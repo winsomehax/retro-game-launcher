@@ -26,7 +26,7 @@ const EXTERNAL_API_TIMEOUT = parseInt(process.env.EXTERNAL_API_TIMEOUT, 10) || 1
 let tgdbPlatformsMap = new Map();
 try {
     // Assuming proxy-server.js is in server/ and the CWD is server/ when node is run
-    const platformsFilePath = './thegamesdb_platforms.json';
+    const platformsFilePath = './data/thegamesdb_platforms.json';
     const platformsData = JSON.parse(fs.readFileSync(platformsFilePath, 'utf-8'));
     if (platformsData && platformsData.data && platformsData.data.platforms) {
         for (const id in platformsData.data.platforms) {
@@ -38,7 +38,7 @@ try {
         console.warn("Warning: TheGamesDB platforms file loaded but structure is unexpected. Platform name resolution might fail.");
     }
 } catch (error) {
-    console.error("Error loading TheGamesDB platforms mapping from server/thegamesdb_platforms.json:", error.message);
+    console.error("Error loading TheGamesDB platforms mapping from data/thegamesdb_platforms.json:", error.message);
     console.warn("Platform name resolution for TheGamesDB results will be unavailable.");
 }
 
