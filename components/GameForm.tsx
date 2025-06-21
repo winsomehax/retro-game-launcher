@@ -137,7 +137,7 @@ export const GameForm: React.FC<GameFormProps> = ({
       // Using the new proxy server endpoint for TheGamesDB
       const fields = "overview,genres,release_date,platform"; // These are TheGamesDB specific fields
       const include = "boxart,platform"; // These are TheGamesDB specific includes
-      const apiUrl = `/api/search/thegamesdb/bygamename?name=${encodeURIComponent(gameData.title)}&fields=${fields}&include=${include}`;
+      const apiUrl = `http://localhost:3001/api/search/thegamesdb/bygamename?name=${encodeURIComponent(gameData.title)}&fields=${fields}&include=${include}`;
 
       console.log("Fetching from proxy server (TheGamesDB):", apiUrl);
       
@@ -200,7 +200,7 @@ export const GameForm: React.FC<GameFormProps> = ({
       const platformName = platforms.find(p => p.id === gameData.platformId)?.name || "Unknown Platform";
       const prompt = `Generate a compelling and concise game description (around 2-3 sentences) for a retro game titled "${gameData.title}" for the "${platformName}" platform. Its genre is "${gameData.genre || 'not specified'}". Focus on the core gameplay or unique aspects.`;
 
-      const apiUrl = `/api/gemini/generatecontent`;
+      const apiUrl = `http://localhost:3001/api/gemini/generatecontent`;
       console.log("Requesting description from proxy (Gemini):", apiUrl);
 
       const response = await fetch(apiUrl, {
