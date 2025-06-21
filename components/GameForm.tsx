@@ -52,6 +52,19 @@ interface TheGamesDbIncludeData {
   };
 }
 
+// Interface for the transformed game object from our proxy server
+interface TransformedGameFromProxy {
+  id: number;
+  title: string;
+  release_date?: string;
+  platform_id: number;
+  overview?: string;
+  boxart_url?: string;
+  // Add other fields like players, genres, rating if they are part of the transformed proxy response
+  // and are needed by the frontend.
+}
+
+
 const defaultGame: Omit<Game, 'id'> = {
   title: '',
   platformId: '',
@@ -75,8 +88,8 @@ export const GameForm: React.FC<GameFormProps> = ({
   const [isFetchingDB, setIsFetchingDB] = useState(false);
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [searchResults, setSearchResults] = useState<TheGamesDbGame[]>([]);
-  const [searchIncludeData, setSearchIncludeData] = useState<TheGamesDbIncludeData | undefined>(undefined);
+  const [searchResults, setSearchResults] = useState<TransformedGameFromProxy[]>([]); // Changed type
+  const [searchIncludeData, setSearchIncludeData] = useState<TheGamesDbIncludeData | undefined>(undefined); // This is no longer used by modal
   const [isGameSelectionModalOpen, setIsGameSelectionModalOpen] = useState(false);
 
   useEffect(() => {
@@ -121,35 +134,50 @@ export const GameForm: React.FC<GameFormProps> = ({
     setIsFetchingDB(true);
     setApiError(null);
     try {
-      // Using API v1.1 and specific fields for form population + include for boxart and platform details
-      const fields = "overview,genres,release_date,platform";
-      const include = "boxart,platform";
-      //const apiUrl = `https://api.thegamesdb.net/v1.1/Games/ByGameName?apikey=${theGamesDbApiKey}&name=${encodeURIComponent(gameData.title)}&fields=${fields}&include=${include}`;
-      const apiUrl = `http://localhost:3001/api/thegamesdb/v1.1/Games/ByGameName?name=${encodeURIComponent(gameData.title)}&fields=${fields}&include=${include}`;
+      // Using the new proxy server endpoint for TheGamesDB
+      const fields = "overview,genres,release_date,platform"; // These are TheGamesDB specific fields
+      const include = "boxart,platform"; // These are TheGamesDB specific includes
+      const apiUrl = `/api/search/thegamesdb/bygamename?name=${encodeURIComponent(gameData.title)}&fields=${fields}&include=${include}`;
 
-      console.log("Fetching from TheGamesDB URL:", apiUrl); // Log the URL
+      console.log("Fetching from proxy server (TheGamesDB):", apiUrl);
       
       const response = await fetch(apiUrl);
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`TheGamesDB API request failed: ${response.status} ${response.statusText}. ${errorData.error || ''}`);
+        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+        throw new Error(`API request failed: ${response.status} ${response.statusText}. ${errorData.message || errorData.error || ''}`);
       }
       const apiResponse = await response.json();
-      console.log("Full response from TheGamesDB:", apiResponse); // Log the full response
+      console.log("Full response from proxy (TheGamesDB):", apiResponse);
       
-      if (apiResponse.data && apiResponse.data.games && apiResponse.data.games.length > 0) {
-        setSearchResults(apiResponse.data.games);
-        setSearchIncludeData(apiResponse.include);
+      // Adjusted to match the transformed response structure from the proxy
+      if (apiResponse.games && apiResponse.games.length > 0) {
+        // The proxy now returns a simplified `games` array.
+        // We need to adapt how we store/use this data if the structure is different from original TheGamesDB.
+        // For now, assuming `apiResponse.games` contains the games array directly.
+        // And `apiResponse.include` might still be there if the proxy forwards it, or it might be incorporated.
+        // Based on the new server code, the response is { source, count, games, pages, remaining_allowance }
+        // The `games` objects are transformed. `searchIncludeData` might not be directly available or needed in the same way.
+
+        // Map the transformed game data to TheGamesDbGame structure if needed for existing modal
+        // Or update the modal to use the new simpler structure.
+        // The proxy returns `TransformedGameFromProxy[]` in `apiResponse.games`.
+        // Set this directly to the searchResults state.
+        setSearchResults(apiResponse.games);
+
+        // `searchIncludeData` is no longer needed from the proxy in this new structure,
+        // as boxart_url is part of each game, and platform name can be looked up from local `platforms` list.
+        setSearchIncludeData(undefined);
+
         setIsGameSelectionModalOpen(true);
       } else {
-        setApiError("No game found on TheGamesDB with that title.");
+        setApiError(apiResponse.message || "No game found with that title via proxy.");
         setSearchResults([]);
         setSearchIncludeData(undefined);
       }
     } catch (error) {
-      console.error("Error fetching from TheGamesDB:", error);
-      setApiError(error instanceof Error ? error.message : "An unknown error occurred while fetching from TheGamesDB.");
+      console.error("Error fetching from proxy (TheGamesDB):", error);
+      setApiError(error instanceof Error ? error.message : "An unknown error occurred while fetching from TheGamesDB via proxy.");
       setSearchResults([]);
       setSearchIncludeData(undefined);
     } finally {
@@ -169,23 +197,42 @@ export const GameForm: React.FC<GameFormProps> = ({
     setIsGeneratingDesc(true);
     setApiError(null);
     try {
-      const ai = new GoogleGenAI({ apiKey: geminiApiKey });
       const platformName = platforms.find(p => p.id === gameData.platformId)?.name || "Unknown Platform";
       const prompt = `Generate a compelling and concise game description (around 2-3 sentences) for a retro game titled "${gameData.title}" for the "${platformName}" platform. Its genre is "${gameData.genre || 'not specified'}". Focus on the core gameplay or unique aspects.`;
-      
-      const response: GenerateContentResponse = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-preview-04-17', // Correct model
-        contents: prompt,
+
+      const apiUrl = `/api/gemini/generatecontent`;
+      console.log("Requesting description from proxy (Gemini):", apiUrl);
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
       });
-      
-      setGameData(prev => ({
-        ...prev,
-        description: response.text?.trim() || prev.description,
-      }));
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+        throw new Error(`API request failed: ${response.status} ${response.statusText}. ${errorData.message || errorData.error || ''}`);
+      }
+
+      const apiResponse = await response.json();
+      console.log("Full response from proxy (Gemini):", apiResponse);
+
+      if (apiResponse.generated_text) {
+        setGameData(prev => ({
+          ...prev,
+          description: apiResponse.generated_text.trim(),
+        }));
+      } else {
+        throw new Error("No generated text found in API response.");
+      }
 
     } catch (error) {
-      console.error("Error generating description with Gemini:", error);
-      setApiError(error instanceof Error ? error.message : "An unknown error occurred while generating description.");
+      console.error("Error generating description with proxy (Gemini):", error);
+      setApiError(error instanceof Error ? error.message : "An unknown error occurred while generating description via proxy.");
     } finally {
       setIsGeneratingDesc(false);
     }
@@ -356,60 +403,77 @@ interface GameSearchResultsModalProps {
   games: TheGamesDbGame[];
   includeData?: TheGamesDbIncludeData;
   onSelectGame: (game: TheGamesDbGame, platformName: string | undefined, coverImageUrl: string) => void;
-  platforms: Platform[]; // Passed for potential future use, not strictly needed if platform name comes from includeData
+  platforms: Platform[];
+}
+
+interface GameSearchResultsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  games: TransformedGameFromProxy[]; // Changed to use the new type
+  includeData?: TheGamesDbIncludeData; // This is no longer used but kept for prop consistency if needed elsewhere
+  onSelectGame: (game: TheGamesDbGame, platformName: string | undefined, coverImageUrl: string) => void;
+  platforms: Platform[];
+}
+
+// The 'games' prop will now be the transformed data from our proxy
+// which includes `boxart_url` and `platform_id`.
+// The `TheGamesDbGame` type might need to be adjusted or we map it here.
+// For now, we'll assume `games` passed to this modal are the `gamesForModal` which are of type `TheGamesDbGame[]`
+// but they are missing `boxart_url`. Let's assume the `apiResponse.games` (from proxy) is passed directly.
+
+interface TransformedGameFromProxy { // Representing the structure from our proxy's TheGamesDB endpoint
+  id: number;
+  title: string;
+  release_date?: string;
+  platform_id: number;
+  overview?: string;
+  boxart_url?: string; // This is key
+  // other fields from proxy like players, genres, rating can be added if needed by modal
 }
 
 const GameSearchResultsModal: React.FC<GameSearchResultsModalProps> = ({
   isOpen,
   onClose,
-  games,
-  includeData,
+  games, // This is now TransformedGameFromProxy[]
+  includeData, // This is now undefined and not used by this modal directly
   onSelectGame,
+  platforms, // Local platforms list
 }) => {
-  const getCoverImageUrlFromTGDB = (gameId: number, currentIncludeData?: TheGamesDbIncludeData): string => {
-    if (!currentIncludeData?.boxart?.data || !currentIncludeData?.boxart?.base_url?.original) {
-      return '';
-    }
-    const gameBoxarts = currentIncludeData.boxart.data[gameId.toString()];
-    if (!gameBoxarts || gameBoxarts.length === 0) {
-      return '';
-    }
-    let preferredBoxart = gameBoxarts.find(img => img.type === 'boxart' && img.side === 'front');
-    if (!preferredBoxart) {
-      preferredBoxart = gameBoxarts.find(img => img.type === 'boxart');
-    }
-    if (!preferredBoxart && gameBoxarts.length > 0) {
-      preferredBoxart = gameBoxarts[0];
-    }
-    if (preferredBoxart) {
-      return currentIncludeData.boxart.base_url.original + preferredBoxart.filename;
-    }
-    return '';
-  };
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Select Game from TheGamesDB" size="xl">
       <div className="space-y-3 max-h-[60vh] overflow-y-auto p-1">
-        {games.map(game => {
-          const platformName = includeData?.platform?.data?.[game.platform.toString()]?.name;
-          const coverImageUrl = getCoverImageUrlFromTGDB(game.id, includeData);
+        {games.map(game => { // No longer need to cast, type is correct
+          const platform = platforms.find(p => p.id === game.platform_id.toString());
+          const platformName = platform?.name;
+          const coverImageUrl = game.boxart_url || '';
+
+          // We need to create a `TheGamesDbGame` object for `onSelectGame` as it expects that type.
+          const gameForSelection: TheGamesDbGame = {
+            id: game.id,
+            game_title: game.title,
+            release_date: game.release_date,
+            platform: game.platform_id,
+            overview: game.overview,
+            // genres: game.genres, // if available and needed
+          };
+
           return (
             <div key={game.id} className="flex items-center space-x-4 p-3 bg-slate-700/50 hover:bg-slate-600/50 rounded-md">
               <img 
                 src={coverImageUrl || 'https://via.placeholder.com/60x80.png?text=No+Art'} 
-                alt={game.game_title} 
+                alt={game.title}
                 className="w-16 h-20 object-cover rounded flex-shrink-0 bg-slate-800" 
               />
               <div className="flex-grow">
-                <h3 className="font-semibold text-base">{game.game_title}</h3>
+                <h3 className="font-semibold text-base">{game.title}</h3>
                 <p className="text-sm text-slate-400">
-                  Platform: {platformName || `ID: ${game.platform}`}{game.release_date ? ` (${new Date(game.release_date).getFullYear()})` : ''}
+                  Platform: {platformName || `ID: ${game.platform_id}`}{game.release_date ? ` (${new Date(game.release_date).getFullYear()})` : ''}
                 </p>
               </div>
               <Button 
                 variant="primary" 
                 size="sm"
-                onClick={() => onSelectGame(game, platformName, coverImageUrl)}
+                onClick={() => onSelectGame(gameForSelection, platformName, coverImageUrl)}
               >
                 Select
               </Button>
