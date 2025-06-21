@@ -142,26 +142,22 @@ app.get('/api/search/thegamesdb/bygamename', async (req, res) => {
                         boxartUrl = `${apiResponse.data.include.boxart.base_url.medium}${frontBoxart.filename}`;
                     }
                 }
-                        // Resolve platform name and alias using the loaded map
+                        // Resolve platform details using the loaded map
                         const platformId = game.platform;
-                        const platformInfo = tgdbPlatformsMap.get(platformId);
-                        let platformNameFromSource = `TGDB Platform ID ${platformId} not in local map`;
-                        let platformAliasFromSource = '';
+                        const sourcePlatformDetails = tgdbPlatformsMap.get(platformId); // This now returns {id, name, alias} or undefined
 
-                        if (platformInfo) {
-                            platformNameFromSource = platformInfo.name;
-                            platformAliasFromSource = platformInfo.alias;
+                        if (sourcePlatformDetails) {
+                            console.log(`TGDB Game: "${game.game_title}", Platform ID: ${platformId}, Resolved Name: "${sourcePlatformDetails.name}", Resolved Alias: "${sourcePlatformDetails.alias}"`);
+                        } else {
+                            console.log(`TGDB Game: "${game.game_title}", Platform ID: ${platformId} - No details found in local TGDB platform map.`);
                         }
-
-                        console.log(`TGDB Game: "${game.game_title}", Platform ID: ${platformId}, Resolved Name: "${platformNameFromSource}", Resolved Alias: "${platformAliasFromSource}"`);
 
                 return {
                     id: game.id,
                     title: game.game_title,
                     release_date: game.release_date,
-                            platform_id: platformId,
-                            platform_name_from_source: platformNameFromSource,
-                            platform_alias_from_source: platformAliasFromSource,
+                            platform_id: platformId, // Keep original TGDB ID for reference
+                            source_platform_details: sourcePlatformDetails || { id: platformId, name: `Unknown TGDB ID: ${platformId}`, alias: `unknown-tgdb-${platformId}` }, // Send full details or a placeholder
                     overview: game.overview,
                     players: game.players,
                             genres: game.genres,

@@ -15,6 +15,7 @@ interface GameFormProps {
   onSubmit: (game: Game) => void;
   platforms: Platform[];
   initialGame?: Game | null;
+  onAddPlatform: (platformToAdd: { id: string; name: string; alias?: string }) => void; // Added prop
   theGamesDbApiKey?: string;
   geminiApiKey?: string;
 }
@@ -57,13 +58,17 @@ interface TransformedGameFromProxy {
   id: number;
   title: string;
   release_date?: string;
-  platform_id: number;
-  platform_name_from_source?: string;
-  platform_alias_from_source?: string; // Added this field
+  platform_id: number; // This is the original ID from TheGamesDB
+  source_platform_details?: { // Full details from thegamesdb_platforms.json via server
+    id: number; // TGDB's own ID for the platform
+    name: string;
+    alias: string;
+  };
   overview?: string;
   boxart_url?: string;
-  // Add other fields like players, genres, rating if they are part of the transformed proxy response
-  // and are needed by the frontend.
+  // Redundant fields removed as they are now within source_platform_details
+  // platform_name_from_source?: string;
+  // platform_alias_from_source?: string;
 }
 
 
@@ -83,6 +88,7 @@ export const GameForm: React.FC<GameFormProps> = ({
   onSubmit, 
   platforms, 
   initialGame,
+  onAddPlatform, // Destructure the new prop
   theGamesDbApiKey,
   geminiApiKey
 }) => {
@@ -242,36 +248,49 @@ export const GameForm: React.FC<GameFormProps> = ({
 
   const handleGameSelectedFromSearch = (
     selectedTGDBGame: TheGamesDbGame,
-  tgdbPlatformName: string | undefined,
-  tgdbPlatformAlias: string | undefined,
+  sourcePlatformDetails: { id: number; name: string; alias: string } | undefined,
   coverImgUrl: string
   ) => {
-  console.log(`handleGameSelectedFromSearch - Received TGDB Name: "${tgdbPlatformName}", Alias: "${tgdbPlatformAlias}"`);
-  console.log("Local platforms (name, alias):", platforms.map(p => ({ name: p.name, alias: p.alias })));
+  console.log(`handleGameSelectedFromSearch - Received Source Platform Details:`, sourcePlatformDetails);
+  console.log("Local platforms for matching:", platforms.map(p => ({ id: p.id, name: p.name, alias: p.alias })));
 
   let matchedPlatform: Platform | undefined = undefined;
+  let finalPlatformIdToSet: string = '';
+  let apiMessage = null;
 
-  if (tgdbPlatformName) {
-    // Try matching by name first
-    matchedPlatform = platforms.find(p => p.name.toLowerCase() === tgdbPlatformName.toLowerCase());
+  if (sourcePlatformDetails) {
+    // Try to find existing local platform
+    matchedPlatform = platforms.find(p =>
+      p.id === sourcePlatformDetails.id.toString() || // Match by TGDB ID (converted to string)
+      p.name.toLowerCase() === sourcePlatformDetails.name.toLowerCase() ||
+      (p.alias && sourcePlatformDetails.alias && p.alias.toLowerCase() === sourcePlatformDetails.alias.toLowerCase()) ||
+      (p.alias && p.alias.toLowerCase() === sourcePlatformDetails.name.toLowerCase()) || // Match local alias against TGDB name
+      (sourcePlatformDetails.alias && p.name.toLowerCase() === sourcePlatformDetails.alias.toLowerCase()) // Match local name against TGDB alias
+    );
 
-    // If not found by name, and if local platform has an alias, try matching TGDB name against local alias
-    if (!matchedPlatform) {
-      matchedPlatform = platforms.find(p => p.alias && p.alias.toLowerCase() === tgdbPlatformName.toLowerCase());
+    console.log("Attempt 1: Matched local platform:", matchedPlatform);
+
+    if (matchedPlatform) {
+      finalPlatformIdToSet = matchedPlatform.id;
+    } else {
+      // No local match found, so add this platform from TGDB source
+      console.log(`Platform "${sourcePlatformDetails.name}" (ID: ${sourcePlatformDetails.id}) not found locally. Adding it.`);
+      const newPlatformData = {
+        id: sourcePlatformDetails.id.toString(), // Use TGDB ID as string for local ID
+        name: sourcePlatformDetails.name,
+        alias: sourcePlatformDetails.alias || '', // Ensure alias is a string
+      };
+      props.onAddPlatform(newPlatformData); // Call prop passed from App.tsx
+      finalPlatformIdToSet = newPlatformData.id; // Use the ID of the (to be) newly added platform
+      apiMessage = `Platform "${sourcePlatformDetails.name}" was not found locally and has been added to your platforms.`;
+      // Note: The 'platforms' prop might not update immediately within this function's closure.
+      // The selection to the form field will use the ID, and App.tsx state update will make it available later.
     }
+  } else {
+    apiMessage = "No platform information received from TheGamesDB search. Please select a platform manually.";
   }
 
-  // If still not found and tgdbPlatformAlias is available, try matching alias
-  if (!matchedPlatform && tgdbPlatformAlias) {
-    // Try matching TGDB alias against local name
-    matchedPlatform = platforms.find(p => p.name.toLowerCase() === tgdbPlatformAlias.toLowerCase());
-    // Try matching TGDB alias against local alias
-    if (!matchedPlatform) {
-      matchedPlatform = platforms.find(p => p.alias && p.alias.toLowerCase() === tgdbPlatformAlias.toLowerCase());
-    }
-  }
-
-  console.log("Matched local platform:", matchedPlatform);
+  setApiError(apiMessage);
 
     setGameData(prev => ({
         ...prev,
@@ -280,14 +299,8 @@ export const GameForm: React.FC<GameFormProps> = ({
         genre: (selectedTGDBGame.genres && selectedTGDBGame.genres.length > 0 ? selectedTGDBGame.genres[0].name : prev.genre) || '',
         releaseDate: selectedTGDBGame.release_date ? new Date(selectedTGDBGame.release_date).getFullYear().toString() : prev.releaseDate,
         coverImageUrl: coverImgUrl || prev.coverImageUrl,
-        platformId: matchedPlatform ? matchedPlatform.id : '',
+      platformId: finalPlatformIdToSet, // Set with matched or new ID
     }));
-
-    let currentApiError = null;
-  if (!matchedPlatform && (tgdbPlatformName || tgdbPlatformAlias)) {
-      currentApiError = `Platform "${tgdbPlatformName || tgdbPlatformAlias}" from TheGamesDB was not found in your configured platforms. Please select manually.`;
-    }
-    setApiError(currentApiError);
 
     setIsGameSelectionModalOpen(false);
     setSearchResults([]);
@@ -439,13 +452,14 @@ interface GameSearchResultsModalProps {
   isOpen: boolean;
   onClose: () => void;
   games: TransformedGameFromProxy[]; // Correct type for games
-  onSelectGame: ( // Correct signature for onSelectGame
+  onSelectGame: (
     game: TheGamesDbGame,
-    platformName: string | undefined,
-    platformAlias: string | undefined,
+    sourcePlatformDetails: { id: number; name: string; alias: string } | undefined, // Pass full object
     coverImageUrl: string
   ) => void;
-  platforms: Platform[]; // Keep for now, might be useful for other modal logic or robust fallback
+  // platforms prop is no longer strictly needed by the modal itself for display,
+  // but kept if other reasons exist or for future fallback logic.
+  platforms: Platform[];
 }
 
 const GameSearchResultsModal: React.FC<GameSearchResultsModalProps> = ({
@@ -453,19 +467,19 @@ const GameSearchResultsModal: React.FC<GameSearchResultsModalProps> = ({
   onClose,
   games,
   onSelectGame,
-  platforms,
+  platforms, // Kept for now
 }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Select Game from TheGamesDB" size="xl">
       <div className="space-y-3 max-h-[60vh] overflow-y-auto p-1">
-        {games.map(game => { // game is now correctly TransformedGameFromProxy
-          console.log(`Modal item - Game: "${game.title}", Platform ID: ${game.platform_id}, Name: "${game.platform_name_from_source}", Alias: "${game.platform_alias_from_source}"`);
+        {games.map(game => {
+          console.log(`Modal item - Game: "${game.title}", Platform ID: ${game.platform_id}, SourceDetails:`, game.source_platform_details);
           const displayPlatformName = game.platform_name_from_source || `ID: ${game.platform_id}`;
           const coverImageUrl = game.boxart_url || '';
 
-          const gameForSelection: TheGamesDbGame = { // Map to TheGamesDbGame for the callback
+          const gameForSelection: TheGamesDbGame = {
             id: game.id,
-            game_title: game.title, // Use game.title from TransformedGameFromProxy
+            game_title: game.title,
             release_date: game.release_date,
             platform: game.platform_id,
             overview: game.overview,
@@ -487,7 +501,7 @@ const GameSearchResultsModal: React.FC<GameSearchResultsModalProps> = ({
               <Button 
                 variant="primary" 
                 size="sm"
-                onClick={() => onSelectGame(gameForSelection, game.platform_name_from_source, game.platform_alias_from_source, coverImageUrl)}
+                onClick={() => onSelectGame(gameForSelection, game.source_platform_details, coverImageUrl)}
               >
                 Select
               </Button>

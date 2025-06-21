@@ -12,6 +12,7 @@ interface GamesViewProps {
   onAddGame: (game: Game) => void;
   onUpdateGame: (game: Game) => void;
   onDeleteGame: (gameId: string) => void;
+  onAddPlatform: (platformToAdd: { id: string; name: string; alias?: string }) => void; // Added prop
   theGamesDbApiKey: string;
   geminiApiKey: string;
 }
@@ -22,6 +23,7 @@ export const GamesView: React.FC<GamesViewProps> = ({
   onAddGame, 
   onUpdateGame, 
   onDeleteGame,
+  onAddPlatform, // Added prop
   theGamesDbApiKey,
   geminiApiKey
 }) => {
@@ -121,6 +123,7 @@ export const GamesView: React.FC<GamesViewProps> = ({
         onSubmit={handleSubmitForm}
         platforms={platforms}
         initialGame={editingGame}
+        onAddPlatform={onAddPlatform} // Pass down the function
         theGamesDbApiKey={theGamesDbApiKey}
         geminiApiKey={geminiApiKey}
       />
