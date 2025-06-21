@@ -7,7 +7,7 @@ import { Select } from './Select';
 import { Button } from './Button';
 import { Modal } from './Modal';
 import { CloudDownloadIcon, SparklesIcon, SpinnerIcon } from './Icons';
-import { GoogleGenAI, GenerateContentResponse } from '@google/genai';
+// import { GoogleGenAI, GenerateContentResponse } from '@google/genai'; // No longer used directly
 
 interface GameFormProps {
   isOpen: boolean;
@@ -242,8 +242,6 @@ export const GameForm: React.FC<GameFormProps> = ({
 
   const handleGameSelectedFromSearch = (
     selectedTGDBGame: TheGamesDbGame,
-    tgdbPlatformName: string | undefined,
-    coverImgUrl: string
   tgdbPlatformName: string | undefined,
   tgdbPlatformAlias: string | undefined,
   coverImgUrl: string
@@ -299,7 +297,7 @@ export const GameForm: React.FC<GameFormProps> = ({
   const platformOptions = platforms.map(p => ({ value: p.id, label: p.name }));
 
   // Close search results modal if the main form modal is closed
-  const handleMainModalClose = () => { setIsGameSelectionModalOpen(false); onClose(); };
+  // const handleMainModalClose = () => { setIsGameSelectionModalOpen(false); onClose(); }; // Unused
 
   return (
     <Modal 
@@ -425,74 +423,52 @@ export const GameForm: React.FC<GameFormProps> = ({
   );
 };
 
-interface GameSearchResultsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  games: TheGamesDbGame[];
-  includeData?: TheGamesDbIncludeData;
-  onSelectGame: (game: TheGamesDbGame, platformName: string | undefined, coverImageUrl: string) => void;
-  platforms: Platform[];
+// Interface for the transformed game object from our proxy server (moved before use)
+interface TransformedGameFromProxy {
+  id: number;
+  title: string;
+  release_date?: string;
+  platform_id: number;
+  platform_name_from_source?: string;
+  platform_alias_from_source?: string;
+  overview?: string;
+  boxart_url?: string;
 }
 
 interface GameSearchResultsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  games: TransformedGameFromProxy[];
-  includeData?: TheGamesDbIncludeData;
-  onSelectGame: (
+  games: TransformedGameFromProxy[]; // Correct type for games
+  onSelectGame: ( // Correct signature for onSelectGame
     game: TheGamesDbGame,
     platformName: string | undefined,
     platformAlias: string | undefined,
     coverImageUrl: string
   ) => void;
-  platforms: Platform[];
-}
-
-// The 'games' prop will now be the transformed data from our proxy
-// which includes `boxart_url` and `platform_id`.
-// The `TheGamesDbGame` type might need to be adjusted or we map it here.
-// For now, we'll assume `games` passed to this modal are the `gamesForModal` which are of type `TheGamesDbGame[]`
-// but they are missing `boxart_url`. Let's assume the `apiResponse.games` (from proxy) is passed directly.
-
-interface TransformedGameFromProxy { // Representing the structure from our proxy's TheGamesDB endpoint
-  id: number;
-  title: string;
-  release_date?: string;
-  platform_id: number;
-  overview?: string;
-  boxart_url?: string; // This is key
-  // other fields from proxy like players, genres, rating can be added if needed by modal
+  platforms: Platform[]; // Keep for now, might be useful for other modal logic or robust fallback
 }
 
 const GameSearchResultsModal: React.FC<GameSearchResultsModalProps> = ({
   isOpen,
   onClose,
-  games, // This is now TransformedGameFromProxy[]
-  includeData, // This is now undefined and not used by this modal directly
+  games,
   onSelectGame,
-  platforms, // Local platforms list
+  platforms,
 }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Select Game from TheGamesDB" size="xl">
       <div className="space-y-3 max-h-[60vh] overflow-y-auto p-1">
-        {games.map(game => {
+        {games.map(game => { // game is now correctly TransformedGameFromProxy
           console.log(`Modal item - Game: "${game.title}", Platform ID: ${game.platform_id}, Name: "${game.platform_name_from_source}", Alias: "${game.platform_alias_from_source}"`);
-          // Use platform_name_from_source directly for display.
-          // The local 'platforms' prop is still available if needed for other matching/logic,
-          // but for display, the name from the source (TheGamesDB via our proxy) is now preferred.
           const displayPlatformName = game.platform_name_from_source || `ID: ${game.platform_id}`;
           const coverImageUrl = game.boxart_url || '';
 
-          // We need to create a `TheGamesDbGame` object for `onSelectGame` as it expects that type.
-          // The `onSelectGame` callback's second argument `platformName` will now be reliably populated
-          // by `game.platform_name_from_source`.
-          const gameForSelection: TheGamesDbGame = {
+          const gameForSelection: TheGamesDbGame = { // Map to TheGamesDbGame for the callback
             id: game.id,
-            game_title: game.title,
+            game_title: game.title, // Use game.title from TransformedGameFromProxy
             release_date: game.release_date,
-            platform: game.platform_id, // This is the ID from TheGamesDB
+            platform: game.platform_id,
             overview: game.overview,
-            // genres: game.genres, // if available and needed
           };
 
           return (

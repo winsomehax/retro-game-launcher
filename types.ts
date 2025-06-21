@@ -9,6 +9,7 @@ export interface EmulatorConfig {
 export interface Platform {
   id:string;
   name: string;
+  alias?: string; // Added for matching against external API aliases
   iconUrl?: string; // e.g., URL to an SVG or small PNG
   emulators: EmulatorConfig[];
 }
