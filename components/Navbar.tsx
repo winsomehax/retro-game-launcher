@@ -18,7 +18,7 @@ const NavItem: React.FC<{
   isActive: boolean;
   onClick: () => void;
   // Forwarding ref to the button element
-  buttonRef?: React.RefObject<HTMLButtonElement>; 
+  buttonRef?: React.RefObject<HTMLButtonElement | null>; 
 }> = ({ label, icon, isActive, onClick, buttonRef }) => (
   <button
     ref={buttonRef}
