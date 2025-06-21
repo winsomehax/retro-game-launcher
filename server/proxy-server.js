@@ -3,6 +3,8 @@ import axios from 'axios';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { URL } from 'url'; // Import URL for parsing
+import fs from 'fs'; // Import File System module
+import path from 'path'; // Import Path module
 
 dotenv.config(); // For loading .env file from the project root
 
@@ -11,20 +13,34 @@ const PORT = process.env.PORT || 3001;
 
 // --- Configuration ---
 const corsOptions = {
-    // In production, restrict this to your frontend's actual domain
-    origin: process.env.FRONTEND_URL || '*',
-    // You might want to specify methods and headers allowed if needed
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Default to a common frontend dev port
     // methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     // allowedHeaders: "Content-Type,Authorization"
 };
 
-const EXTERNAL_API_KEY = process.env.EXTERNAL_API_KEY;
-if (!EXTERNAL_API_KEY) {
-    console.warn("Warning: EXTERNAL_API_KEY is not set in the .env file. Calls to protected external APIs may fail.");
-}
-
+const EXTERNAL_API_KEY = process.env.EXTERNAL_API_KEY; // General key, might not be used if specific keys are present
 const PROXY_SECRET = process.env.PROXY_SECRET;
 const EXTERNAL_API_TIMEOUT = parseInt(process.env.EXTERNAL_API_TIMEOUT, 10) || 10000; // Default 10s
+
+// Load TheGamesDB platforms mapping
+let tgdbPlatformsMap = new Map();
+try {
+    // Assuming proxy-server.js is in server/ and thegamesdb_platforms.json is also in server/
+    const platformsFilePath = path.join(path.dirname(new URL(import.meta.url).pathname), 'thegamesdb_platforms.json');
+    const platformsData = JSON.parse(fs.readFileSync(platformsFilePath, 'utf-8'));
+    if (platformsData && platformsData.data && platformsData.data.platforms) {
+        for (const id in platformsData.data.platforms) {
+            tgdbPlatformsMap.set(parseInt(id, 10), platformsData.data.platforms[id].name);
+        }
+        console.log("Successfully loaded TheGamesDB platforms mapping.");
+    } else {
+        console.warn("Warning: TheGamesDB platforms file loaded but structure is unexpected. Platform name resolution might fail.");
+    }
+} catch (error) {
+    console.error("Error loading TheGamesDB platforms mapping from server/thegamesdb_platforms.json:", error.message);
+    console.warn("Platform name resolution for TheGamesDB results will be unavailable.");
+}
+
 
 // --- Middleware ---
 app.use(cors(corsOptions)); // Enable CORS with configured options
@@ -125,18 +141,20 @@ app.get('/api/search/thegamesdb/bygamename', async (req, res) => {
                         boxartUrl = `${apiResponse.data.include.boxart.base_url.medium}${frontBoxart.filename}`;
                     }
                 }
+                        // Resolve platform name using the loaded map
+                        const platformNameFromSource = tgdbPlatformsMap.get(game.platform) || 'Unknown Platform ID';
+
                 return {
                     id: game.id,
                     title: game.game_title,
                     release_date: game.release_date,
-                    platform_id: game.platform, // Platform ID, frontend might need to map this to name
-                    // platform_name: apiResponse.data.include?.platform?.data?.[game.platform]?.name, // Example if platform details were included
+                            platform_id: game.platform,
+                            platform_name_from_source: platformNameFromSource, // Added platform name
                     overview: game.overview,
                     players: game.players,
-                    genres: game.genres, // This will be array of genre IDs, might need further mapping
+                            genres: game.genres,
                     rating: game.rating,
                     boxart_url: boxartUrl,
-                    // Add other fields as needed
                 };
             });
 
