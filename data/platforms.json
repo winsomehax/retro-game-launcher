@@ -1,7 +1,7 @@
 
 [
   {
-    "id": "c64-platform",
+    "id": "40",
     "name": "Commodore 64",
     "iconUrl": "https://picsum.photos/seed/c64/40/40",
     "emulators": [
@@ -9,7 +9,7 @@
     ]
   },
   {
-    "id": "amiga-platform",
+    "id": "4911",
     "name": "Amiga",
     "iconUrl": "https://picsum.photos/seed/amiga/40/40",
     "emulators": [
@@ -18,7 +18,7 @@
     ]
   },
   {
-    "id": "snes-platform",
+    "id": "6",
     "name": "Super Nintendo",
     "iconUrl": "https://picsum.photos/seed/snes/40/40",
     "emulators": [
