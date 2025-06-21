@@ -30,9 +30,10 @@ try {
     const platformsData = JSON.parse(fs.readFileSync(platformsFilePath, 'utf-8'));
     if (platformsData && platformsData.data && platformsData.data.platforms) {
         for (const id in platformsData.data.platforms) {
-            tgdbPlatformsMap.set(parseInt(id, 10), platformsData.data.platforms[id].name);
+            const platformEntry = platformsData.data.platforms[id];
+            tgdbPlatformsMap.set(parseInt(id, 10), { name: platformEntry.name, alias: platformEntry.alias });
         }
-        console.log("Successfully loaded TheGamesDB platforms mapping.");
+        console.log("Successfully loaded TheGamesDB platforms mapping (name and alias).");
     } else {
         console.warn("Warning: TheGamesDB platforms file loaded but structure is unexpected. Platform name resolution might fail.");
     }
@@ -141,15 +142,26 @@ app.get('/api/search/thegamesdb/bygamename', async (req, res) => {
                         boxartUrl = `${apiResponse.data.include.boxart.base_url.medium}${frontBoxart.filename}`;
                     }
                 }
-                        // Resolve platform name using the loaded map
-                        const platformNameFromSource = tgdbPlatformsMap.get(game.platform) || 'Unknown Platform ID';
+                        // Resolve platform name and alias using the loaded map
+                        const platformId = game.platform;
+                        const platformInfo = tgdbPlatformsMap.get(platformId);
+                        let platformNameFromSource = `TGDB Platform ID ${platformId} not in local map`;
+                        let platformAliasFromSource = '';
+
+                        if (platformInfo) {
+                            platformNameFromSource = platformInfo.name;
+                            platformAliasFromSource = platformInfo.alias;
+                        }
+
+                        console.log(`TGDB Game: "${game.game_title}", Platform ID: ${platformId}, Resolved Name: "${platformNameFromSource}", Resolved Alias: "${platformAliasFromSource}"`);
 
                 return {
                     id: game.id,
                     title: game.game_title,
                     release_date: game.release_date,
-                            platform_id: game.platform,
-                            platform_name_from_source: platformNameFromSource, // Added platform name
+                            platform_id: platformId,
+                            platform_name_from_source: platformNameFromSource,
+                            platform_alias_from_source: platformAliasFromSource,
                     overview: game.overview,
                     players: game.players,
                             genres: game.genres,
