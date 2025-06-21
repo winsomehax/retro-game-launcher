@@ -58,6 +58,7 @@ interface TransformedGameFromProxy {
   title: string;
   release_date?: string;
   platform_id: number;
+  platform_name_from_source?: string; // Added this field
   overview?: string;
   boxart_url?: string;
   // Add other fields like players, genres, rating if they are part of the transformed proxy response
@@ -442,17 +443,21 @@ const GameSearchResultsModal: React.FC<GameSearchResultsModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Select Game from TheGamesDB" size="xl">
       <div className="space-y-3 max-h-[60vh] overflow-y-auto p-1">
-        {games.map(game => { // No longer need to cast, type is correct
-          const platform = platforms.find(p => p.id === game.platform_id.toString());
-          const platformName = platform?.name;
+        {games.map(game => {
+          // Use platform_name_from_source directly for display.
+          // The local 'platforms' prop is still available if needed for other matching/logic,
+          // but for display, the name from the source (TheGamesDB via our proxy) is now preferred.
+          const displayPlatformName = game.platform_name_from_source || `ID: ${game.platform_id}`;
           const coverImageUrl = game.boxart_url || '';
 
           // We need to create a `TheGamesDbGame` object for `onSelectGame` as it expects that type.
+          // The `onSelectGame` callback's second argument `platformName` will now be reliably populated
+          // by `game.platform_name_from_source`.
           const gameForSelection: TheGamesDbGame = {
             id: game.id,
             game_title: game.title,
             release_date: game.release_date,
-            platform: game.platform_id,
+            platform: game.platform_id, // This is the ID from TheGamesDB
             overview: game.overview,
             // genres: game.genres, // if available and needed
           };
@@ -467,13 +472,13 @@ const GameSearchResultsModal: React.FC<GameSearchResultsModalProps> = ({
               <div className="flex-grow">
                 <h3 className="font-semibold text-base">{game.title}</h3>
                 <p className="text-sm text-slate-400">
-                  Platform: {platformName || `ID: ${game.platform_id}`}{game.release_date ? ` (${new Date(game.release_date).getFullYear()})` : ''}
+                  Platform: {displayPlatformName}{game.release_date ? ` (${new Date(game.release_date).getFullYear()})` : ''}
                 </p>
               </div>
               <Button 
                 variant="primary" 
                 size="sm"
-                onClick={() => onSelectGame(gameForSelection, platformName, coverImageUrl)}
+                onClick={() => onSelectGame(gameForSelection, game.platform_name_from_source, coverImageUrl)}
               >
                 Select
               </Button>

@@ -124,4 +124,5 @@ The backend server (`server/proxy-server.js`) provides the following endpoints:
 
 -   The frontend makes calls to these backend endpoints, which then proxy the requests to the external APIs. This is done to avoid CORS issues and securely manage API keys.
 -   Ensure your `.env` file in the `server/` directory is correctly configured with API keys before running the application.
+-   The API server uses `server/thegamesdb_platforms.json` to map TheGamesDB platform IDs to their names. This file is based on data from TheGamesDB API and might need to be updated periodically if TheGamesDB adds or changes platforms. The mechanism for updating this file is currently manual.
 -   The application relies on local JSON files (`data/games.json`, `data/platforms.json`) for storing user game data and platform configurations. These are typically managed by the frontend.
