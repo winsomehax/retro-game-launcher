@@ -1,0 +1,28 @@
+
+[
+  {
+    "id": "c64-platform",
+    "name": "Commodore 64",
+    "iconUrl": "https://picsum.photos/seed/c64/40/40",
+    "emulators": [
+      { "id": "vice-emu", "name": "VICE x64", "executablePath": "/usr/bin/vice", "args": "-fullscreen {ROM}" }
+    ]
+  },
+  {
+    "id": "amiga-platform",
+    "name": "Amiga",
+    "iconUrl": "https://picsum.photos/seed/amiga/40/40",
+    "emulators": [
+      { "id": "uae-emu", "name": "WinUAE", "executablePath": "C:\\Program Files\\WinUAE\\winuae.exe", "args": "-f {CONFIG} {ROM}" },
+      { "id": "fs-uae-emu", "name": "FS-UAE", "executablePath": "/usr/bin/fs-uae", "args": "--fullscreen {ROM}" }
+    ]
+  },
+  {
+    "id": "snes-platform",
+    "name": "Super Nintendo",
+    "iconUrl": "https://picsum.photos/seed/snes/40/40",
+    "emulators": [
+      { "id": "snes9x-emu", "name": "Snes9x", "executablePath": "/usr/bin/snes9x-gtk", "args": "{ROM}" }
+    ]
+  }
+]

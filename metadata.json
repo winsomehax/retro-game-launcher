@@ -1,0 +1,6 @@
+{
+  "name": "Retro Game Launcher",
+  "description": "A web application to browse, manage, and launch your retro game collection. It allows configuring platforms, emulators, and game details. (ROM scanning and launching are simulated).",
+  "requestFramePermissions": [],
+  "prompt": ""
+}

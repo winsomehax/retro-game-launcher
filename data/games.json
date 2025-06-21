@@ -1,0 +1,43 @@
+
+[
+  {
+    "id": "game-1",
+    "title": "Impossible Mission",
+    "platformId": "c64-platform",
+    "romPath": "/roms/c64/impossible_mission.d64",
+    "coverImageUrl": "https://picsum.photos/seed/impossmission/300/400",
+    "description": "Stay awhile, stay FOREVER! Avoid deadly robots and search for puzzle pieces in this classic action-platformer.",
+    "genre": "Platformer",
+    "releaseDate": "1984"
+  },
+  {
+    "id": "game-2",
+    "title": "The Secret of Monkey Island",
+    "platformId": "amiga-platform",
+    "romPath": "/roms/amiga/monkey_island.adf",
+    "coverImageUrl": "https://picsum.photos/seed/monkeyisland/300/400",
+    "description": "A wannabe pirate, Guybrush Threepwood, seeks adventure, love, and the legendary treasure of Monkey Island.",
+    "genre": "Adventure",
+    "releaseDate": "1990"
+  },
+  {
+    "id": "game-3",
+    "title": "Chrono Trigger",
+    "platformId": "snes-platform",
+    "romPath": "/roms/snes/chrono_trigger.smc",
+    "coverImageUrl": "https://picsum.photos/seed/chronotrig/300/400",
+    "description": "A timeless RPG adventure through different eras to save the planet from a global catastrophe.",
+    "genre": "RPG",
+    "releaseDate": "1995"
+  },
+  {
+    "id": "game-4",
+    "title": "Turrican II: The Final Fight",
+    "platformId": "amiga-platform",
+    "romPath": "/roms/amiga/turrican2.adf",
+    "coverImageUrl": "https://picsum.photos/seed/turrican2/300/400",
+    "description": "Action-packed run and gun game with huge levels and memorable soundtrack.",
+    "genre": "Run and Gun",
+    "releaseDate": "1991"
+  }
+]
