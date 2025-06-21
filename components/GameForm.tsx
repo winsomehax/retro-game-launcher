@@ -58,7 +58,8 @@ interface TransformedGameFromProxy {
   title: string;
   release_date?: string;
   platform_id: number;
-  platform_name_from_source?: string; // Added this field
+  platform_name_from_source?: string;
+  platform_alias_from_source?: string; // Added this field
   overview?: string;
   boxart_url?: string;
   // Add other fields like players, genres, rating if they are part of the transformed proxy response
@@ -243,10 +244,36 @@ export const GameForm: React.FC<GameFormProps> = ({
     selectedTGDBGame: TheGamesDbGame,
     tgdbPlatformName: string | undefined,
     coverImgUrl: string
+  tgdbPlatformName: string | undefined,
+  tgdbPlatformAlias: string | undefined,
+  coverImgUrl: string
   ) => {
-    const matchedPlatform = platforms.find(p =>
-        tgdbPlatformName && p.name.toLowerCase() === tgdbPlatformName.toLowerCase()
-    );
+  console.log(`handleGameSelectedFromSearch - Received TGDB Name: "${tgdbPlatformName}", Alias: "${tgdbPlatformAlias}"`);
+  console.log("Local platforms (name, alias):", platforms.map(p => ({ name: p.name, alias: p.alias })));
+
+  let matchedPlatform: Platform | undefined = undefined;
+
+  if (tgdbPlatformName) {
+    // Try matching by name first
+    matchedPlatform = platforms.find(p => p.name.toLowerCase() === tgdbPlatformName.toLowerCase());
+
+    // If not found by name, and if local platform has an alias, try matching TGDB name against local alias
+    if (!matchedPlatform) {
+      matchedPlatform = platforms.find(p => p.alias && p.alias.toLowerCase() === tgdbPlatformName.toLowerCase());
+    }
+  }
+
+  // If still not found and tgdbPlatformAlias is available, try matching alias
+  if (!matchedPlatform && tgdbPlatformAlias) {
+    // Try matching TGDB alias against local name
+    matchedPlatform = platforms.find(p => p.name.toLowerCase() === tgdbPlatformAlias.toLowerCase());
+    // Try matching TGDB alias against local alias
+    if (!matchedPlatform) {
+      matchedPlatform = platforms.find(p => p.alias && p.alias.toLowerCase() === tgdbPlatformAlias.toLowerCase());
+    }
+  }
+
+  console.log("Matched local platform:", matchedPlatform);
 
     setGameData(prev => ({
         ...prev,
@@ -259,8 +286,8 @@ export const GameForm: React.FC<GameFormProps> = ({
     }));
 
     let currentApiError = null;
-    if (!matchedPlatform && tgdbPlatformName) {
-        currentApiError = `Platform "${tgdbPlatformName}" from TheGamesDB was not found in your configured platforms. Please select a platform manually.`;
+  if (!matchedPlatform && (tgdbPlatformName || tgdbPlatformAlias)) {
+      currentApiError = `Platform "${tgdbPlatformName || tgdbPlatformAlias}" from TheGamesDB was not found in your configured platforms. Please select manually.`;
     }
     setApiError(currentApiError);
 
@@ -410,9 +437,14 @@ interface GameSearchResultsModalProps {
 interface GameSearchResultsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  games: TransformedGameFromProxy[]; // Changed to use the new type
-  includeData?: TheGamesDbIncludeData; // This is no longer used but kept for prop consistency if needed elsewhere
-  onSelectGame: (game: TheGamesDbGame, platformName: string | undefined, coverImageUrl: string) => void;
+  games: TransformedGameFromProxy[];
+  includeData?: TheGamesDbIncludeData;
+  onSelectGame: (
+    game: TheGamesDbGame,
+    platformName: string | undefined,
+    platformAlias: string | undefined,
+    coverImageUrl: string
+  ) => void;
   platforms: Platform[];
 }
 
@@ -444,6 +476,7 @@ const GameSearchResultsModal: React.FC<GameSearchResultsModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title="Select Game from TheGamesDB" size="xl">
       <div className="space-y-3 max-h-[60vh] overflow-y-auto p-1">
         {games.map(game => {
+          console.log(`Modal item - Game: "${game.title}", Platform ID: ${game.platform_id}, Name: "${game.platform_name_from_source}", Alias: "${game.platform_alias_from_source}"`);
           // Use platform_name_from_source directly for display.
           // The local 'platforms' prop is still available if needed for other matching/logic,
           // but for display, the name from the source (TheGamesDB via our proxy) is now preferred.
@@ -478,7 +511,7 @@ const GameSearchResultsModal: React.FC<GameSearchResultsModalProps> = ({
               <Button 
                 variant="primary" 
                 size="sm"
-                onClick={() => onSelectGame(gameForSelection, game.platform_name_from_source, coverImageUrl)}
+                onClick={() => onSelectGame(gameForSelection, game.platform_name_from_source, game.platform_alias_from_source, coverImageUrl)}
               >
                 Select
               </Button>
