@@ -134,14 +134,34 @@ const AppContent: React.FC = () => {
   const handleUpdateGame = useCallback((updatedGame: Game) => setGames(prev => prev.map(g => g.id === updatedGame.id ? updatedGame : g)), []);
   const handleDeleteGame = useCallback((gameId: string) => setGames(prev => prev.filter(g => g.id !== gameId)), []);
 
-  const handleAddPlatform = useCallback((platformData: Omit<Platform, 'emulators'>) => {
-    const newPlatform: Platform = { ...platformData, id: platformData.id || crypto.randomUUID(), emulators: [] };
-    setPlatforms(prev => [...prev, newPlatform]);
+  // Adjusted handleAddPlatform to prevent duplicates and ensure correct typing
+  const handleAddPlatform = useCallback((platformToAdd: { id: string; name: string; alias?: string }) => {
+    setPlatforms(prevPlatforms => {
+      // Check if platform with same id or name (case-insensitive) already exists
+      const existingPlatform = prevPlatforms.find(
+        p => p.id === platformToAdd.id || p.name.toLowerCase() === platformToAdd.name.toLowerCase()
+      );
+      if (existingPlatform) {
+        console.warn(`Platform with ID ${platformToAdd.id} or name "${platformToAdd.name}" already exists. Not adding duplicate.`);
+        return prevPlatforms; // Return previous state if duplicate
+      }
+      const newPlatform: Platform = {
+        id: platformToAdd.id, // ID from TGDB, converted to string
+        name: platformToAdd.name,
+        alias: platformToAdd.alias || '', // Ensure alias is at least an empty string
+        emulators: [],
+        iconUrl: '', // Default iconUrl
+      };
+      // TODO: Consider saving the updated platforms list to data/platforms.json here
+      // For now, it only updates the state for the current session.
+      console.log("Adding new platform to state:", newPlatform);
+      return [...prevPlatforms, newPlatform];
+    });
   }, []);
 
   const handleUpdatePlatform = useCallback((updatedPlatformData: Omit<Platform, 'emulators'>) => {
     setPlatforms(prev => prev.map(p => 
-      p.id === updatedPlatformData.id ? { ...p, name: updatedPlatformData.name, iconUrl: updatedPlatformData.iconUrl } : p
+      p.id === updatedPlatformData.id ? { ...p, name: updatedPlatformData.name, iconUrl: updatedPlatformData.iconUrl, alias: updatedPlatformData.alias } : p
     ));
   }, []);
 
@@ -198,6 +218,7 @@ const AppContent: React.FC = () => {
               onAddGame={handleAddGame}
               onUpdateGame={handleUpdateGame}
               onDeleteGame={handleDeleteGame}
+              onAddPlatform={handleAddPlatform} // Pass down the function
               theGamesDbApiKey={theGamesDbApiKey}
               geminiApiKey={geminiApiKey}
             />
