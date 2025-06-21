@@ -436,17 +436,8 @@ export const GameForm: React.FC<GameFormProps> = ({
   );
 };
 
-// Interface for the transformed game object from our proxy server (moved before use)
-interface TransformedGameFromProxy {
-  id: number;
-  title: string;
-  release_date?: string;
-  platform_id: number;
-  platform_name_from_source?: string;
-  platform_alias_from_source?: string;
-  overview?: string;
-  boxart_url?: string;
-}
+// Duplicated TransformedGameFromProxy interface removed.
+// The correct definition is at the top of the file (lines 41-53).
 
 interface GameSearchResultsModalProps {
   isOpen: boolean;
@@ -474,7 +465,8 @@ const GameSearchResultsModal: React.FC<GameSearchResultsModalProps> = ({
       <div className="space-y-3 max-h-[60vh] overflow-y-auto p-1">
         {games.map(game => {
           console.log(`Modal item - Game: "${game.title}", Platform ID: ${game.platform_id}, SourceDetails:`, game.source_platform_details);
-          const displayPlatformName = game.platform_name_from_source || `ID: ${game.platform_id}`;
+          // Correctly use source_platform_details.name for display
+          const displayPlatformName = game.source_platform_details?.name || `ID: ${game.platform_id}`;
           const coverImageUrl = game.boxart_url || '';
 
           const gameForSelection: TheGamesDbGame = {
