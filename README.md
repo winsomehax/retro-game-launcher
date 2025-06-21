@@ -58,8 +58,10 @@ This is a React-based retro game launcher intended for local desktop use. It fea
     PORT=3001
 
     # URL of the frontend application (for CORS configuration)
-    # Example: FRONTEND_URL=http://localhost:5173 (if using Vite default)
-    FRONTEND_URL=http://localhost:3000
+    # This MUST match the URL your frontend development server is running on.
+    # Common defaults are http://localhost:5173 (Vite) or http://localhost:3000 (Create React App).
+    # Update this value if your frontend runs on a different port.
+    FRONTEND_URL=http://localhost:5173
 
     # API Keys for external services
     THEGAMESDB_API_KEY=your_thegamesdb_api_key

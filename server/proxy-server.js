@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3001;
 
 // --- Configuration ---
 const corsOptions = {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Default to a common frontend dev port
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Default to common Vite frontend dev port
     // methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     // allowedHeaders: "Content-Type,Authorization"
 };
@@ -25,8 +25,8 @@ const EXTERNAL_API_TIMEOUT = parseInt(process.env.EXTERNAL_API_TIMEOUT, 10) || 1
 // Load TheGamesDB platforms mapping
 let tgdbPlatformsMap = new Map();
 try {
-    // Assuming proxy-server.js is in server/ and thegamesdb_platforms.json is also in server/
-    const platformsFilePath = path.join(path.dirname(new URL(import.meta.url).pathname), 'thegamesdb_platforms.json');
+    // Assuming proxy-server.js is in server/ and the CWD is server/ when node is run
+    const platformsFilePath = './thegamesdb_platforms.json';
     const platformsData = JSON.parse(fs.readFileSync(platformsFilePath, 'utf-8'));
     if (platformsData && platformsData.data && platformsData.data.platforms) {
         for (const id in platformsData.data.platforms) {
