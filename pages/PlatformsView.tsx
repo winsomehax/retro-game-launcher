@@ -1,7 +1,8 @@
 import React, { useState, useRef, createRef, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Platform, EmulatorConfig } from '../types';
 import { Button } from '../components/Button';
-import { PlusIcon, EditIcon, TrashIcon, ChevronRightIcon, CogIcon } from '../components/Icons'; // Added CogIcon
+import { PlusIcon, EditIcon, TrashIcon, ChevronRightIcon, CogIcon, SearchIcon as ScanIcon } from '../components/Icons'; // Added ScanIcon (using SearchIcon as placeholder)
 import { PlatformForm } from '../components/PlatformForm';
 import { EmulatorConfigForm } from '../components/EmulatorConfigForm';
 
@@ -32,6 +33,7 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
   const [selectedPlatformForEmulator, setSelectedPlatformForEmulator] = useState<Platform | null>(null);
 
   const [activePlatformId, setActivePlatformId] = useState<string | null>(platforms.length > 0 ? platforms[0].id : null);
+  const navigate = useNavigate();
   
   const platformItemRefs = useRef(platforms.map(() => createRef<HTMLButtonElement>()));
   const platformListRef = useRef<HTMLUListElement>(null);
@@ -207,9 +209,20 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
 
               <div className="flex justify-between items-center mb-4">
                 <h4 className="text-lg font-semibold text-neutral-200">Configured Emulators</h4>
-                <Button onClick={() => handleAddEmulator(currentSelectedPlatform)} leftIcon={<PlusIcon />} size="sm" variant="secondary">
-                  Add Emulator
-                </Button>
+                <div className="flex space-x-2">
+                  <Button
+                    onClick={() => navigate('/scan', { state: { platformId: currentSelectedPlatform.id, platformName: currentSelectedPlatform.name } })}
+                    leftIcon={<ScanIcon />}
+                    size="sm"
+                    variant="outline"
+                    aria-label={`Scan ROMs for ${currentSelectedPlatform.name}`}
+                  >
+                    Scan ROMs
+                  </Button>
+                  <Button onClick={() => handleAddEmulator(currentSelectedPlatform)} leftIcon={<PlusIcon />} size="sm" variant="secondary">
+                    Add Emulator
+                  </Button>
+                </div>
               </div>
               {currentSelectedPlatform.emulators.length > 0 ? (
                 <ul className="space-y-3">

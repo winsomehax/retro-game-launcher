@@ -253,8 +253,9 @@ app.post('/api/gemini/generatecontent', async (req, res) => {
         return res.status(500).json({ error: 'Gemini API key is not configured on the server.' });
     }
 
-    const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`;
-    // Using gemini-pro as an example, adjust model as needed e.g. gemini-2.0-flash
+    const modelName = process.env.GEMINI_MODEL_NAME || 'gemini-1.5-flash-latest'; // Allow override via env var
+    const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    console.log(`Proxying to Gemini model: ${modelName}`);
     // The Gemini API expects the key in the URL for POST requests.
 
     // Gemini response is usually fine, but we can select parts if needed.
