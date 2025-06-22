@@ -134,6 +134,23 @@ const AppContent: React.FC = () => {
   const handleUpdateGame = useCallback((updatedGame: Game) => setGames(prev => prev.map(g => g.id === updatedGame.id ? updatedGame : g)), []);
   const handleDeleteGame = useCallback((gameId: string) => setGames(prev => prev.filter(g => g.id !== gameId)), []);
 
+  // New function for adding multiple games
+  const handleAddMultipleGames = useCallback((newGames: Game[], platformId: string) => {
+    // Optional: Filter out games that might already exist by checking romPath for the given platformId
+    setGames(prevGames => {
+      const existingRomPaths = new Set(prevGames.filter(g => g.platformId === platformId).map(g => g.romPath));
+      const gamesToAdd = newGames.filter(g => !existingRomPaths.has(g.romPath));
+      if (gamesToAdd.length < newGames.length) {
+        const skippedCount = newGames.length - gamesToAdd.length;
+        // TODO: This alert might be better handled in ScanView after the callback, or via a more robust notification system.
+        // For now, logging it here. A toast notification system would be ideal.
+        console.log(`${skippedCount} game(s) were skipped as they already exist in the library for this platform.`);
+        // Consider if ScanView should be informed about skipped games to show a more integrated message.
+      }
+      return [...prevGames, ...gamesToAdd];
+    });
+  }, []);
+
   // Adjusted handleAddPlatform to prevent duplicates and ensure correct typing
   const handleAddPlatform = useCallback((platformToAdd: { id: string; name: string; alias?: string }) => {
     setPlatforms(prevPlatforms => {
@@ -234,7 +251,12 @@ const AppContent: React.FC = () => {
               onDeleteEmulator={handleDeleteEmulator}
             />
           } />
-          <Route path="/scan" element={<ScanView />} />
+          <Route path="/scan" element={
+            <ScanView
+              geminiApiKeyConfigured={!!geminiApiKey}
+              onAddGames={handleAddMultipleGames}
+            />}
+          />
           <Route path="/apikeys" element={
              apiKeys ? ( 
               <ApiKeysView
