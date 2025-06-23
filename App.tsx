@@ -88,36 +88,15 @@ const AppContent: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetch('/data/platforms.json')
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for platforms.json`);
-        return response.json();
-      })
-      .then((data: Platform[]) => setPlatforms(data))
-      .catch(error => console.error("Could not load platforms:", error));
-
-    fetch('/data/games.json')
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for games.json`);
-        return response.json();
-      })
-      .then((data: Game[]) => setGames(data))
-      .catch(error => console.error("Could not load games:", error));
-
-    loadInitialApiKeys().then(keys => {
-      setApiKeys(keys);
-    });
-  }, []);
-
   // State to track if initial data load is complete
   const [isInitialGamesLoadComplete, setIsInitialGamesLoadComplete] = useState(false);
   const [isInitialPlatformsLoadComplete, setIsInitialPlatformsLoadComplete] = useState(false);
 
   useEffect(() => {
-    fetch('/data/platforms.json')
+    // Load platforms from the backend API
+    fetch('/api/data/platforms')
       .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for platforms.json`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for /api/data/platforms`);
         return response.json();
       })
       .then((data: Platform[]) => {
@@ -125,13 +104,15 @@ const AppContent: React.FC = () => {
         setIsInitialPlatformsLoadComplete(true);
       })
       .catch(error => {
-        console.error("Could not load platforms:", error);
-        setIsInitialPlatformsLoadComplete(true); // Still mark as complete to avoid blocking saves
+        console.error("Could not load platforms from API:", error);
+        setPlatforms([]); // Initialize with empty array on error
+        setIsInitialPlatformsLoadComplete(true);
       });
 
-    fetch('/data/games.json')
+    // Load games from the backend API
+    fetch('/api/data/games')
       .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for games.json`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for /api/data/games`);
         return response.json();
       })
       .then((data: Game[]) => {
@@ -139,8 +120,9 @@ const AppContent: React.FC = () => {
         setIsInitialGamesLoadComplete(true);
       })
       .catch(error => {
-        console.error("Could not load games:", error);
-        setIsInitialGamesLoadComplete(true); // Still mark as complete
+        console.error("Could not load games from API:", error);
+        setGames([]); // Initialize with empty array on error
+        setIsInitialGamesLoadComplete(true);
       });
 
     loadInitialApiKeys().then(keys => {
