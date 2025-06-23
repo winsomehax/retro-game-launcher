@@ -174,7 +174,21 @@ app.get('/api/thegamesdb/platforms', async (req, res) => {
         // For now, just returning the platforms array.
         // const cachedFile = JSON.parse(await fs.promises.readFile(TGDB_PLATFORMS_CACHE_PATH, 'utf-8'));
         // res.status(200).json({ platforms: tgdbPlatformsList, base_image_url: cachedFile.base_image_url });
-        res.status(200).json(tgdbPlatformsList);
+        // res.status(200).json(tgdbPlatformsList); // Old implementation
+        // New implementation: return platforms list and base_image_url
+        try {
+            const fileContent = await fs.promises.readFile(TGDB_PLATFORMS_CACHE_PATH, 'utf-8');
+            const cachedData = JSON.parse(fileContent);
+            res.status(200).json({
+                platforms: tgdbPlatformsList,
+                base_image_url: cachedData.base_image_url
+            });
+        } catch (error) {
+            console.error("Error reading TGDB_PLATFORMS_CACHE_PATH to get base_image_url:", error);
+            // Fallback to sending just platforms if reading the cache for base_image_url fails
+            // but tgdbPlatformsList is somehow populated (e.g. from a previous successful read)
+            res.status(200).json({ platforms: tgdbPlatformsList, base_image_url: null });
+        }
     } else {
         // Attempt a refresh if the list is empty, in case initial load failed or file was deleted.
         // This makes the endpoint more resilient.
@@ -182,7 +196,18 @@ app.get('/api/thegamesdb/platforms', async (req, res) => {
         try {
             await refreshTheGamesDBPlatformsCacheIfNeeded();
             if (tgdbPlatformsList && tgdbPlatformsList.length > 0) {
-                res.status(200).json(tgdbPlatformsList);
+                // After refresh, try to send data including base_image_url
+                try {
+                    const fileContent = await fs.promises.readFile(TGDB_PLATFORMS_CACHE_PATH, 'utf-8');
+                    const cachedData = JSON.parse(fileContent);
+                    res.status(200).json({
+                        platforms: tgdbPlatformsList,
+                        base_image_url: cachedData.base_image_url
+                    });
+                } catch (error) {
+                    console.error("Error reading TGDB_PLATFORMS_CACHE_PATH post-refresh:", error);
+                    res.status(200).json({ platforms: tgdbPlatformsList, base_image_url: null });
+                }
             } else {
                 console.error("Failed to populate TheGamesDB platforms list even after refresh attempt.");
                 res.status(503).json({ error: 'TheGamesDB platforms data is currently unavailable. Please try again later.' });

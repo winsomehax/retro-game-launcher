@@ -176,11 +176,20 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
           {currentSelectedPlatform ? (
             <>
               <div className="flex justify-between items-start mb-6 pb-4 border-b border-neutral-700">
-                <div>
-                  <h3 className="text-2xl font-display font-semibold text-neutral-100">{currentSelectedPlatform.name}</h3>
-                  <p className="text-sm text-neutral-400">Manage emulators for this platform.</p>
+                <div className="flex items-start space-x-4">
+                  {(currentSelectedPlatform.userIconUrl || currentSelectedPlatform.icon) && (
+                    <img
+                      src={currentSelectedPlatform.userIconUrl || currentSelectedPlatform.icon}
+                      alt={`${currentSelectedPlatform.name} icon`}
+                      className="w-24 h-24 rounded-lg object-contain bg-neutral-700 p-1"
+                    />
+                  )}
+                  <div>
+                    <h3 className="text-3xl font-display font-bold text-neutral-100">{currentSelectedPlatform.name}</h3>
+                    <p className="text-sm text-neutral-400 mt-1">Manage emulators and view details for this platform.</p>
+                  </div>
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 flex-shrink-0">
                   <Button variant="ghost" size="sm" onClick={() => handleEditPlatform(currentSelectedPlatform)} aria-label={`Edit ${currentSelectedPlatform.name}`}>
                       <EditIcon className="text-neutral-400 hover:text-primary-light"/>
                   </Button>
@@ -209,7 +218,68 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
                 </div>
               </div>
 
-              <div className="flex justify-between items-center mb-4">
+              {/* Platform Details Section */}
+              <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                {currentSelectedPlatform.overview && (
+                  <div className="md:col-span-2 bg-neutral-700/30 p-4 rounded-lg">
+                    <h5 className="font-semibold text-neutral-200 mb-1">Overview</h5>
+                    <p className="text-neutral-300 leading-relaxed whitespace-pre-wrap">{currentSelectedPlatform.overview}</p>
+                  </div>
+                )}
+
+                <div>
+                  {currentSelectedPlatform.manufacturer && (
+                    <p className="mb-1.5"><strong className="font-medium text-neutral-300">Manufacturer:</strong> <span className="text-neutral-400">{currentSelectedPlatform.manufacturer}</span></p>
+                  )}
+                  {currentSelectedPlatform.developer && (
+                    <p className="mb-1.5"><strong className="font-medium text-neutral-300">Developer:</strong> <span className="text-neutral-400">{currentSelectedPlatform.developer}</span></p>
+                  )}
+                  {currentSelectedPlatform.console && (
+                    <p className="mb-1.5"><strong className="font-medium text-neutral-300">Type:</strong> <span className="text-neutral-400">{currentSelectedPlatform.console}</span></p>
+                  )}
+                  {currentSelectedPlatform.media && (
+                    <p className="mb-1.5"><strong className="font-medium text-neutral-300">Media:</strong> <span className="text-neutral-400">{currentSelectedPlatform.media}</span></p>
+                  )}
+                </div>
+
+                <div>
+                  {currentSelectedPlatform.cpu && (
+                    <p className="mb-1.5"><strong className="font-medium text-neutral-300">CPU:</strong> <span className="text-neutral-400">{currentSelectedPlatform.cpu}</span></p>
+                  )}
+                  {currentSelectedPlatform.memory && (
+                    <p className="mb-1.5"><strong className="font-medium text-neutral-300">Memory:</strong> <span className="text-neutral-400">{currentSelectedPlatform.memory}</span></p>
+                  )}
+                  {currentSelectedPlatform.graphics && (
+                    <p className="mb-1.5"><strong className="font-medium text-neutral-300">Graphics:</strong> <span className="text-neutral-400">{currentSelectedPlatform.graphics}</span></p>
+                  )}
+                  {currentSelectedPlatform.sound && (
+                    <p className="mb-1.5"><strong className="font-medium text-neutral-300">Sound:</strong> <span className="text-neutral-400">{currentSelectedPlatform.sound}</span></p>
+                  )}
+                  {currentSelectedPlatform.maxcontrollers && (
+                    <p className="mb-1.5"><strong className="font-medium text-neutral-300">Max Controllers:</strong> <span className="text-neutral-400">{currentSelectedPlatform.maxcontrollers}</span></p>
+                  )}
+                   {currentSelectedPlatform.display && (
+                    <p className="mb-1.5"><strong className="font-medium text-neutral-300">Display:</strong> <span className="text-neutral-400">{currentSelectedPlatform.display}</span></p>
+                  )}
+                </div>
+
+                {currentSelectedPlatform.youtube && (
+                  <div className="md:col-span-2">
+                    <h5 className="font-semibold text-neutral-200 mb-1">Gameplay Video</h5>
+                    {/* Basic link for now, could be replaced with an embed */}
+                    <a
+                      href={currentSelectedPlatform.youtube.startsWith('http') ? currentSelectedPlatform.youtube : `https://www.youtube.com/watch?v=${currentSelectedPlatform.youtube}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:text-primary-light underline break-all"
+                    >
+                      {currentSelectedPlatform.youtube}
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-between items-center mb-4 pt-4 border-t border-neutral-700">
                 <h4 className="text-lg font-semibold text-neutral-200">Configured Emulators</h4>
                 <div className="flex space-x-2">
                   <Button
