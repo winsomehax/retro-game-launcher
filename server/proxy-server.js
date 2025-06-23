@@ -3,10 +3,15 @@ import axios from 'axios';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { URL } from 'url'; // Import URL for parsing
+import { fileURLToPath } from 'url'; // Added for ES Module __dirname
 import fs from 'fs'; // Import File System module
-import path from 'path'; // Import Path module
+import path, { dirname } from 'path'; // Import Path module and dirname for ES Module __dirname
 
 dotenv.config(); // For loading .env file from the project root
+
+// Polyfill for __dirname in ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
