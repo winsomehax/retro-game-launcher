@@ -3,18 +3,16 @@ import axios from 'axios';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { URL } from 'url'; // Import URL for parsing
+import { fileURLToPath } from 'url'; // Added for ES Module __dirname
 import fs from 'fs'; // Import File System module
-import path from 'path'; // Import Path module
+import path, { dirname } from 'path'; // Import Path module and dirname for ES Module __dirname
 
 dotenv.config(); // For loading .env file from the project root
 
-// Note: __dirname is not available in ES modules by default.
-// This is a common way to get the directory name.
+// Polyfill for __dirname in ES Modules
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
 
-// This defines the path to your project's `public/data` directory.
-const dataPath = path.join(__dirname, '..', 'public', 'data');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
