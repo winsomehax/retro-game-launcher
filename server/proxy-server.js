@@ -494,6 +494,12 @@ app.post('/api/gemini/generatecontent', async (req, res) => {
     }
 });
 
+// Simple GET route for testing
+app.get('/api/ping', (req, res) => {
+  console.log('--- Received GET request at /api/ping ---');
+  res.status(200).json({ message: 'pong', timestamp: new Date().toISOString() });
+});
+
 
 // --- Server Start ---
 app.listen(PORT, () => {
@@ -554,6 +560,8 @@ app.post('/api/data/platforms', async (req, res) => {
 
 // Endpoint to save games data
 app.post('/api/data/games', async (req, res) => {
+    console.log('--- Received POST request at /api/data/games: ---'); // Re-added log
+    console.log('Request body:', JSON.stringify(req.body, null, 2));    // Re-added log
     const gamesData = req.body; // Expecting an array of game objects
 
     if (!Array.isArray(gamesData)) {
