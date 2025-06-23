@@ -197,55 +197,47 @@ const AppContent: React.FC = () => {
     });
   }, []);
 
-  // Adjusted handleAddPlatform to prevent duplicates and ensure correct typing
-  const handleAddPlatform = useCallback((platformToAdd: { id: string; name: string; alias?: string }) => {
+  // Platform CRUD operations
+  const handleAddPlatform = useCallback((platformToAdd: Platform) => {
     setPlatforms(prevPlatforms => {
-      // Check if platform with same id or name (case-insensitive) already exists
-      const existingPlatform = prevPlatforms.find(
-        p => p.id === platformToAdd.id || p.name.toLowerCase() === platformToAdd.name.toLowerCase()
-      );
+      const existingPlatform = prevPlatforms.find(p => p.id === platformToAdd.id); // ID is number
       if (existingPlatform) {
-        console.warn(`Platform with ID ${platformToAdd.id} or name "${platformToAdd.name}" already exists. Not adding duplicate.`);
-        return prevPlatforms; // Return previous state if duplicate
+        console.warn(`Platform with ID ${platformToAdd.id} (${platformToAdd.name}) already exists. Not adding duplicate.`);
+        // Optionally, show a user-facing message here
+        return prevPlatforms;
       }
-      const newPlatform: Platform = {
-        id: platformToAdd.id, // ID from TGDB, converted to string
-        name: platformToAdd.name,
-        alias: platformToAdd.alias || '', // Ensure alias is at least an empty string
-        emulators: [],
-        iconUrl: '', // Default iconUrl
-      };
-      // TODO: Consider saving the updated platforms list to data/platforms.json here
-      // For now, it only updates the state for the current session.
-      console.log("Adding new platform to state:", newPlatform);
-      return [...prevPlatforms, newPlatform];
+      // Ensure emulators array exists, even if platformToAdd doesn't explicitly have it (though Platform type requires it)
+      const newPlatformWithEmulators = { ...platformToAdd, emulators: platformToAdd.emulators || [] };
+      console.log("Adding new platform to state:", newPlatformWithEmulators);
+      return [...prevPlatforms, newPlatformWithEmulators];
     });
   }, []);
 
-  const handleUpdatePlatform = useCallback((updatedPlatformData: Omit<Platform, 'emulators'>) => {
+  const handleUpdatePlatform = useCallback((updatedPlatformData: Platform) => {
     setPlatforms(prev => prev.map(p =>
-      p.id === updatedPlatformData.id ? { ...p, name: updatedPlatformData.name, iconUrl: updatedPlatformData.iconUrl, alias: updatedPlatformData.alias } : p
+      p.id === updatedPlatformData.id ? { ...p, ...updatedPlatformData } : p // Spread all new data
     ));
   }, []);
 
-  const handleDeletePlatform = useCallback((platformId: string) => {
+  const handleDeletePlatform = useCallback((platformId: number) => { // ID is number
     setPlatforms(prev => prev.filter(p => p.id !== platformId));
-    setGames(prev => prev.filter(g => g.platformId !== platformId));
+    // Also remove games associated with this platformId (platformId in Game is string, needs conversion for comparison)
+    setGames(prevGames => prevGames.filter(g => g.platformId !== platformId.toString()));
   }, []);
 
-  const handleAddEmulator = useCallback((platformId: string, emulatorConfig: EmulatorConfig) => {
+  const handleAddEmulator = useCallback((platformId: number, emulatorConfig: EmulatorConfig) => { // ID is number
     setPlatforms(prev => prev.map(p =>
       p.id === platformId ? { ...p, emulators: [...p.emulators, {...emulatorConfig, id: emulatorConfig.id || crypto.randomUUID()}] } : p
     ));
   }, []);
 
-  const handleUpdateEmulator = useCallback((platformId: string, updatedEmulatorConfig: EmulatorConfig) => {
+  const handleUpdateEmulator = useCallback((platformId: number, updatedEmulatorConfig: EmulatorConfig) => { // ID is number
     setPlatforms(prev => prev.map(p =>
       p.id === platformId ? { ...p, emulators: p.emulators.map(e => e.id === updatedEmulatorConfig.id ? updatedEmulatorConfig : e) } : p
     ));
   }, []);
 
-  const handleDeleteEmulator = useCallback((platformId: string, emulatorId: string) => {
+  const handleDeleteEmulator = useCallback((platformId: number, emulatorId: string) => { // ID is number
     setPlatforms(prev => prev.map(p =>
       p.id === platformId ? { ...p, emulators: p.emulators.filter(e => e.id !== emulatorId) } : p
     ));

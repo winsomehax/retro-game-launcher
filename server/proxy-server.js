@@ -27,30 +27,172 @@ const EXTERNAL_API_KEY = process.env.EXTERNAL_API_KEY; // General key, might not
 const PROXY_SECRET = process.env.PROXY_SECRET;
 const EXTERNAL_API_TIMEOUT = parseInt(process.env.EXTERNAL_API_TIMEOUT, 10) || 10000; // Default 10s
 
-// Load TheGamesDB platforms mapping
-let tgdbPlatformsMap = new Map();
-try {
-    // Corrected path to be relative to __dirname (the directory of the current module)
-    const platformsFilePath = path.join(__dirname, 'thegamesdb_platforms.json');
-    const platformsData = JSON.parse(fs.readFileSync(platformsFilePath, 'utf-8'));
-    if (platformsData && platformsData.data && platformsData.data.platforms) {
-        for (const id in platformsData.data.platforms) {
-            const platformEntry = platformsData.data.platforms[id];
-            tgdbPlatformsMap.set(parseInt(id, 10), { name: platformEntry.name, alias: platformEntry.alias });
+// --- TheGamesDB Platforms Cache ---
+const TGDB_PLATFORMS_CACHE_PATH = path.join(__dirname, 'thegamesdb_platforms.json');
+const TGDB_API_KEY = process.env.THEGAMESDB_API_KEY;
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+let tgdbPlatformsMap = new Map(); // For game enrichment
+let tgdbPlatformsList = []; // For the API endpoint
+
+async function refreshTheGamesDBPlatformsCacheIfNeeded() {
+    let shouldFetch = false;
+    try {
+        if (fs.existsSync(TGDB_PLATFORMS_CACHE_PATH)) {
+            const fileContent = await fs.promises.readFile(TGDB_PLATFORMS_CACHE_PATH, 'utf-8');
+            const cachedData = JSON.parse(fileContent);
+            if (cachedData.lastUpdated && (Date.now() - new Date(cachedData.lastUpdated).getTime()) < ONE_WEEK_MS) {
+                console.log("TheGamesDB platforms cache is up-to-date.");
+                tgdbPlatformsList = cachedData.platforms || [];
+                // Populate tgdbPlatformsMap from the fresh cache
+                tgdbPlatformsMap.clear();
+                if (Array.isArray(tgdbPlatformsList)) {
+                    tgdbPlatformsList.forEach(platform => {
+                        tgdbPlatformsMap.set(platform.id, { name: platform.name, alias: platform.alias });
+                    });
+                }
+                console.log(`Loaded ${tgdbPlatformsMap.size} platforms into tgdbPlatformsMap from cache.`);
+            } else {
+                console.log("TheGamesDB platforms cache is outdated or missing lastUpdated timestamp.");
+                shouldFetch = true;
+            }
+        } else {
+            console.log("TheGamesDB platforms cache file not found.");
+            shouldFetch = true;
         }
-        console.log("Successfully loaded TheGamesDB platforms mapping (name and alias).");
-    } else {
-        console.warn("Warning: TheGamesDB platforms file loaded but structure is unexpected. Platform name resolution might fail.");
+    } catch (error) {
+        console.error("Error reading TheGamesDB platforms cache:", error.message);
+        shouldFetch = true; // Fetch if cache is corrupt or unreadable
     }
-} catch (error) {
-    console.error("Error loading TheGamesDB platforms mapping from data/thegamesdb_platforms.json:", error.message);
-    console.warn("Platform name resolution for TheGamesDB results will be unavailable.");
+
+    if (shouldFetch) {
+        if (!TGDB_API_KEY) {
+            console.error("Cannot refresh TheGamesDB platforms: THEGAMESDB_API_KEY is not set.");
+            // Attempt to load from existing file if fetching is not possible, even if outdated
+            if (tgdbPlatformsList.length === 0 && fs.existsSync(TGDB_PLATFORMS_CACHE_PATH)) {
+                try {
+                    console.warn("Attempting to load potentially outdated platforms cache as fallback.");
+                    const fileContent = await fs.promises.readFile(TGDB_PLATFORMS_CACHE_PATH, 'utf-8');
+                    const cachedData = JSON.parse(fileContent);
+                    tgdbPlatformsList = cachedData.platforms || [];
+                     // Populate tgdbPlatformsMap
+                    tgdbPlatformsMap.clear();
+                    if(Array.isArray(tgdbPlatformsList)) {
+                        tgdbPlatformsList.forEach(platform => {
+                            tgdbPlatformsMap.set(platform.id, { name: platform.name, alias: platform.alias });
+                        });
+                    }
+                    console.log(`Loaded ${tgdbPlatformsMap.size} platforms into tgdbPlatformsMap from stale cache fallback.`);
+                } catch (fallbackError) {
+                    console.error("Failed to load stale platforms cache as fallback:", fallbackError.message);
+                }
+            }
+            if (tgdbPlatformsList.length === 0) { // If still no data, warn that platform features will be limited
+                 console.warn("TheGamesDB Platforms list is empty. Platform selection and some game details might be unavailable.");
+            }
+            return;
+        }
+
+        console.log("Fetching fresh TheGamesDB platforms data...");
+        try {
+            const fields = "icon,console,controller,developer,manufacturer,media,cpu,memory,graphics,sound,maxcontrollers,display,overview,youtube";
+            const targetUrl = `https://api.thegamesdb.net/v1/Platforms?apikey=${TGDB_API_KEY}&fields=${encodeURIComponent(fields)}`;
+
+            const response = await axios.get(targetUrl, { timeout: EXTERNAL_API_TIMEOUT });
+
+            if (response.data && response.data.data && response.data.data.platforms) {
+                const platformsObject = response.data.data.platforms;
+                const newPlatformsList = Object.values(platformsObject); // Convert object of platforms to array
+
+                const dataToCache = {
+                    lastUpdated: new Date().toISOString(),
+                    platforms: newPlatformsList,
+                    // Store base_image_url if provided by API, for constructing full icon URLs later
+                    base_image_url: response.data.include?.images?.base_url?.original || // Example path, adjust if different
+                                   response.data.include?.boxart?.base_url?.medium || // Fallback, adjust
+                                   "https://images.thegamesdb.net/" // Default fallback if nothing else
+                };
+                await fs.promises.writeFile(TGDB_PLATFORMS_CACHE_PATH, JSON.stringify(dataToCache, null, 2), 'utf-8');
+                console.log(`Successfully fetched and cached ${newPlatformsList.length} TheGamesDB platforms.`);
+                tgdbPlatformsList = newPlatformsList;
+
+                // Repopulate tgdbPlatformsMap with fresh data
+                tgdbPlatformsMap.clear();
+                newPlatformsList.forEach(platform => {
+                    tgdbPlatformsMap.set(platform.id, { name: platform.name, alias: platform.alias });
+                });
+                console.log(`Populated tgdbPlatformsMap with ${tgdbPlatformsMap.size} fresh platforms.`);
+
+            } else {
+                console.warn("Fetched TheGamesDB platforms data is not in the expected format:", response.data);
+                if (tgdbPlatformsList.length === 0) { // If fetch failed and list is empty, warn
+                    console.warn("TheGamesDB Platforms list remains empty after fetch attempt.");
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching TheGamesDB platforms:", error.message);
+            if (axios.isAxiosError(error) && error.response) {
+                console.error("API Response Status:", error.response.status);
+                console.error("API Response Data:", error.response.data);
+            }
+            if (tgdbPlatformsList.length === 0) { // If fetch failed and list is empty, warn
+                 console.warn("TheGamesDB Platforms list is empty due to fetch error. Platform selection might be unavailable.");
+            }
+        }
+    }
 }
+
+// Initial load of platforms cache
+// Wrap in an async IIFE to use await at the top level if needed for startup sequencing
+(async () => {
+    try {
+        await refreshTheGamesDBPlatformsCacheIfNeeded();
+    } catch (err) {
+        console.error("Failed initial TheGamesDB platforms cache refresh during startup:", err);
+        // Fallback logic for tgdbPlatformsMap is already inside refreshTheGamesDBPlatformsCacheIfNeeded
+        // and will also attempt to load from stale cache if direct refresh fails.
+        // If tgdbPlatformsMap is still empty, a warning is logged by the function itself.
+    }
+})();
 
 
 // --- Middleware ---
 app.use(cors(corsOptions)); // Enable CORS with configured options
 app.use(express.json());   // To parse JSON request bodies
+
+// --- TheGamesDB Platforms API Endpoint ---
+app.get('/api/thegamesdb/platforms', async (req, res) => {
+    // Ensure the cache is loaded/refreshed before responding if it hasn't been.
+    // This also handles the case where the server has been running for a while and the cache might be stale
+    // (though a periodic refresh is better for long-running servers, this covers on-demand).
+    // However, for simplicity and to avoid delaying the first request significantly if a fetch is needed,
+    // we'll rely on the startup refresh and return the current tgdbPlatformsList.
+    // A more robust solution might trigger a refresh here if the list is empty or deemed too old.
+
+    if (tgdbPlatformsList && tgdbPlatformsList.length > 0) {
+        // Optionally, could also return the base_image_url from the cache file if needed by client
+        // For now, just returning the platforms array.
+        // const cachedFile = JSON.parse(await fs.promises.readFile(TGDB_PLATFORMS_CACHE_PATH, 'utf-8'));
+        // res.status(200).json({ platforms: tgdbPlatformsList, base_image_url: cachedFile.base_image_url });
+        res.status(200).json(tgdbPlatformsList);
+    } else {
+        // Attempt a refresh if the list is empty, in case initial load failed or file was deleted.
+        // This makes the endpoint more resilient.
+        console.warn('/api/thegamesdb/platforms called when tgdbPlatformsList is empty. Attempting a refresh.');
+        try {
+            await refreshTheGamesDBPlatformsCacheIfNeeded();
+            if (tgdbPlatformsList && tgdbPlatformsList.length > 0) {
+                res.status(200).json(tgdbPlatformsList);
+            } else {
+                console.error("Failed to populate TheGamesDB platforms list even after refresh attempt.");
+                res.status(503).json({ error: 'TheGamesDB platforms data is currently unavailable. Please try again later.' });
+            }
+        } catch (error) {
+            console.error("Error during on-demand refresh for /api/thegamesdb/platforms:", error);
+            res.status(500).json({ error: 'Failed to retrieve TheGamesDB platforms data due to a server error.' });
+        }
+    }
+});
 
 // (Optional but Recommended) Middleware to check for the proxy secret
 // if (PROXY_SECRET) {
