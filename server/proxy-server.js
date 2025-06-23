@@ -196,6 +196,72 @@ app.get('/api/search/thegamesdb/bygamename', async (req, res) => {
     }
 });
 
+// Endpoint for Gemini API - Enrich Game List
+app.post('/api/gemini/enrich-gamelist', async (req, res) => {
+    const { gameList } = req.body; // Expecting body like: { "gameList": [{ "title": "Game 1" }, { "title": "Game 2" }] }
+    if (!gameList || !Array.isArray(gameList) || gameList.length === 0) {
+        return res.status(400).json({ error: 'Request body must contain a non-empty "gameList" array.' });
+    }
+    if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ error: 'Gemini API key is not configured on the server.' });
+    }
+
+    const modelName = process.env.GEMINI_MODEL_NAME || 'gemini-1.5-flash-latest';
+    const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+
+    // Construct the prompt for Gemini
+    const gameTitles = gameList.map(game => game.title).join(', ');
+    const prompt = `For the following game titles: ${gameTitles}, provide a short, engaging description for each, suitable for a game library. Return the data as a JSON array where each object has "title" and "description" fields.`;
+
+    const contents = [{ "parts": [{ "text": prompt }] }];
+
+    try {
+        const apiResponse = await axios.post(targetUrl, { contents }, {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: EXTERNAL_API_TIMEOUT,
+        });
+
+        if (apiResponse.data.candidates && apiResponse.data.candidates.length > 0) {
+            const generatedText = apiResponse.data.candidates[0].content.parts[0].text;
+            // Attempt to parse the generated text as JSON
+            try {
+                // Gemini might return the JSON within a markdown code block, so try to extract it.
+                const jsonMatch = generatedText.match(/```json\n([\s\S]*?)\n```/);
+                let enrichedData;
+                if (jsonMatch && jsonMatch[1]) {
+                    enrichedData = JSON.parse(jsonMatch[1]);
+                } else {
+                    // If no markdown block, try parsing the whole text
+                    enrichedData = JSON.parse(generatedText);
+                }
+                res.json({
+                    source: 'Gemini',
+                    enriched_games: enrichedData,
+                });
+            } catch (parseError) {
+                console.error("Gemini enrich-gamelist: Error parsing generated text as JSON:", parseError.message);
+                console.error("Gemini raw response text:", generatedText);
+                res.status(500).json({ error: 'Failed to parse game enrichment data from Gemini.', details: generatedText });
+            }
+        } else {
+            console.warn("Gemini enrich-gamelist: No candidates returned or unexpected response structure.");
+            res.status(500).json({ error: 'No enrichment data returned from Gemini.', details: apiResponse.data });
+        }
+    } catch (error) {
+        console.error("Gemini enrich-gamelist request failed:", error.message);
+        if (error.response) {
+            const errData = error.response.data.error || error.response.data;
+            res.status(error.response.status).json({
+                message: `Error from Gemini API: ${errData.message || 'Unknown error'}`,
+                details: errData
+            });
+        } else if (error.request) {
+            res.status(504).json({ error: 'Gateway Timeout: No response from Gemini API.' });
+        } else {
+            res.status(500).json({ error: 'Internal Server Error while calling Gemini API for game list enrichment.' });
+        }
+    }
+});
 
 // Endpoint for RAWG API - Games List (Search)
 app.get('/api/search/rawg/games', async (req, res) => {
