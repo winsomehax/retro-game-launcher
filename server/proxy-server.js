@@ -32,8 +32,8 @@ const EXTERNAL_API_TIMEOUT = parseInt(process.env.EXTERNAL_API_TIMEOUT, 10) || 1
 // Load TheGamesDB platforms mapping
 let tgdbPlatformsMap = new Map();
 try {
-    // Assuming proxy-server.js is in server/ and the CWD is server/ when node is run
-    const platformsFilePath = './data/thegamesdb_platforms.json';
+    // Corrected path to be relative to __dirname (the directory of the current module)
+    const platformsFilePath = path.join(__dirname, 'thegamesdb_platforms.json');
     const platformsData = JSON.parse(fs.readFileSync(platformsFilePath, 'utf-8'));
     if (platformsData && platformsData.data && platformsData.data.platforms) {
         for (const id in platformsData.data.platforms) {
@@ -140,57 +140,88 @@ app.get('/api/search/thegamesdb/bygamename', async (req, res) => {
     try {
         const apiResponse = await axios.get(targetUrl, { params, timeout: EXTERNAL_API_TIMEOUT });
 
-        if (apiResponse.data && apiResponse.data.data && apiResponse.data.data.games) {
-            const transformedGames = apiResponse.data.data.games.map(game => {
-                let boxartUrl = null;
-                if (apiResponse.data.include && apiResponse.data.include.boxart && apiResponse.data.include.boxart.data[game.id]) {
-                    const boxartEntries = apiResponse.data.include.boxart.data[game.id];
-                    const frontBoxart = boxartEntries.find(b => b.side === 'front');
-                    if (frontBoxart) {
-                        boxartUrl = `${apiResponse.data.include.boxart.base_url.medium}${frontBoxart.filename}`;
-                    }
-                }
-                        // Resolve platform details using the loaded map
-                        const platformId = game.platform;
-                        const sourcePlatformDetails = tgdbPlatformsMap.get(platformId); // This now returns {id, name, alias} or undefined
-
-                        if (sourcePlatformDetails) {
-                            console.log(`TGDB Game: "${game.game_title}", Platform ID: ${platformId}, Resolved Name: "${sourcePlatformDetails.name}", Resolved Alias: "${sourcePlatformDetails.alias}"`);
-                        } else {
-                            console.log(`TGDB Game: "${game.game_title}", Platform ID: ${platformId} - No details found in local TGDB platform map.`);
+        // Ensure the response from TheGamesDB is JSON before proceeding
+        const contentType = apiResponse.headers['content-type'];
+        if (contentType && contentType.includes('application/json')) {
+            if (apiResponse.data && apiResponse.data.data && apiResponse.data.data.games) {
+                const transformedGames = apiResponse.data.data.games.map(game => {
+                    let boxartUrl = null;
+                    if (apiResponse.data.include && apiResponse.data.include.boxart && apiResponse.data.include.boxart.data[game.id]) {
+                        const boxartEntries = apiResponse.data.include.boxart.data[game.id];
+                        const frontBoxart = boxartEntries.find(b => b.side === 'front');
+                        if (frontBoxart) {
+                            boxartUrl = `${apiResponse.data.include.boxart.base_url.medium}${frontBoxart.filename}`;
                         }
+                    }
+                    const platformId = game.platform;
+                    const sourcePlatformDetails = tgdbPlatformsMap.get(platformId);
 
-                return {
-                    id: game.id,
-                    title: game.game_title,
-                    release_date: game.release_date,
-                            platform_id: platformId, // Keep original TGDB ID for reference
-                            source_platform_details: sourcePlatformDetails || { id: platformId, name: `Unknown TGDB ID: ${platformId}`, alias: `unknown-tgdb-${platformId}` }, // Send full details or a placeholder
-                    overview: game.overview,
-                    players: game.players,
-                            genres: game.genres,
-                    rating: game.rating,
-                    boxart_url: boxartUrl,
-                };
-            });
+                    return {
+                        id: game.id,
+                        title: game.game_title,
+                        release_date: game.release_date,
+                        platform_id: platformId,
+                        source_platform_details: sourcePlatformDetails || { id: platformId, name: `Unknown TGDB ID: ${platformId}`, alias: `unknown-tgdb-${platformId}` },
+                        overview: game.overview,
+                        players: game.players,
+                        genres: game.genres,
+                        rating: game.rating,
+                        boxart_url: boxartUrl,
+                    };
+                });
 
-            res.json({
-                source: 'TheGamesDB',
-                count: apiResponse.data.data.count,
-                games: transformedGames,
-                pages: apiResponse.data.pages, // Forward pagination info
-                remaining_allowance: apiResponse.data.remaining_monthly_allowance
-            });
+                res.json({
+                    source: 'TheGamesDB',
+                    count: apiResponse.data.data.count,
+                    games: transformedGames,
+                    pages: apiResponse.data.pages,
+                    remaining_allowance: apiResponse.data.remaining_monthly_allowance
+                });
+            } else {
+                // Still JSON, but not the expected structure
+                console.warn("TheGamesDB response was JSON but had unexpected structure:", apiResponse.data);
+                res.status(200).json(apiResponse.data);
+            }
         } else {
-            res.json(apiResponse.data); // Return original if structure is unexpected
+            // Non-JSON response from TheGamesDB
+            console.error("TheGamesDB returned non-JSON response. Content-Type:", contentType);
+            console.error("TheGamesDB response data:", apiResponse.data);
+            res.status(502).json({
+                error: 'Bad Gateway: TheGamesDB returned non-JSON response.',
+                details: {
+                    contentType: contentType,
+                    body: apiResponse.data // Send the first few characters as a preview if it's too long
+                }
+            });
         }
     } catch (error) {
         console.error("TheGamesDB ByGameName request failed:", error.message);
         if (error.response) {
-            res.status(error.response.status).json(error.response.data);
+            // External API responded with an error status code
+            const contentType = error.response.headers['content-type'];
+            let responseData = error.response.data;
+
+            if (contentType && contentType.includes('application/json')) {
+                // If it's JSON, pass it through (or a structured subset of it)
+                res.status(error.response.status).json(responseData.error || responseData);
+            } else {
+                // If it's not JSON (e.g., HTML error page from TheGamesDB)
+                console.error("TheGamesDB error response was not JSON. Content-Type:", contentType);
+                console.error("TheGamesDB error response data:", responseData);
+                res.status(error.response.status).json({
+                    error: 'Error from TheGamesDB (non-JSON response).',
+                    details: {
+                        statusCode: error.response.status,
+                        contentType: contentType,
+                        bodyPreview: typeof responseData === 'string' ? responseData.substring(0, 200) + (responseData.length > 200 ? '...' : '') : 'Non-string body'
+                    }
+                });
+            }
         } else if (error.request) {
+            // The request was made but no response was received
             res.status(504).json({ error: 'Gateway Timeout: No response from TheGamesDB.' });
         } else {
+            // Something happened in setting up the request that triggered an Error
             res.status(500).json({ error: 'Internal Server Error while fetching from TheGamesDB.' });
         }
     }
@@ -217,46 +248,70 @@ app.post('/api/gemini/enrich-gamelist', async (req, res) => {
 
     try {
         const apiResponse = await axios.post(targetUrl, { contents }, {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             timeout: EXTERNAL_API_TIMEOUT,
         });
 
-        if (apiResponse.data.candidates && apiResponse.data.candidates.length > 0) {
-            const generatedText = apiResponse.data.candidates[0].content.parts[0].text;
-            // Attempt to parse the generated text as JSON
-            try {
-                // Gemini might return the JSON within a markdown code block, so try to extract it.
-                const jsonMatch = generatedText.match(/```json\n([\s\S]*?)\n```/);
-                let enrichedData;
-                if (jsonMatch && jsonMatch[1]) {
-                    enrichedData = JSON.parse(jsonMatch[1]);
-                } else {
-                    // If no markdown block, try parsing the whole text
-                    enrichedData = JSON.parse(generatedText);
+        const contentType = apiResponse.headers['content-type'];
+        if (contentType && contentType.includes('application/json')) {
+            if (apiResponse.data.candidates && apiResponse.data.candidates.length > 0) {
+                const generatedText = apiResponse.data.candidates[0].content.parts[0].text;
+                try {
+                    const jsonMatch = generatedText.match(/```json\n([\s\S]*?)\n```/);
+                    let enrichedData;
+                    if (jsonMatch && jsonMatch[1]) {
+                        enrichedData = JSON.parse(jsonMatch[1]);
+                    } else {
+                        enrichedData = JSON.parse(generatedText);
+                    }
+                    res.json({
+                        source: 'Gemini',
+                        enriched_games: enrichedData,
+                    });
+                } catch (parseError) {
+                    console.error("Gemini enrich-gamelist: Error parsing generated text as JSON:", parseError.message);
+                    console.error("Gemini raw response text for parsing error:", generatedText);
+                    res.status(500).json({ error: 'Failed to parse game enrichment data from Gemini.', details: generatedText });
                 }
-                res.json({
-                    source: 'Gemini',
-                    enriched_games: enrichedData,
-                });
-            } catch (parseError) {
-                console.error("Gemini enrich-gamelist: Error parsing generated text as JSON:", parseError.message);
-                console.error("Gemini raw response text:", generatedText);
-                res.status(500).json({ error: 'Failed to parse game enrichment data from Gemini.', details: generatedText });
+            } else {
+                console.warn("Gemini enrich-gamelist: No candidates or unexpected JSON structure.", apiResponse.data);
+                res.status(200).json(apiResponse.data); // Forward if JSON but not expected structure
             }
         } else {
-            console.warn("Gemini enrich-gamelist: No candidates returned or unexpected response structure.");
-            res.status(500).json({ error: 'No enrichment data returned from Gemini.', details: apiResponse.data });
+            console.error("Gemini enrich-gamelist returned non-JSON response. Content-Type:", contentType);
+            console.error("Gemini enrich-gamelist response data:", apiResponse.data);
+            res.status(502).json({
+                error: 'Bad Gateway: Gemini API (enrich) returned non-JSON response.',
+                details: { contentType: contentType, bodyPreview: String(apiResponse.data).substring(0, 200) }
+            });
         }
     } catch (error) {
         console.error("Gemini enrich-gamelist request failed:", error.message);
         if (error.response) {
-            const errData = error.response.data.error || error.response.data;
-            res.status(error.response.status).json({
-                message: `Error from Gemini API: ${errData.message || 'Unknown error'}`,
-                details: errData
-            });
+            const contentType = error.response.headers['content-type'];
+            let responseData = error.response.data;
+            let errorDetails = responseData;
+
+            if (contentType && contentType.includes('application/json')) {
+                errorDetails = responseData.error || responseData; // Gemini often has a nested 'error' object
+                res.status(error.response.status).json({
+                    message: `Error from Gemini API (enrich): ${errorDetails.message || 'Unknown error'}`,
+                    details: errorDetails
+                });
+            } else {
+                console.error("Gemini enrich-gamelist error response was not JSON. Content-Type:", contentType);
+                console.error("Gemini enrich-gamelist error response data:", responseData);
+                res.status(error.response.status).json({
+                    error: 'Error from Gemini API (enrich, non-JSON response).',
+                    details: {
+                        statusCode: error.response.status,
+                        contentType: contentType,
+                        bodyPreview: String(responseData).substring(0, 200)
+                    }
+                });
+            }
         } else if (error.request) {
-            res.status(504).json({ error: 'Gateway Timeout: No response from Gemini API.' });
+            res.status(504).json({ error: 'Gateway Timeout: No response from Gemini API (enrich).' });
         } else {
             res.status(500).json({ error: 'Internal Server Error while calling Gemini API for game list enrichment.' });
         }
@@ -283,31 +338,69 @@ app.get('/api/search/rawg/games', async (req, res) => {
     // RAWG's response is generally quite clean, so minimal transformation might be needed initially.
     // We can adapt this later based on frontend needs.
     try {
-        const apiResponse = await axios.get(targetUrl, { params, timeout: EXTERNAL_API_TIMEOUT });
-         const transformedGames = apiResponse.data.results.map(game => ({
-            id: game.id,
-            title: game.name,
-            slug: game.slug,
-            released: game.released,
-            rating: game.rating,
-            metacritic: game.metacritic,
-            background_image: game.background_image,
-            platforms: game.platforms.map(p => p.platform.name), // Extract platform names
-            genres: game.genres.map(g => g.name), // Extract genre names
-            stores: game.stores.map(s => s.store.name), // Extract store names
-        }));
+        const apiResponse = await axios.get(targetUrl, { params, timeout: EXTERNAL_API_TIMEOUT, headers: {'Accept': 'application/json'} });
 
-        res.json({
-            source: 'RAWG',
-            count: apiResponse.data.count,
-            next: apiResponse.data.next,
-            previous: apiResponse.data.previous,
-            games: transformedGames,
-        });
+        const contentType = apiResponse.headers['content-type'];
+        if (contentType && contentType.includes('application/json')) {
+            if (apiResponse.data && apiResponse.data.results) { // RAWG uses a 'results' array
+                const transformedGames = apiResponse.data.results.map(game => ({
+                    id: game.id,
+                    title: game.name,
+                    slug: game.slug,
+                    released: game.released,
+                    rating: game.rating,
+                    metacritic: game.metacritic,
+                    background_image: game.background_image,
+                    platforms: game.platforms.map(p => p.platform.name),
+                    genres: game.genres.map(g => g.name),
+                    stores: game.stores.map(s => s.store.name),
+                }));
+
+                res.json({
+                    source: 'RAWG',
+                    count: apiResponse.data.count,
+                    next: apiResponse.data.next,
+                    previous: apiResponse.data.previous,
+                    games: transformedGames,
+                });
+            } else {
+                // Still JSON, but not the expected structure
+                console.warn("RAWG response was JSON but had unexpected structure:", apiResponse.data);
+                res.status(200).json(apiResponse.data);
+            }
+        } else {
+            // Non-JSON response from RAWG
+            console.error("RAWG returned non-JSON response. Content-Type:", contentType);
+            console.error("RAWG response data:", apiResponse.data);
+            res.status(502).json({
+                error: 'Bad Gateway: RAWG API returned non-JSON response.',
+                details: {
+                    contentType: contentType,
+                    bodyPreview: String(apiResponse.data).substring(0, 200)
+                }
+            });
+        }
     } catch (error) {
         console.error("RAWG games search request failed:", error.message);
         if (error.response) {
-            res.status(error.response.status).json(error.response.data);
+            const contentType = error.response.headers['content-type'];
+            let responseData = error.response.data;
+
+            if (contentType && contentType.includes('application/json')) {
+                // RAWG error responses might have a 'detail' field or just be the error object
+                res.status(error.response.status).json(responseData.detail || responseData.error || responseData);
+            } else {
+                console.error("RAWG error response was not JSON. Content-Type:", contentType);
+                console.error("RAWG error response data:", responseData);
+                res.status(error.response.status).json({
+                    error: 'Error from RAWG (non-JSON response).',
+                    details: {
+                        statusCode: error.response.status,
+                        contentType: contentType,
+                        bodyPreview: String(responseData).substring(0, 200)
+                    }
+                });
+            }
         } else if (error.request) {
             res.status(504).json({ error: 'Gateway Timeout: No response from RAWG.' });
         } else {
@@ -369,33 +462,70 @@ app.post('/api/gemini/enrich-gamelist', async (req, res) => {
     // For example, just returning the first candidate's text part.
     try {
         const apiResponse = await axios.post(targetUrl, { contents }, {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             timeout: EXTERNAL_API_TIMEOUT,
         });
 
-        if (apiResponse.data.candidates && apiResponse.data.candidates.length > 0) {
-            const firstCandidateText = apiResponse.data.candidates[0].content.parts[0].text;
-            res.json({
-                source: 'Gemini',
-                generated_text: firstCandidateText,
-                full_response: apiResponse.data // Optionally include full response for debugging/more data
-            });
+        const contentType = apiResponse.headers['content-type'];
+        if (contentType && contentType.includes('application/json')) {
+            if (apiResponse.data.candidates && apiResponse.data.candidates.length > 0 &&
+                apiResponse.data.candidates[0].content && apiResponse.data.candidates[0].content.parts &&
+                apiResponse.data.candidates[0].content.parts.length > 0 &&
+                typeof apiResponse.data.candidates[0].content.parts[0].text !== 'undefined') {
+
+                const firstCandidateText = apiResponse.data.candidates[0].content.parts[0].text;
+                res.json({
+                    source: 'Gemini',
+                    generated_text: firstCandidateText,
+                    full_response: apiResponse.data
+                });
+            } else {
+                // Still JSON, but not the expected structure
+                console.warn("Gemini generateContent response was JSON but had unexpected structure:", apiResponse.data);
+                res.status(200).json(apiResponse.data);
+            }
         } else {
-            res.json(apiResponse.data); // Return as is if structure is not as expected
+             // Non-JSON response from Gemini
+            console.error("Gemini generateContent returned non-JSON response. Content-Type:", contentType);
+            console.error("Gemini generateContent response data:", apiResponse.data);
+            res.status(502).json({
+                error: 'Bad Gateway: Gemini API (generate) returned non-JSON response.',
+                details: {
+                    contentType: contentType,
+                    bodyPreview: String(apiResponse.data).substring(0, 200)
+                }
+            });
         }
+
     } catch (error) {
         console.error("Gemini generateContent request failed:", error.message);
         if (error.response) {
-            // Gemini often returns detailed errors in error.response.data.error
-            const errData = error.response.data.error || error.response.data;
-            res.status(error.response.status).json({
-                message: `Error from Gemini API: ${errData.message || 'Unknown error'}`,
-                details: errData
-            });
+            const contentType = error.response.headers['content-type'];
+            let responseData = error.response.data;
+            let errorDetails = responseData;
+
+            if (contentType && contentType.includes('application/json')) {
+                errorDetails = responseData.error || responseData; // Gemini often has a nested 'error' object
+                 res.status(error.response.status).json({
+                    message: `Error from Gemini API (generate): ${errorDetails.message || 'Unknown error'}`,
+                    details: errorDetails
+                });
+            } else {
+                console.error("Gemini generateContent error response was not JSON. Content-Type:", contentType);
+                console.error("Gemini generateContent error response data:", responseData);
+                res.status(error.response.status).json({
+                    error: 'Error from Gemini API (generate, non-JSON response).',
+                    details: {
+                        statusCode: error.response.status,
+                        contentType: contentType,
+                        bodyPreview: String(responseData).substring(0, 200)
+                    }
+                });
+            }
         } else if (error.request) {
-            res.status(504).json({ error: 'Gateway Timeout: No response from Gemini API.' });
+            res.status(504).json({ error: 'Gateway Timeout: No response from Gemini API (generate).' });
         } else {
-            res.status(500).json({ error: 'Internal Server Error while calling Gemini API.' });
+            res.status(500).json({ error: 'Internal Server Error while calling Gemini API (generate).' });
         }
     }
 });
