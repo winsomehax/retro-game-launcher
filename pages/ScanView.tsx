@@ -265,7 +265,7 @@ ${fileNamesForPrompt}`;
                   onClick={handleFetchDetailsWithAI}
                   disabled={isLoadingAi || scannedFiles.filter(f => f.selected).length === 0}
                   leftIcon={<SparklesIcon />}
-                  variant="outline"
+                  variant="secondary"
                 >
                   {isLoadingAi ? 'Fetching AI Details...' : 'Fetch Game Details with AI'}
                 </Button>

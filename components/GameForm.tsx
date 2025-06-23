@@ -280,7 +280,7 @@ export const GameForm: React.FC<GameFormProps> = ({
         name: sourcePlatformDetails.name,
         alias: sourcePlatformDetails.alias || '', // Ensure alias is a string
       };
-      props.onAddPlatform(newPlatformData); // Call prop passed from App.tsx
+      onAddPlatform(newPlatformData); // Call prop passed from App.tsx
       finalPlatformIdToSet = newPlatformData.id; // Use the ID of the (to be) newly added platform
       apiMessage = `Platform "${sourcePlatformDetails.name}" was not found locally and has been added to your platforms.`;
       // Note: The 'platforms' prop might not update immediately within this function's closure.
@@ -332,7 +332,6 @@ export const GameForm: React.FC<GameFormProps> = ({
           isOpen={isGameSelectionModalOpen}
           onClose={() => setIsGameSelectionModalOpen(false)}
           games={searchResults}
-          includeData={searchIncludeData}
           onSelectGame={handleGameSelectedFromSearch}
           platforms={platforms}
         />
