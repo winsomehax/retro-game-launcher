@@ -42,17 +42,18 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
           }
           return res.json();
         })
-        .then((data: Platform[] | { platforms: Platform[], base_image_url?: string }) => {
-            // Check if data is an object with platforms and base_image_url
-            if (typeof data === 'object' && data !== null && Array.isArray((data as any).platforms)) {
-                setAvailableTgdbPlatforms((data as any).platforms);
-                if ((data as any).base_image_url) {
-                    setTgdbIconBaseUrl((data as any).base_image_url);
+        .then((responseData: { platforms: Platform[], base_image_url?: string | null }) => {
+            if (responseData && Array.isArray(responseData.platforms)) {
+                setAvailableTgdbPlatforms(responseData.platforms);
+                if (responseData.base_image_url) {
+                    setTgdbIconBaseUrl(responseData.base_image_url);
+                    console.log("PlatformForm: Received base_image_url:", responseData.base_image_url);
+                } else {
+                    console.warn("PlatformForm: base_image_url not found in API response or is null.");
+                    setTgdbIconBaseUrl(null); // Explicitly set to null if not provided
                 }
-            } else if (Array.isArray(data)) { // Fallback for if API just returns array
-                 setAvailableTgdbPlatforms(data as Platform[]);
             } else {
-                throw new Error("Unexpected data format for TheGamesDB platforms");
+                throw new Error("Unexpected data format for TheGamesDB platforms response. 'platforms' array missing.");
             }
             setIsLoadingTgdbPlatforms(false);
         })
