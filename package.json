@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev:client": "vite",
-    "dev:server": "node server/server.js",
+    "dev:server": "node server/proxy-server.js",
     "dev": "npm-run-all --parallel dev:server dev:client",
     "build": "vite build",
     "preview": "vite preview"

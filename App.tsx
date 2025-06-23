@@ -88,6 +88,43 @@ const AppContent: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // --- Persistence Functions ---
+  const savePlatforms = useCallback(async (platformsToSave: Platform[]) => {
+    try {
+      // This endpoint needs to be created on the server to write to `public/data/platforms.json`
+      const response = await fetch('/api/data/platforms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(platformsToSave, null, 2)
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to save platforms: ${response.statusText}`);
+      }
+      console.log("Platforms saved successfully.");
+    } catch (error) {
+      console.error("Error saving platforms:", error);
+      // TODO: Add user-facing error notification
+    }
+  }, []);
+
+  const saveGames = useCallback(async (gamesToSave: Game[]) => {
+    try {
+      // This endpoint needs to be created on the server to write to `public/data/games.json`
+      const response = await fetch('/api/data/games', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(gamesToSave, null, 2)
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to save games: ${response.statusText}`);
+      }
+      console.log("Games saved successfully.");
+    } catch (error) {
+      console.error("Error saving games:", error);
+      // TODO: Add user-facing error notification
+    }
+  }, []);
+
   useEffect(() => {
     fetch('/data/platforms.json')
       .then(response => {
@@ -130,26 +167,47 @@ const AppContent: React.FC = () => {
     navigate(`/${view}`);
   };
 
-  const handleAddGame = useCallback((game: Game) => setGames(prev => [...prev, game]), []);
-  const handleUpdateGame = useCallback((updatedGame: Game) => setGames(prev => prev.map(g => g.id === updatedGame.id ? updatedGame : g)), []);
-  const handleDeleteGame = useCallback((gameId: string) => setGames(prev => prev.filter(g => g.id !== gameId)), []);
+  const handleAddGame = useCallback((game: Game) => {
+    setGames(prev => {
+      const newGames = [...prev, game];
+      saveGames(newGames);
+      return newGames;
+    });
+  }, [saveGames]);
+
+  const handleUpdateGame = useCallback((updatedGame: Game) => {
+    setGames(prev => {
+      const newGames = prev.map(g => g.id === updatedGame.id ? updatedGame : g);
+      saveGames(newGames);
+      return newGames;
+    });
+  }, [saveGames]);
+
+  const handleDeleteGame = useCallback((gameId: string) => {
+    setGames(prev => {
+      const newGames = prev.filter(g => g.id !== gameId);
+      saveGames(newGames);
+      return newGames;
+    });
+  }, [saveGames]);
 
   // New function for adding multiple games
   const handleAddMultipleGames = useCallback((newGames: Game[], platformId: string) => {
-    // Optional: Filter out games that might already exist by checking romPath for the given platformId
     setGames(prevGames => {
       const existingRomPaths = new Set(prevGames.filter(g => g.platformId === platformId).map(g => g.romPath));
       const gamesToAdd = newGames.filter(g => !existingRomPaths.has(g.romPath));
       if (gamesToAdd.length < newGames.length) {
         const skippedCount = newGames.length - gamesToAdd.length;
-        // TODO: This alert might be better handled in ScanView after the callback, or via a more robust notification system.
-        // For now, logging it here. A toast notification system would be ideal.
         console.log(`${skippedCount} game(s) were skipped as they already exist in the library for this platform.`);
-        // Consider if ScanView should be informed about skipped games to show a more integrated message.
       }
-      return [...prevGames, ...gamesToAdd];
+      if (gamesToAdd.length > 0) {
+        const newGamesState = [...prevGames, ...gamesToAdd];
+        saveGames(newGamesState);
+        return newGamesState;
+      }
+      return prevGames; // No changes, don't save or re-render
     });
-  }, []);
+  }, [saveGames]);
 
   // Adjusted handleAddPlatform to prevent duplicates and ensure correct typing
   const handleAddPlatform = useCallback((platformToAdd: { id: string; name: string; alias?: string }) => {
@@ -160,7 +218,7 @@ const AppContent: React.FC = () => {
       );
       if (existingPlatform) {
         console.warn(`Platform with ID ${platformToAdd.id} or name "${platformToAdd.name}" already exists. Not adding duplicate.`);
-        return prevPlatforms; // Return previous state if duplicate
+        return prevPlatforms;
       }
       const newPlatform: Platform = {
         id: platformToAdd.id, // ID from TGDB, converted to string
@@ -169,41 +227,65 @@ const AppContent: React.FC = () => {
         emulators: [],
         iconUrl: '', // Default iconUrl
       };
-      // TODO: Consider saving the updated platforms list to data/platforms.json here
-      // For now, it only updates the state for the current session.
       console.log("Adding new platform to state:", newPlatform);
-      return [...prevPlatforms, newPlatform];
+      const newPlatforms = [...prevPlatforms, newPlatform];
+      savePlatforms(newPlatforms);
+      return newPlatforms;
     });
-  }, []);
+  }, [savePlatforms]);
 
   const handleUpdatePlatform = useCallback((updatedPlatformData: Omit<Platform, 'emulators'>) => {
-    setPlatforms(prev => prev.map(p => 
-      p.id === updatedPlatformData.id ? { ...p, name: updatedPlatformData.name, iconUrl: updatedPlatformData.iconUrl, alias: updatedPlatformData.alias } : p
-    ));
-  }, []);
+    setPlatforms(prev => {
+      const newPlatforms = prev.map(p => 
+        p.id === updatedPlatformData.id ? { ...p, name: updatedPlatformData.name, iconUrl: updatedPlatformData.iconUrl, alias: updatedPlatformData.alias } : p
+      );
+      savePlatforms(newPlatforms);
+      return newPlatforms;
+    });
+  }, [savePlatforms]);
 
   const handleDeletePlatform = useCallback((platformId: string) => {
-    setPlatforms(prev => prev.filter(p => p.id !== platformId));
-    setGames(prev => prev.filter(g => g.platformId !== platformId));
-  }, []);
+    setPlatforms(prev => {
+      const newPlatforms = prev.filter(p => p.id !== platformId);
+      savePlatforms(newPlatforms);
+      return newPlatforms;
+    });
+    setGames(prev => {
+      const newGames = prev.filter(g => g.platformId !== platformId);
+      saveGames(newGames);
+      return newGames;
+    });
+  }, [savePlatforms, saveGames]);
 
   const handleAddEmulator = useCallback((platformId: string, emulatorConfig: EmulatorConfig) => {
-    setPlatforms(prev => prev.map(p => 
-      p.id === platformId ? { ...p, emulators: [...p.emulators, {...emulatorConfig, id: emulatorConfig.id || crypto.randomUUID()}] } : p
-    ));
-  }, []);
+    setPlatforms(prev => {
+      const newPlatforms = prev.map(p => 
+        p.id === platformId ? { ...p, emulators: [...p.emulators, {...emulatorConfig, id: emulatorConfig.id || crypto.randomUUID()}] } : p
+      );
+      savePlatforms(newPlatforms);
+      return newPlatforms;
+    });
+  }, [savePlatforms]);
 
   const handleUpdateEmulator = useCallback((platformId: string, updatedEmulatorConfig: EmulatorConfig) => {
-    setPlatforms(prev => prev.map(p => 
-      p.id === platformId ? { ...p, emulators: p.emulators.map(e => e.id === updatedEmulatorConfig.id ? updatedEmulatorConfig : e) } : p
-    ));
-  }, []);
+    setPlatforms(prev => {
+      const newPlatforms = prev.map(p => 
+        p.id === platformId ? { ...p, emulators: p.emulators.map(e => e.id === updatedEmulatorConfig.id ? updatedEmulatorConfig : e) } : p
+      );
+      savePlatforms(newPlatforms);
+      return newPlatforms;
+    });
+  }, [savePlatforms]);
 
   const handleDeleteEmulator = useCallback((platformId: string, emulatorId: string) => {
-    setPlatforms(prev => prev.map(p => 
-      p.id === platformId ? { ...p, emulators: p.emulators.filter(e => e.id !== emulatorId) } : p
-    ));
-  }, []);
+    setPlatforms(prev => {
+      const newPlatforms = prev.map(p => 
+        p.id === platformId ? { ...p, emulators: p.emulators.filter(e => e.id !== emulatorId) } : p
+      );
+      savePlatforms(newPlatforms);
+      return newPlatforms;
+    });
+  }, [savePlatforms]);
 
   const handleUpdateApiKey = useCallback((updatedApiKey: ApiKeyEntry) => {
     setApiKeys(prevKeys => {

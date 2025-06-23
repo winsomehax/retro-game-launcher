@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 // Input component might not be needed if we use browser's file input directly
 // import { Input } from '../components/Input';
-import { FolderOpenIcon, SearchIcon, SparklesIcon, UploadCloudIcon } from '../components/Icons'; // Using SparklesIcon for AI
+import { FolderOpenIcon, SparklesIcon, UploadCloudIcon } from '../components/Icons'; // Using SparklesIcon for AI
 import { Game } from '../types'; // For storing enriched game data
 
 interface ScannedFile {
@@ -36,9 +36,6 @@ export const ScanView: React.FC<ScanViewProps> = ({ geminiApiKeyConfigured = fal
   const [platformName, setPlatformName] = useState<string | null>(null);
   const [scannedFiles, setScannedFiles] = useState<ScannedFile[]>([]);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
-
-  // Placeholder for API key status - replace with prop later
-  const [isGeminiConfigured, setIsGeminiConfigured] = useState(true); // TODO: Replace with geminiApiKeyConfigured prop
 
   useEffect(() => {
     if (location.state && location.state.platformId && location.state.platformName) {
@@ -90,74 +87,104 @@ export const ScanView: React.FC<ScanViewProps> = ({ geminiApiKeyConfigured = fal
     }
 
     setIsLoadingAi(true);
-    const batchSize = 20;
+    const batchSize = 20; // Keep batching to not overload the prompt/API
     let allAiResults: Record<string, Partial<ScannedFile>> = {};
 
     for (let i = 0; i < selectedFiles.length; i += batchSize) {
       const batch = selectedFiles.slice(i, i + batchSize);
-      const fileNamesForPrompt = batch.map(file => file.name).join('\n');
+      const fileNames = batch.map(file => file.name);
+      const fileListString = fileNames.join('\n');
 
-      const prompt = `You are the world's greatest expert at finding the details of a game/retro game from just the title of file, or the title of the folder that some files sit in. Please examine the list of files below. Each item is a file/folder name - these all refer to a game that runs on ${platformName}. For each item return ONLY AS JSON: a cleaned up title, a short 1-2 sentence description, genre, release date and also include ${platformName} as 'platform'. The JSON should be an array of objects, where each object corresponds to an item in the list and includes an 'original_filename' field that matches the input filename.
+      const prompt = `You are an expert in retro gaming and metadata. Based on the platform and a list of ROM filenames, identify the full game title, a concise 1-2 sentence description, the primary genre, and the release year.
 
-The list follows:
-${fileNamesForPrompt}`;
+You MUST return ONLY a valid JSON array of objects. Each object in the array must correspond to one of the input ROMs and have the following structure:
+{
+  "original_filename": "the_rom_filename.zip",
+  "title": "The Full Game Title",
+  "description": "A short description of the game.",
+  "genre": "Action",
+  "releaseDate": "YYYY"
+}
 
-      console.log("Sending prompt to AI for batch:", batch.map(f=>f.name));
-      // console.log("Prompt:", prompt);
+If you cannot identify a game, use the filename for the title and leave other fields as empty strings. Do not include any explanations or text outside of the JSON array.
+
+Platform: "${platformName}"
+Filenames:
+${fileListString}
+`;
+
+      console.log("Sending prompt to backend for AI enrichment for batch...");
 
       try {
-        const response = await fetch('/api/gemini/generatecontent', {
+        // The backend endpoint proxies the request to Gemini. We must format the body correctly.
+        const apiUrl = '/api/gemini/enrich-gamelist';
+        const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-          }),
+          // The body must be in the format expected by the Gemini API.
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Error from Gemini API proxy:', errorData);
-          alert(`Error fetching details from AI: ${errorData.message || response.statusText}`);
-          // Continue to next batch or stop? For now, try next batch.
+          // The backend should now return a structured JSON error
+          let errorMessage = `API request failed: ${response.status} ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
+          } catch (e) {
+            // Fallback for non-JSON error responses
+            const textError = await response.text();
+            if (textError) errorMessage = textError;
+          }
+          console.error('Error from backend enrichment endpoint:', errorMessage);
+          alert(`Error fetching details from AI: ${errorMessage}`);
+          // Continue to the next batch
           continue;
         }
 
-        const result = await response.json();
-        console.log("AI Raw Result:", result);
-        // The actual text is nested in result.generated_text (based on proxy-server.js)
-        // And this text itself is expected to be a JSON string.
-        if (result.generated_text) {
-          try {
-            // Clean the text: remove backticks and "json" prefix if present
-            const cleanedJsonString = result.generated_text.replace(/^```json\s*|```$/g, '').trim();
-            const aiDataArray = JSON.parse(cleanedJsonString) as Array<{original_filename: string, title: string, description: string, genre: string, releaseDate: string, platform: string}>;
+        const apiResponse = await response.json();
+        console.log("Received raw response from backend:", apiResponse);
 
-            aiDataArray.forEach(aiDataItem => {
-              const originalFile = batch.find(f => f.name === aiDataItem.original_filename);
-              if (originalFile) {
-                allAiResults[originalFile.id] = {
-                  title: aiDataItem.title,
-                  description: aiDataItem.description,
-                  genre: aiDataItem.genre,
-                  releaseDate: aiDataItem.releaseDate,
-                  // platform from AI can be used for verification if needed: aiDataItem.platform
-                };
-              }
-            });
-          } catch (parseError) {
-            console.error('Error parsing AI JSON response:', parseError, "Raw text:", result.generated_text);
-            alert('Received malformed data from AI. Check console for details.');
+        let aiDataArray: Array<{original_filename: string, title: string, description: string, genre: string, releaseDate: string}> = [];
+
+        if (apiResponse.generated_text) {
+          try {
+            let jsonString = apiResponse.generated_text.trim();
+            // AI might wrap the JSON in markdown code blocks, so we strip them.
+            if (jsonString.startsWith('```json')) {
+              jsonString = jsonString.substring(7, jsonString.length - 3).trim();
+            } else if (jsonString.startsWith('```')) {
+              jsonString = jsonString.substring(3, jsonString.length - 3).trim();
+            }
+            aiDataArray = JSON.parse(jsonString);
+          } catch (e) {
+            console.error("Failed to parse JSON from AI response text:", apiResponse.generated_text, e);
+            alert("AI returned data in an unexpected format. Check console for details.");
+            continue;
           }
         } else {
-           console.warn('AI response did not contain generated_text field:', result);
+          throw new Error("Unexpected response structure from enrichment API. Expected 'generated_text' field.");
         }
 
+        aiDataArray.forEach(aiDataItem => {
+          // Find the original file from the batch to get its ID (path)
+          const originalFile = batch.find(f => f.name === aiDataItem.original_filename);
+          if (originalFile) {
+            allAiResults[originalFile.id] = {
+              title: aiDataItem.title,
+              description: aiDataItem.description,
+              genre: aiDataItem.genre,
+              releaseDate: aiDataItem.releaseDate,
+            };
+          }
+        });
+
       } catch (error) {
-        console.error('Network error or other issue calling /api/gemini/generatecontent:', error);
+        console.error('Network error or other issue calling /api/gemini/enrich-gamelist:', error);
         alert(`Network error fetching AI details: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        // Stop processing further batches on network error
+        // Stop processing further batches on a network error
         setIsLoadingAi(false);
         return;
       }
@@ -260,12 +287,12 @@ ${fileNamesForPrompt}`;
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-semibold text-neutral-200">Found Files & Folders ({scannedFiles.filter(f => f.selected).length} / {scannedFiles.length} selected)</h3>
             <div className="flex space-x-2">
-              {isGeminiConfigured && (
+              {geminiApiKeyConfigured && (
                 <Button
                   onClick={handleFetchDetailsWithAI}
                   disabled={isLoadingAi || scannedFiles.filter(f => f.selected).length === 0}
                   leftIcon={<SparklesIcon />}
-                  variant="outline"
+                  variant="ghost"
                 >
                   {isLoadingAi ? 'Fetching AI Details...' : 'Fetch Game Details with AI'}
                 </Button>
