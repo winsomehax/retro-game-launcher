@@ -110,6 +110,70 @@ const AppContent: React.FC = () => {
     });
   }, []);
 
+  // State to track if initial data load is complete
+  const [isInitialGamesLoadComplete, setIsInitialGamesLoadComplete] = useState(false);
+  const [isInitialPlatformsLoadComplete, setIsInitialPlatformsLoadComplete] = useState(false);
+
+  useEffect(() => {
+    fetch('/data/platforms.json')
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for platforms.json`);
+        return response.json();
+      })
+      .then((data: Platform[]) => {
+        setPlatforms(data);
+        setIsInitialPlatformsLoadComplete(true);
+      })
+      .catch(error => {
+        console.error("Could not load platforms:", error);
+        setIsInitialPlatformsLoadComplete(true); // Still mark as complete to avoid blocking saves
+      });
+
+    fetch('/data/games.json')
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for games.json`);
+        return response.json();
+      })
+      .then((data: Game[]) => {
+        setGames(data);
+        setIsInitialGamesLoadComplete(true);
+      })
+      .catch(error => {
+        console.error("Could not load games:", error);
+        setIsInitialGamesLoadComplete(true); // Still mark as complete
+      });
+
+    loadInitialApiKeys().then(keys => {
+      setApiKeys(keys);
+    });
+  }, []);
+
+
+  // Effect to save games when `games` state changes (after initial load)
+  useEffect(() => {
+    if (isInitialGamesLoadComplete && games.length > 0) { // Added games.length > 0 to avoid saving empty array if initial load fails but sets complete
+      saveDataToBackend('/api/data/games', games, 'Games');
+    } else if (isInitialGamesLoadComplete && games.length === 0) {
+        // If initial load is done and games array is empty (e.g. user deletes all games)
+        // We might want to save this empty state.
+        // Or, if this is an undesirable state right after initial load (e.g. games.json was empty/corrupt)
+        // we might add a delay or a more robust check. For now, let's save empty if it's intentional.
+        console.log("Initial games load complete, games array is empty. Attempting to save empty games list.");
+        saveDataToBackend('/api/data/games', [], 'Games (empty list)');
+    }
+  }, [games, isInitialGamesLoadComplete]); // Dependency array includes games and the load completion flag
+
+  // Effect to save platforms when `platforms` state changes (after initial load)
+  useEffect(() => {
+    if (isInitialPlatformsLoadComplete && platforms.length > 0) {
+      saveDataToBackend('/api/data/platforms', platforms, 'Platforms');
+    } else if (isInitialPlatformsLoadComplete && platforms.length === 0) {
+      // Similar to games, decide if saving an empty platform list is desired immediately after load.
+      console.log("Initial platforms load complete, platforms array is empty. Attempting to save empty platforms list.");
+      saveDataToBackend('/api/data/platforms', [], 'Platforms (empty list)');
+    }
+  }, [platforms, isInitialPlatformsLoadComplete]); // Dependency array
+
   const getCurrentView = (): NavView => {
     const path = location.pathname;
     if (path.startsWith('/platforms')) return 'platforms';
@@ -222,6 +286,28 @@ const AppContent: React.FC = () => {
   const theGamesDbApiKey = apiKeys ? (apiKeys.find(k => k.id === THEGAMESDB_API_KEY_ID)?.apiKey || "") : "";
   const geminiApiKey = apiKeys ? (apiKeys.find(k => k.id === GEMINI_API_KEY_ID)?.apiKey || "") : "";
 
+  // Helper function to save data to backend
+  const saveDataToBackend = async (endpoint: string, data: any, entityName: string) => {
+    try {
+      console.log(`Attempting to save ${entityName} data to backend at ${endpoint}:`, data);
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Unknown error during save." }));
+        throw new Error(`Failed to save ${entityName} data: ${response.status} ${response.statusText}. ${errorData.message || errorData.error || ''}`);
+      }
+      const result = await response.json();
+      console.log(`${entityName} data saved successfully:`, result.message);
+    } catch (error) {
+      console.error(`Error saving ${entityName} data:`, error);
+      // TODO: Add user-facing error notification here
+    }
+  };
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-neutral-900">
