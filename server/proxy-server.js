@@ -538,6 +538,41 @@ const ensureDataDirExists = () => {
 // Ensure data directory exists on server startup
 ensureDataDirExists();
 
+// Endpoint to load games data
+app.get('/api/data/games', async (req, res) => {
+    try {
+        if (fs.existsSync(GAMES_FILE_PATH)) {
+            const fileContent = await fs.promises.readFile(GAMES_FILE_PATH, 'utf8');
+            const gamesData = JSON.parse(fileContent);
+            res.status(200).json(gamesData);
+        } else {
+            console.log(`${GAMES_FILE_PATH} not found. Returning empty array for games.`);
+            res.status(200).json([]); // Return empty array if file doesn't exist
+        }
+    } catch (error) {
+        console.error(`Error reading games data from ${GAMES_FILE_PATH}:`, error);
+        // If file exists but is corrupt or other read error, also return empty array for robustness on client
+        res.status(200).json([]);
+    }
+});
+
+// Endpoint to load platforms data
+app.get('/api/data/platforms', async (req, res) => {
+    try {
+        if (fs.existsSync(PLATFORMS_FILE_PATH)) {
+            const fileContent = await fs.promises.readFile(PLATFORMS_FILE_PATH, 'utf8');
+            const platformsData = JSON.parse(fileContent);
+            res.status(200).json(platformsData);
+        } else {
+            console.log(`${PLATFORMS_FILE_PATH} not found. Returning empty array for platforms.`);
+            res.status(200).json([]); // Return empty array if file doesn't exist
+        }
+    } catch (error) {
+        console.error(`Error reading platforms data from ${PLATFORMS_FILE_PATH}:`, error);
+        res.status(200).json([]);
+    }
+});
+
 // Endpoint to save platforms data
 app.post('/api/data/platforms', async (req, res) => {
     const platformsData = req.body; // Expecting an array of platform objects
