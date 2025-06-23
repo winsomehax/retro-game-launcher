@@ -205,7 +205,7 @@ export const GameForm: React.FC<GameFormProps> = ({
     setIsGeneratingDesc(true);
     setApiError(null);
     try {
-      const platformName = platforms.find(p => p.id === gameData.platformId)?.name || "Unknown Platform";
+      const platformName = platforms.find(p => p.id.toString() === gameData.platformId)?.name || "Unknown Platform";
       const prompt = `Generate a compelling and concise game description (around 2-3 sentences) for a retro game titled "${gameData.title}" for the "${platformName}" platform. Its genre is "${gameData.genre || 'not specified'}". Focus on the core gameplay or unique aspects.`;
 
       const apiUrl = `http://localhost:3001/api/gemini/generatecontent`;
@@ -261,7 +261,7 @@ export const GameForm: React.FC<GameFormProps> = ({
   if (sourcePlatformDetails) {
     // Try to find existing local platform
     matchedPlatform = platforms.find(p =>
-      p.id === sourcePlatformDetails.id.toString() || // Match by TGDB ID (converted to string)
+      p.id.toString() === sourcePlatformDetails.id.toString() || // Match by TGDB ID (converted to string)
       p.name.toLowerCase() === sourcePlatformDetails.name.toLowerCase() ||
       (p.alias && sourcePlatformDetails.alias && p.alias.toLowerCase() === sourcePlatformDetails.alias.toLowerCase()) ||
       (p.alias && p.alias.toLowerCase() === sourcePlatformDetails.name.toLowerCase()) || // Match local alias against TGDB name
@@ -271,7 +271,7 @@ export const GameForm: React.FC<GameFormProps> = ({
     console.log("Attempt 1: Matched local platform:", matchedPlatform);
 
     if (matchedPlatform) {
-      finalPlatformIdToSet = matchedPlatform.id;
+      finalPlatformIdToSet = matchedPlatform.id.toString();
     } else {
       // No local match found, so add this platform from TGDB source
       console.log(`Platform "${sourcePlatformDetails.name}" (ID: ${sourcePlatformDetails.id}) not found locally. Adding it.`);
@@ -307,7 +307,7 @@ export const GameForm: React.FC<GameFormProps> = ({
     setSearchIncludeData(undefined);
   };
 
-  const platformOptions = platforms.map(p => ({ value: p.id, label: p.name }));
+  const platformOptions = platforms.map(p => ({ value: p.id.toString(), label: p.name }));
 
   // Close search results modal if the main form modal is closed
   // const handleMainModalClose = () => { setIsGameSelectionModalOpen(false); onClose(); }; // Unused
@@ -456,8 +456,7 @@ const GameSearchResultsModal: React.FC<GameSearchResultsModalProps> = ({
   isOpen,
   onClose,
   games,
-  onSelectGame,
-  platforms, // Kept for now
+  onSelectGame // Kept for now
 }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Select Game from TheGamesDB" size="xl">

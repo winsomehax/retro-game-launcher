@@ -43,5 +43,26 @@
         "args": "{ROM}"
       }
     ]
+  },
+  {
+    "id": 5013,
+    "name": "BBC Micro",
+    "alias": "bbc-micro",
+    "icon": "",
+    "console": null,
+    "controller": null,
+    "developer": "BBC",
+    "manufacturer": "Acorn Computers",
+    "media": "Cassette, Floppy, Hard Disk, Laserdisc",
+    "cpu": "2 MHz MOS Technology 6502/6512",
+    "memory": "16KiB ~ 272KiB",
+    "graphics": "640×256, 8 colours",
+    "sound": "Texas Instruments SN76489, 4 channels, mono; TMS5220 speech synthesiser with phrase ROM (optional)",
+    "maxcontrollers": "2",
+    "display": "UHF, composite, TTL RGB",
+    "overview": " ",
+    "youtube": "https://www.youtube.com/watch?v=H6EOFwK0yCg",
+    "userIconUrl": "",
+    "emulators": []
   }
 ]
