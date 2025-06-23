@@ -8,6 +8,13 @@ import path from 'path'; // Import Path module
 
 dotenv.config(); // For loading .env file from the project root
 
+// Note: __dirname is not available in ES modules by default.
+// This is a common way to get the directory name.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// This defines the path to your project's `public/data` directory.
+const dataPath = path.join(__dirname, '..', 'public', 'data');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -64,6 +71,7 @@ app.use(express.json());   // To parse JSON request bodies
 
 // Helper function to handle external API calls
 async function makeExternalApiCall(req, res, targetUrl, method = 'GET', params = {}, data = {}, additionalHeaders = {}) {
+    console.log("hfksjdhfksdjhfsdkjfhskjfhsdkfjh")
     try {
         const requestHeaders = {
             'Accept': 'application/json', // Prefer JSON responses
@@ -242,9 +250,40 @@ app.get('/api/search/rawg/games', async (req, res) => {
     }
 });
 
+// Endpoint to save platforms
+app.post('/api/data/platforms', async (req, res) => {
+  try {
+    const platformsData = req.body;
+    if (!Array.isArray(platformsData)) {
+      return res.status(400).json({ message: 'Invalid data format. Expected an array of platforms.' });
+    }
+    const filePath = path.join(dataPath, 'platforms.json');
+    await fs.writeFile(filePath, JSON.stringify(platformsData, null, 2), 'utf8');
+    res.status(200).json({ message: 'Platforms saved successfully.' });
+  } catch (error) {
+    console.error('Error saving platforms:', error);
+    res.status(500).json({ message: 'Failed to save platforms.' });
+  }
+});
+
+// Endpoint to save games
+app.post('/api/data/games', async (req, res) => {
+  try {
+    const gamesData = req.body;
+    if (!Array.isArray(gamesData)) {
+      return res.status(400).json({ message: 'Invalid data format. Expected an array of games.' });
+    }
+    const filePath = path.join(dataPath, 'games.json');
+    await fs.writeFile(filePath, JSON.stringify(gamesData, null, 2), 'utf8');
+    res.status(200).json({ message: 'Games saved successfully.' });
+  } catch (error) {
+    console.error('Error saving games:', error);
+    res.status(500).json({ message: 'Failed to save games.' });
+  }
+});
 
 // Endpoint for Gemini API - Generate Content
-app.post('/api/gemini/generatecontent', async (req, res) => {
+app.post('/api/gemini/enrich-gamelist', async (req, res) => {
     const { contents } = req.body; // Expecting body like: { "contents": [{"parts": [{"text": "Your prompt"}]}] }
     if (!contents) {
         return res.status(400).json({ error: 'Request body must contain "contents" field.' });
@@ -253,7 +292,9 @@ app.post('/api/gemini/generatecontent', async (req, res) => {
         return res.status(500).json({ error: 'Gemini API key is not configured on the server.' });
     }
 
-    const modelName = process.env.GEMINI_MODEL_NAME || 'gemini-1.5-flash-latest'; // Allow override via env var
+    
+    const modelName =process.env.GEMINI_MODEL_NAME || 'gemini-2.0-flash'; // Allow override via env var
+    console.log("Using Gemini api: ",process.env.GEMINI_API_KEY);
     const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${process.env.GEMINI_API_KEY}`;
     console.log(`Proxying to Gemini model: ${modelName}`);
     // The Gemini API expects the key in the URL for POST requests.

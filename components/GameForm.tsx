@@ -97,7 +97,6 @@ export const GameForm: React.FC<GameFormProps> = ({
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<TransformedGameFromProxy[]>([]); // Changed type
-  const [searchIncludeData, setSearchIncludeData] = useState<TheGamesDbIncludeData | undefined>(undefined); // This is no longer used by modal
   const [isGameSelectionModalOpen, setIsGameSelectionModalOpen] = useState(false);
 
   useEffect(() => {
@@ -108,7 +107,6 @@ export const GameForm: React.FC<GameFormProps> = ({
     }
     setApiError(null); // Reset API error when form opens or initial game changes
     setSearchResults([]);
-    setSearchIncludeData(undefined);
     setIsGameSelectionModalOpen(false);
   }, [initialGame, isOpen]);
 
@@ -145,7 +143,7 @@ export const GameForm: React.FC<GameFormProps> = ({
       // Using the new proxy server endpoint for TheGamesDB
       const fields = "overview,genres,release_date,platform"; // These are TheGamesDB specific fields
       const include = "boxart,platform"; // These are TheGamesDB specific includes
-      const apiUrl = `http://localhost:3001/api/search/thegamesdb/bygamename?name=${encodeURIComponent(gameData.title)}&fields=${fields}&include=${include}`;
+      const apiUrl = `/api/search/thegamesdb/bygamename?name=${encodeURIComponent(gameData.title)}&fields=${fields}&include=${include}`;
 
       console.log("Fetching from proxy server (TheGamesDB):", apiUrl);
       
@@ -173,21 +171,15 @@ export const GameForm: React.FC<GameFormProps> = ({
         // Set this directly to the searchResults state.
         setSearchResults(apiResponse.games);
 
-        // `searchIncludeData` is no longer needed from the proxy in this new structure,
-        // as boxart_url is part of each game, and platform name can be looked up from local `platforms` list.
-        setSearchIncludeData(undefined);
-
         setIsGameSelectionModalOpen(true);
       } else {
         setApiError(apiResponse.message || "No game found with that title via proxy.");
         setSearchResults([]);
-        setSearchIncludeData(undefined);
       }
     } catch (error) {
       console.error("Error fetching from proxy (TheGamesDB):", error);
       setApiError(error instanceof Error ? error.message : "An unknown error occurred while fetching from TheGamesDB via proxy.");
       setSearchResults([]);
-      setSearchIncludeData(undefined);
     } finally {
       setIsFetchingDB(false);
     }
@@ -208,7 +200,7 @@ export const GameForm: React.FC<GameFormProps> = ({
       const platformName = platforms.find(p => p.id === gameData.platformId)?.name || "Unknown Platform";
       const prompt = `Generate a compelling and concise game description (around 2-3 sentences) for a retro game titled "${gameData.title}" for the "${platformName}" platform. Its genre is "${gameData.genre || 'not specified'}". Focus on the core gameplay or unique aspects.`;
 
-      const apiUrl = `http://localhost:3001/api/gemini/generatecontent`;
+      const apiUrl = `/api/gemini/generatecontent`;
       console.log("Requesting description from proxy (Gemini):", apiUrl);
 
       const response = await fetch(apiUrl, {
@@ -261,7 +253,7 @@ export const GameForm: React.FC<GameFormProps> = ({
   if (sourcePlatformDetails) {
     // Try to find existing local platform
     matchedPlatform = platforms.find(p =>
-      p.id === sourcePlatformDetails.id.toString() || // Match by TGDB ID (converted to string)
+      (sourcePlatformDetails.id != null && p.id === sourcePlatformDetails.id.toString()) || // Match by TGDB ID (converted to string)
       p.name.toLowerCase() === sourcePlatformDetails.name.toLowerCase() ||
       (p.alias && sourcePlatformDetails.alias && p.alias.toLowerCase() === sourcePlatformDetails.alias.toLowerCase()) ||
       (p.alias && p.alias.toLowerCase() === sourcePlatformDetails.name.toLowerCase()) || // Match local alias against TGDB name
@@ -272,19 +264,22 @@ export const GameForm: React.FC<GameFormProps> = ({
 
     if (matchedPlatform) {
       finalPlatformIdToSet = matchedPlatform.id;
-    } else {
-      // No local match found, so add this platform from TGDB source
+    } else if (sourcePlatformDetails.id != null) {
+      // No local match found, but we have an ID from the source, so add this platform from TGDB source
       console.log(`Platform "${sourcePlatformDetails.name}" (ID: ${sourcePlatformDetails.id}) not found locally. Adding it.`);
       const newPlatformData = {
         id: sourcePlatformDetails.id.toString(), // Use TGDB ID as string for local ID
         name: sourcePlatformDetails.name,
         alias: sourcePlatformDetails.alias || '', // Ensure alias is a string
       };
-      props.onAddPlatform(newPlatformData); // Call prop passed from App.tsx
+      onAddPlatform(newPlatformData); // Call prop passed from App.tsx
       finalPlatformIdToSet = newPlatformData.id; // Use the ID of the (to be) newly added platform
       apiMessage = `Platform "${sourcePlatformDetails.name}" was not found locally and has been added to your platforms.`;
       // Note: The 'platforms' prop might not update immediately within this function's closure.
       // The selection to the form field will use the ID, and App.tsx state update will make it available later.
+    } else {
+      // No match and no ID from source. We can't do much.
+      apiMessage = `Could not match platform "${sourcePlatformDetails.name}" and no ID was provided by the API. Please select a platform manually.`;
     }
   } else {
     apiMessage = "No platform information received from TheGamesDB search. Please select a platform manually.";
@@ -304,7 +299,6 @@ export const GameForm: React.FC<GameFormProps> = ({
 
     setIsGameSelectionModalOpen(false);
     setSearchResults([]);
-    setSearchIncludeData(undefined);
   };
 
   const platformOptions = platforms.map(p => ({ value: p.id, label: p.name }));
@@ -332,7 +326,7 @@ export const GameForm: React.FC<GameFormProps> = ({
           isOpen={isGameSelectionModalOpen}
           onClose={() => setIsGameSelectionModalOpen(false)}
           games={searchResults}
-          includeData={searchIncludeData}
+          //includeData={searchIncludeData}
           onSelectGame={handleGameSelectedFromSearch}
           platforms={platforms}
         />
@@ -458,7 +452,6 @@ const GameSearchResultsModal: React.FC<GameSearchResultsModalProps> = ({
   onClose,
   games,
   onSelectGame,
-  platforms, // Kept for now
 }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Select Game from TheGamesDB" size="xl">
