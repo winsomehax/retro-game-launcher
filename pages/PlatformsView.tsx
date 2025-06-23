@@ -7,13 +7,13 @@ import { PlatformForm } from '../components/PlatformForm';
 import { EmulatorConfigForm } from '../components/EmulatorConfigForm';
 
 interface PlatformsViewProps {
-  platforms: Platform[];
-  onAddPlatform: (platformData: Omit<Platform, 'emulators'>) => void;
-  onUpdatePlatform: (platformData: Omit<Platform, 'emulators'>) => void;
-  onDeletePlatform: (platformId: string) => void;
-  onAddEmulator: (platformId: string, emulatorConfig: EmulatorConfig) => void;
-  onUpdateEmulator: (platformId: string, emulatorConfig: EmulatorConfig) => void;
-  onDeleteEmulator: (platformId: string, emulatorId: string) => void;
+  platforms: Platform[]; // Platform type already updated in types.ts
+  onAddPlatform: (platformData: Platform) => void; // Expect full Platform object
+  onUpdatePlatform: (platformData: Platform) => void; // Expect full Platform object
+  onDeletePlatform: (platformId: number) => void; // ID is now number
+  onAddEmulator: (platformId: number, emulatorConfig: EmulatorConfig) => void; // ID is now number
+  onUpdateEmulator: (platformId: number, emulatorConfig: EmulatorConfig) => void; // ID is now number
+  onDeleteEmulator: (platformId: number, emulatorId: string) => void; // ID is now number
 }
 
 export const PlatformsView: React.FC<PlatformsViewProps> = ({
@@ -26,13 +26,13 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
   onDeleteEmulator,
 }) => {
   const [isPlatformFormOpen, setIsPlatformFormOpen] = useState(false);
-  const [editingPlatform, setEditingPlatform] = useState<Omit<Platform, 'emulators'> | null>(null);
+  const [editingPlatform, setEditingPlatform] = useState<Platform | null>(null); // Use full Platform type
   
   const [isEmulatorFormOpen, setIsEmulatorFormOpen] = useState(false);
   const [editingEmulator, setEditingEmulator] = useState<EmulatorConfig | null>(null);
   const [selectedPlatformForEmulator, setSelectedPlatformForEmulator] = useState<Platform | null>(null);
 
-  const [activePlatformId, setActivePlatformId] = useState<string | null>(platforms.length > 0 ? platforms[0].id : null);
+  const [activePlatformId, setActivePlatformId] = useState<number | null>(platforms.length > 0 ? platforms[0].id : null); // ID is now number
   const navigate = useNavigate();
   
   const platformItemRefs = useRef(platforms.map(() => createRef<HTMLButtonElement>()));
@@ -43,7 +43,7 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
     platformItemRefs.current = platforms.map((_, i) => platformItemRefs.current[i] || createRef<HTMLButtonElement>());
   }, [platforms]);
 
-  const handlePlatformKeyDown = useCallback((event: React.KeyboardEvent<HTMLUListElement>, platformId: string) => {
+  const handlePlatformKeyDown = useCallback((event: React.KeyboardEvent<HTMLUListElement>, platformId: number) => { // ID is now number
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       const currentIndex = platforms.findIndex(p => p.id === platformId);
@@ -60,31 +60,33 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
 
 
   const handleAddPlatform = () => {
-    setEditingPlatform(null);
+    setEditingPlatform(null); // Clear any platform being edited
     setIsPlatformFormOpen(true);
   };
 
-  const handleEditPlatform = (platform: Omit<Platform, 'emulators'>) => {
+  const handleEditPlatform = (platform: Platform) => { // Expect full Platform object
     setEditingPlatform(platform);
     setIsPlatformFormOpen(true);
   };
 
-  const handlePlatformSubmit = (platformData: Omit<Platform, 'emulators'>) => {
+  const handlePlatformSubmit = (platformData: Platform) => { // Expect full Platform object
+    // platformData.id is now a number from TheGamesDB or from existing edited platform
     if (editingPlatform) {
       onUpdatePlatform(platformData);
     } else {
-      const newPlatformFullId = platformData.id || crypto.randomUUID(); 
-      onAddPlatform({...platformData, id: newPlatformFullId});
+      // For new platforms, platformData is the full object from TGDB, including its numeric ID
+      onAddPlatform(platformData);
       if (!activePlatformId || platforms.length === 0) { 
-         setActivePlatformId(newPlatformFullId);
+         setActivePlatformId(platformData.id); // Use the numeric ID
          // Focus the newly added platform after a short delay for DOM update
          setTimeout(() => {
-            const newIndex = platforms.findIndex(p => p.id === newPlatformFullId);
-            platformItemRefs.current[newIndex]?.current?.focus();
+            const newIndex = platforms.findIndex(p => p.id === platformData.id);
+            if (newIndex !== -1) platformItemRefs.current[newIndex]?.current?.focus();
          }, 100);
       }
     }
     setIsPlatformFormOpen(false);
+    setEditingPlatform(null); // Clear editing state
   };
 
   const handleAddEmulator = (platform: Platform) => {
@@ -156,8 +158,8 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
                                 ${activePlatformId === platform.id ? 'bg-primary text-white shadow-md' : 'bg-neutral-700 hover:bg-neutral-600 text-neutral-300'}`}
                   >
                     <div className="flex items-center space-x-3">
-                        {platform.iconUrl && <img src={platform.iconUrl} alt="" className="w-6 h-6 rounded-sm object-cover"/>}
-                        {!platform.iconUrl && <div aria-hidden="true" className="w-6 h-6 rounded-sm bg-neutral-500 flex items-center justify-center text-xs text-neutral-300">{platform.name.substring(0,1).toUpperCase()}</div>}
+                        {(platform.userIconUrl || platform.icon) && <img src={platform.userIconUrl || platform.icon} alt={`${platform.name} icon`} className="w-6 h-6 rounded-sm object-cover"/>}
+                        {!(platform.userIconUrl || platform.icon) && <div aria-hidden="true" className="w-6 h-6 rounded-sm bg-neutral-500 flex items-center justify-center text-xs text-neutral-300">{platform.name.substring(0,1).toUpperCase()}</div>}
                         <span>{platform.name}</span>
                     </div>
                     <ChevronRightIcon className={`w-5 h-5 ${activePlatformId === platform.id ? 'text-white' : 'text-neutral-400'}`} />
