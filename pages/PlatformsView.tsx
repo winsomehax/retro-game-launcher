@@ -191,7 +191,7 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
                     <p className="text-sm text-neutral-400 mt-1">Manage emulators and view details for this platform.</p>
                   </div>
                 </div>
-                <div className="flex space-x-2 flex-shrink-0">
+                <div className="flex space-x-2 flex-shrink-0 bg-red-500 p-2 min-w-[100px]"> {/* Added conspicuous background, padding, and min-width */}
                   <Button variant="ghost" size="sm" onClick={() => handleEditPlatform(currentSelectedPlatform)} aria-label={`Edit ${currentSelectedPlatform.name}`}>
                       <EditIcon className="text-neutral-400 hover:text-primary-light"/>
                   </Button>
