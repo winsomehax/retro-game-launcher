@@ -32,6 +32,8 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
   const [platformImagesBaseUrl, setPlatformImagesBaseUrl] = useState<string | null>(null);
   const [isLoadingPlatformImages, setIsLoadingPlatformImages] = useState<boolean>(false);
   const [errorPlatformImages, setErrorPlatformImages] = useState<string | null>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null); // For hover preview
+  const [previewTimeoutId, setPreviewTimeoutId] = useState<NodeJS.Timeout | null>(null); // For hover delay
 
 
   useEffect(() => {
@@ -268,6 +270,15 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
                       onClick={() => {
                         setPlatformData(prev => ({ ...prev, userIconUrl: fullImageUrl }));
                       }}
+                      onMouseEnter={() => {
+                        if (previewTimeoutId) clearTimeout(previewTimeoutId);
+                        const timeoutId = setTimeout(() => setPreviewImageUrl(fullImageUrl), 300); // 300ms delay
+                        setPreviewTimeoutId(timeoutId);
+                      }}
+                      onMouseLeave={() => {
+                        if (previewTimeoutId) clearTimeout(previewTimeoutId);
+                        setPreviewImageUrl(null);
+                      }}
                       className={`relative aspect-video rounded-md overflow-hidden border-2 transition-all
                                   ${isSelected ? 'border-primary ring-2 ring-primary' : 'border-neutral-600 hover:border-primary-light focus:border-primary-light'}
                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900`}
@@ -300,6 +311,24 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
             </div>
         )}
       </form>
+
+      {/* Image Preview Overlay - positioned relative to the Modal's content area */}
+      {previewImageUrl && (
+        <div
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
+                     p-2 bg-neutral-900 border border-neutral-700 rounded-lg shadow-2xl z-50
+                     max-w-[calc(100%-4rem)] max-h-[calc(100%-8rem)] pointer-events-none" // pointer-events-none so it doesn't block clicks on underlying elements
+          // Adjust max-w and max-h as needed, considering modal padding and desired preview size
+        >
+          <img
+            src={previewImageUrl}
+            alt="Preview"
+            className="block max-w-full max-h-full object-contain rounded"
+            // Example: max-h-[300px] or max-w-[400px] if more specific constraints are needed
+            // The parent div's max-w/max-h will ultimately constrain it.
+          />
+        </div>
+      )}
     </Modal>
   );
 };
