@@ -303,6 +303,7 @@ const AppContent: React.FC = () => {
           <Route path="/platforms" element={
             <PlatformsView 
               platforms={platforms}
+              games={games} // Pass games prop
               onAddPlatform={handleAddPlatform}
               onUpdatePlatform={handleUpdatePlatform}
               onDeletePlatform={handleDeletePlatform}

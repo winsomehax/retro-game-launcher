@@ -1,6 +1,6 @@
 import React, { useState, useRef, createRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Platform, EmulatorConfig } from '../types';
+import { Platform, EmulatorConfig, Game } from '../types'; // Added Game
 import { Button } from '../components/Button';
 import { PlusIcon, EditIcon, TrashIcon, ChevronRightIcon, CogIcon, SearchIcon as ScanIcon } from '../components/Icons'; // Added ScanIcon (using SearchIcon as placeholder)
 import { PlatformForm } from '../components/PlatformForm';
@@ -8,6 +8,7 @@ import { EmulatorConfigForm } from '../components/EmulatorConfigForm';
 
 interface PlatformsViewProps {
   platforms: Platform[]; // Platform type already updated in types.ts
+  games: Game[]; // Added games prop
   onAddPlatform: (platformData: Platform) => void; // Expect full Platform object
   onUpdatePlatform: (platformData: Platform) => void; // Expect full Platform object
   onDeletePlatform: (platformId: number) => void; // ID is now number
@@ -18,6 +19,7 @@ interface PlatformsViewProps {
 
 export const PlatformsView: React.FC<PlatformsViewProps> = ({
   platforms,
+  games, // Added games prop
   onAddPlatform,
   onUpdatePlatform,
   onDeletePlatform,
@@ -194,7 +196,28 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
                       <EditIcon className="text-neutral-400 hover:text-primary-light"/>
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => {
-                    if(confirm(`Are you sure you want to delete the platform "${currentSelectedPlatform.name}"? This will also delete all associated games.`)) {
+                    const platformToDelete = currentSelectedPlatform;
+                    if (!platformToDelete) return;
+
+                    const linkedGames = games.filter(game => String(game.platformId) === String(platformToDelete.id));
+                    const linkedEmulatorsCount = platformToDelete.emulators.length;
+
+                    let confirmMessage = `Are you sure you want to delete the platform "${platformToDelete.name}"?`;
+                    const details = [];
+                    if (linkedGames.length > 0) {
+                      details.push(`${linkedGames.length} game(s) will also be deleted: ${linkedGames.slice(0, 3).map(g => `"${g.title}"`).join(', ')}${linkedGames.length > 3 ? ', and more...' : ''}`);
+                    }
+                    if (linkedEmulatorsCount > 0) {
+                      details.push(`${linkedEmulatorsCount} configured emulator(s) for this platform will also be removed.`);
+                    }
+
+                    if (details.length > 0) {
+                      confirmMessage += `\n\nWARNING:\n- ${details.join('\n- ')}\n\nIf you proceed, the platform, its emulators, and all associated game entries will be permanently deleted. This action cannot be undone.`;
+                    } else {
+                      confirmMessage += ` This action cannot be undone.`
+                    }
+
+                    if (confirm(confirmMessage)) {
                         const platformIdToDelete = currentSelectedPlatform.id;
                         const nextIndexToFocus = platforms.findIndex(p => p.id === platformIdToDelete);
                         
