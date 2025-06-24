@@ -49,7 +49,10 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
         })
         .then((responseData: { platforms: Platform[], base_image_url?: string | null }) => {
             if (responseData && Array.isArray(responseData.platforms)) {
-                setAvailableTgdbPlatforms(responseData.platforms);
+                const sortedPlatforms = responseData.platforms.sort((a, b) =>
+                    a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+                );
+                setAvailableTgdbPlatforms(sortedPlatforms);
                 if (responseData.base_image_url) {
                     setTgdbIconBaseUrl(responseData.base_image_url);
                     console.log("PlatformForm: Received base_image_url:", responseData.base_image_url);
