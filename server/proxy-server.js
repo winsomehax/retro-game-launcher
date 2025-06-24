@@ -28,7 +28,7 @@ const PROXY_SECRET = process.env.PROXY_SECRET;
 const EXTERNAL_API_TIMEOUT = parseInt(process.env.EXTERNAL_API_TIMEOUT, 10) || 10000; // Default 10s
 
 // --- TheGamesDB Platforms Cache ---
-const TGDB_PLATFORMS_CACHE_PATH = path.join(__dirname, 'thegamesdb_platforms.json');
+const TGDB_PLATFORMS_CACHE_PATH = path.join(__dirname, './data/thegamesdb_platforms.json');
 const TGDB_API_KEY = process.env.THEGAMESDB_API_KEY;
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 

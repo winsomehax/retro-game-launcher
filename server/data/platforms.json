@@ -64,5 +64,26 @@
     "youtube": "https://www.youtube.com/watch?v=H6EOFwK0yCg",
     "userIconUrl": "",
     "emulators": []
+  },
+  {
+    "id": 1,
+    "name": "PC",
+    "alias": "pc",
+    "icon": "pc-1336524756.png",
+    "console": "1.png",
+    "controller": null,
+    "developer": "IBM",
+    "manufacturer": null,
+    "media": null,
+    "cpu": "x86 Based",
+    "memory": null,
+    "graphics": null,
+    "sound": null,
+    "maxcontrollers": null,
+    "display": null,
+    "overview": "PC stands for Personal Computer. Mass-market consumer computers use highly standardized components and so are simple for an end user to assemble into a working system. A typical desktop computer consists of a computer case which holds the power supply, motherboard, hard disk and often an optical disc drive. External devices such as a computer monitor or visual display unit, keyboard, and a pointing device are usually found in a personal computer.",
+    "youtube": null,
+    "userIconUrl": "https://images.thegamesdb.net/pc-1336524756.png",
+    "emulators": []
   }
 ]
