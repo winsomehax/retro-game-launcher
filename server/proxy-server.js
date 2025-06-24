@@ -498,12 +498,14 @@ app.post('/api/gemini/enrich-gamelist', async (req, res) => {
         return res.status(500).json({ error: 'Gemini API key is not configured on the server.' });
     }
 
-    const modelName = process.env.GEMINI_MODEL_NAME || 'gemini-2.0-flash-latest';
+    const modelName = process.env.GEMINI_MODEL_NAME || 'gemini-1.5-flash-latest';
     const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
     // Construct the prompt for Gemini
     const gameTitles = gameList.map(game => game.title).join(', ');
-    const prompt = `For the following game titles: ${gameTitles}, provide a short, engaging description for each, suitable for a game library. Return the data as a pure valid JSON array where each object has "title" and "description" fields. You must NOT return anything other than valid JSON that can be used directly. No extra characters or words or labelling it "json".`;
+    const prompt = `For the following game titles: ${gameTitles}, provide a short, engaging description for each, suitable for a game library. `+
+    `Return the data as a pure valid JSON array where each object has "title", "description", "genre", "release" fields. You must NOT return `+
+    `anything other than valid JSON that can be used directly. No extra characters or words or labelling it "json".`;
 
     const contents = [{ "parts": [{ "text": prompt }] }];
 

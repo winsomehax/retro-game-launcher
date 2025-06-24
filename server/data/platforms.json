@@ -21,25 +21,6 @@
     "emulators": []
   },
   {
-    "id": "4911",
-    "name": "Amiga",
-    "iconUrl": "https://picsum.photos/seed/amiga/40/40",
-    "emulators": [
-      {
-        "id": "uae-emu",
-        "name": "WinUAE",
-        "executablePath": "C:\\Program Files\\WinUAE\\winuae.exe",
-        "args": "-f {CONFIG} {ROM}"
-      },
-      {
-        "id": "fs-uae-emu",
-        "name": "FS-UAE",
-        "executablePath": "/usr/bin/fs-uae",
-        "args": "--fullscreen {ROM}"
-      }
-    ]
-  },
-  {
     "id": 4911,
     "name": "Amiga",
     "alias": "amiga",
@@ -58,7 +39,20 @@
     "overview": "The Amiga is a family of personal computers marketed by Commodore in the 1980s and 1990s. The first model was launched in 1985 as a high-end home computer and became popular for its graphical, audio and multi-tasking abilities. The Amiga provided a significant upgrade from 8-bit computers, such as the Commodore 64, and the platform quickly grew in popularity among computer enthusiasts. The best selling model, the Amiga 500, was introduced in 1987 and became the leading home computer of the late 1980s and early 1990s in much of Western Europe. In North America success was more modest. The Amiga went on to sell approximately six million units.\r\n\r\nSecond generation Amiga systems (A1200 and A4000) were released in 1992. However, poor marketing and failure to repeat the technological advances of the first systems meant that the Amiga quickly lost its market share to competing platforms, such as the fourth generation game consoles, Apple Macintosh and IBM PC compatibles.",
     "youtube": "iUKKLzD4Pto",
     "userIconUrl": "https://cdn.thegamesdb.net/images/original/platform/boxart/4911-2.jpg",
-    "emulators": []
+    "emulators": [
+      {
+        "id": "uae-emu",
+        "name": "WinUAE",
+        "executablePath": "C:\\Program Files\\WinUAE\\winuae.exe",
+        "args": "-f {CONFIG} {ROM}"
+      },
+      {
+        "id": "fs-uae-emu",
+        "name": "FS-UAE",
+        "executablePath": "/usr/bin/fs-uae",
+        "args": "--fullscreen {ROM}"
+      }
+    ]
   },
   {
     "id": "40",
