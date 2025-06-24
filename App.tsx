@@ -100,7 +100,8 @@ const AppContent: React.FC = () => {
         return response.json();
       })
       .then((data: Platform[]) => {
-        setPlatforms(data);
+        const sortedData = data.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+        setPlatforms(sortedData);
         setIsInitialPlatformsLoadComplete(true);
       })
       .catch(error => {
@@ -209,7 +210,9 @@ const AppContent: React.FC = () => {
       // Ensure emulators array exists, even if platformToAdd doesn't explicitly have it (though Platform type requires it)
       const newPlatformWithEmulators = { ...platformToAdd, emulators: platformToAdd.emulators || [] };
       console.log("Adding new platform to state:", newPlatformWithEmulators);
-      return [...prevPlatforms, newPlatformWithEmulators];
+      const updatedPlatforms = [...prevPlatforms, newPlatformWithEmulators];
+      updatedPlatforms.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+      return updatedPlatforms;
     });
   }, []);
 
