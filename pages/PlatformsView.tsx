@@ -191,9 +191,9 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
                     <p className="text-sm text-neutral-400 mt-1">Manage emulators and view details for this platform.</p>
                   </div>
                 </div>
-                <div className="flex space-x-2 flex-shrink-0 bg-red-500 p-2 min-w-[100px]"> {/* Added conspicuous background, padding, and min-width */}
+                <div className="flex space-x-2 flex-shrink-0"> {/* Removed diagnostic styling */}
                   <Button variant="ghost" size="sm" onClick={() => handleEditPlatform(currentSelectedPlatform)} aria-label={`Edit ${currentSelectedPlatform.name}`}>
-                      <EditIcon className="text-neutral-400 hover:text-primary-light"/>
+                      <EditIcon className="text-neutral-400 hover:text-primary-light"/> Edit {/* Added text for diagnostics */}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => {
                     const platformToDelete = currentSelectedPlatform;
@@ -236,7 +236,7 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
                         }, 100);
                     }
                   }} aria-label={`Delete ${currentSelectedPlatform.name}`}>
-                      <TrashIcon className="text-neutral-400 hover:text-red-500"/>
+                      <TrashIcon className="text-neutral-400 hover:text-red-500"/> Delete {/* Added text for diagnostics */}
                   </Button>
                 </div>
               </div>
