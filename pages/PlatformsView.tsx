@@ -192,10 +192,10 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
                   </div>
                 </div>
                 <div className="flex space-x-2 flex-shrink-0"> {/* Removed diagnostic styling */}
-                  <Button variant="ghost" size="sm" onClick={() => handleEditPlatform(currentSelectedPlatform)} aria-label={`Edit ${currentSelectedPlatform.name}`}>
+                  <Button variant="secondary" size="sm" onClick={() => handleEditPlatform(currentSelectedPlatform)} aria-label={`Edit ${currentSelectedPlatform.name}`}> {/* Changed to secondary */}
                       <EditIcon className="text-neutral-400 hover:text-primary-light"/> Edit {/* Added text for diagnostics */}
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => {
+                  <Button variant="secondary" size="sm" onClick={() => { {/* Changed to secondary */}
                     const platformToDelete = currentSelectedPlatform;
                     if (!platformToDelete) return;
 
