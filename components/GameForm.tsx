@@ -205,11 +205,8 @@ export const GameForm: React.FC<GameFormProps> = ({
     setIsGeneratingDesc(true);
     setApiError(null);
     try {
-      const platformName = platforms.find(p => p.id.toString() === gameData.platformId)?.name || "Unknown Platform";
-      const prompt = `Generate a compelling and concise game description (around 2-3 sentences) for a retro game titled "${gameData.title}" for the "${platformName}" platform. Its genre is "${gameData.genre || 'not specified'}". Focus on the core gameplay or unique aspects.`;
-
-      const apiUrl = `http://localhost:3001/api/gemini/generatecontent`;
-      console.log("Requesting description from proxy (Gemini):", apiUrl);
+      const apiUrl = `http://localhost:3001/api/gemini/enrich-gamelist`;
+      console.log("Requesting description from proxy (Gemini Enrich):", apiUrl);
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -217,7 +214,7 @@ export const GameForm: React.FC<GameFormProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          gameList: [{ title: gameData.title, platform: platforms.find(p => p.id.toString() === gameData.platformId)?.name || "Unknown Platform", genre: gameData.genre || 'not specified' }]
         }),
       });
 
@@ -227,17 +224,18 @@ export const GameForm: React.FC<GameFormProps> = ({
       }
 
       const apiResponse = await response.json();
-      console.log("Full response from proxy (Gemini):", apiResponse);
+      console.log("Full response from proxy (Gemini Enrich):", apiResponse);
 
-      if (apiResponse.generated_text) {
+      // Expecting response: { source: 'Gemini', enriched_games: [{ title: "...", description: "..."}] }
+      if (apiResponse.enriched_games && apiResponse.enriched_games.length > 0 && apiResponse.enriched_games[0].description) {
         setGameData(prev => ({
           ...prev,
-          description: apiResponse.generated_text.trim(),
+          description: apiResponse.enriched_games[0].description.trim(),
         }));
       } else {
-        throw new Error("No generated text found in API response.");
+        console.warn("Gemini enrich-gamelist: Description not found in expected path or empty array.", apiResponse);
+        throw new Error("No description found in API response from enrich-gamelist.");
       }
-
     } catch (error) {
       console.error("Error generating description with proxy (Gemini):", error);
       setApiError(error instanceof Error ? error.message : "An unknown error occurred while generating description via proxy.");
