@@ -219,6 +219,103 @@ app.get('/api/thegamesdb/platforms', async (req, res) => {
     }
 });
 
+app.get('/api/thegamesdb/platform_images', async (req, res) => {
+    const { id } = req.query; // Platform ID from the client
+    if (!id) {
+        return res.status(400).json({ error: 'Query parameter "id" (platform ID) is required.' });
+    }
+    if (!TGDB_API_KEY) {
+        console.error("TheGamesDB API key (THEGAMESDB_API_KEY) is not configured on the server.");
+        return res.status(500).json({ error: 'TheGamesDB API key is not configured on the server.' });
+    }
+
+    const imageTypes = 'fanart,banner,boxart'; // As per original request
+    const targetUrl = `https://api.thegamesdb.net/v1/Platforms/Images`;
+
+    // Params adjusted based on the original URL encoding observation: filter%5Btype%5D=fanart%2C%20banner%2C%20boxart
+    const adjustedParams = {
+        apikey: TGDB_API_KEY,
+        platforms_id: id,
+        'filter[type]': imageTypes
+    };
+
+    console.log(`Fetching TheGamesDB platform images for ID: ${id}, URL: ${targetUrl}, Params: ${JSON.stringify(adjustedParams)}`);
+
+    try {
+        const apiResponse = await axios.get(targetUrl, {
+            params: adjustedParams,
+            timeout: EXTERNAL_API_TIMEOUT,
+        });
+
+        const contentType = apiResponse.headers['content-type'];
+        if (contentType && contentType.includes('application/json')) {
+            if (apiResponse.data && apiResponse.data.data && apiResponse.data.data.images && apiResponse.data.data.base_url) {
+                // Successfully fetched images. The API keys images by platform ID.
+                // So, apiResponse.data.data.images will be like { "40": [ ...image objects... ] }
+                const platformSpecificImages = apiResponse.data.data.images[id] || [];
+
+                res.status(200).json({
+                    base_url: apiResponse.data.data.base_url,
+                    images: platformSpecificImages,
+                    // For debugging, let's see what keys are in the images object if it's not the requested id
+                    // original_response_platform_id_keys: Object.keys(apiResponse.data.data.images)
+                });
+
+            } else if (apiResponse.data && apiResponse.data.code && apiResponse.data.code !== 200) {
+                // Handle API-level errors from TheGamesDB (e.g., invalid ID, API key issue)
+                console.warn(`TheGamesDB API returned code ${apiResponse.data.code} for platform images (ID: ${id}):`, apiResponse.data);
+                res.status(apiResponse.data.code === 404 ? 404 : 502).json({
+                    error: `TheGamesDB API error: ${apiResponse.data.status || 'Failed to fetch images'}`,
+                    details: apiResponse.data
+                });
+            } else {
+                // Valid JSON, but not the expected structure (e.g., no images for the ID, or missing base_url)
+                // This case could also mean an empty image list for a valid ID.
+                // The API when no images are found for an ID, returns "data": { "count": 0, "images": { "<id>": [] }, "base_url": { ... } }
+                // So, if images[id] is empty or undefined, but base_url exists, it's a valid "no images" response.
+                if (apiResponse.data && apiResponse.data.data && apiResponse.data.data.base_url && apiResponse.data.data.images && !apiResponse.data.data.images[id]) {
+                     res.status(200).json({ // No specific images for this ID, but the call was successful
+                        base_url: apiResponse.data.data.base_url,
+                        images: []
+                    });
+                } else {
+                    console.warn(`TheGamesDB platform images response for ID ${id} was JSON but had unexpected structure or missing data:`, apiResponse.data);
+                    res.status(502).json({ error: 'Bad Gateway: Unexpected response structure from TheGamesDB for platform images.', details: apiResponse.data });
+                }
+            }
+        } else {
+            // Non-JSON response from TheGamesDB
+            console.error(`TheGamesDB (platform images ID: ${id}) returned non-JSON response. Content-Type:`, contentType);
+            console.error(`TheGamesDB (platform images ID: ${id}) response data:`, apiResponse.data);
+            res.status(502).json({
+                error: 'Bad Gateway: TheGamesDB API (platform images) returned non-JSON response.',
+                details: {
+                    contentType: contentType,
+                    bodyPreview: String(apiResponse.data).substring(0, 200)
+                }
+            });
+        }
+    } catch (error) {
+        console.error(`Error calling TheGamesDB Platform Images API for ID ${id}:`, error.message);
+        if (error.response) {
+            const contentType = error.response.headers['content-type'];
+            let responseData = error.response.data;
+            if (contentType && contentType.includes('application/json')) {
+                res.status(error.response.status).json(responseData.error || responseData);
+            } else {
+                res.status(error.response.status).json({
+                    error: `Error from TheGamesDB (platform images, non-JSON response for ID ${id}): ${error.message}`,
+                    details: { bodyPreview: String(responseData).substring(0,200) }
+                });
+            }
+        } else if (error.request) {
+            res.status(504).json({ error: `Gateway Timeout: No response from TheGamesDB (platform images for ID ${id}).` });
+        } else {
+            res.status(500).json({ error: `Internal Server Error while fetching platform images for ID ${id} from TheGamesDB.` });
+        }
+    }
+});
+
 // (Optional but Recommended) Middleware to check for the proxy secret
 // if (PROXY_SECRET) {
 //     app.use('/api/*', (req, res, next) => { // Apply to all /api routes
