@@ -49,3 +49,24 @@ export interface ApiKeyEntry {
 }
 
 export type NavView = 'games' | 'platforms' | 'scan' | 'apikeys';
+
+// Added for TheGamesDB Platform Images API
+export interface TheGamesDBImage {
+  id: number;
+  type: 'fanart' | 'banner' | 'boxart' | string; // Allow other types from API
+  filename: string;
+  // side?: string; // e.g., "front", "back" for boxart
+  // resolution?: string; // e.g., "1920x1080"
+}
+
+export interface TheGamesDBPlatformImagesResponse {
+  base_url: {
+    original: string;
+    small?: string;
+    thumb?: string;
+    cropped_center_thumb?: string;
+    medium?: string;
+    large?: string;
+  };
+  images: TheGamesDBImage[];
+}
