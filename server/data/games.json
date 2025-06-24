@@ -20,16 +20,6 @@
     "releaseDate": "1990"
   },
   {
-    "id": "game-3",
-    "title": "Chrono Trigger",
-    "platformId": "6",
-    "romPath": "/roms/snes/chrono_trigger.smc",
-    "coverImageUrl": "https://picsum.photos/seed/chronotrig/300/400",
-    "description": "A timeless RPG adventure through different eras to save the planet from a global catastrophe.",
-    "genre": "RPG",
-    "releaseDate": "1995"
-  },
-  {
     "id": "game-4",
     "title": "Turrican II: The Final Fight",
     "platformId": "4911",
