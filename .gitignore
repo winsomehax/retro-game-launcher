@@ -30,3 +30,4 @@ dist
 
 # Environment variables file
 .env
+reqexample.txt
