@@ -95,67 +95,59 @@ export const ScanView: React.FC<ScanViewProps> = ({ geminiApiKeyConfigured = fal
 
     for (let i = 0; i < selectedFiles.length; i += batchSize) {
       const batch = selectedFiles.slice(i, i + batchSize);
-      const fileNamesForPrompt = batch.map(file => file.name).join('\n');
+      // Prepare the gameList for the enrich-gamelist endpoint
+      const gameListForApi = batch.map(file => ({
+        title: file.name, // Use file.name as the title for enrichment
+        // platform: platformName, // Platform context can be useful for the AI
+        // You could add other known details here if the API supports them
+      }));
 
-      const prompt = `You are the world's greatest expert at finding the details of a game/retro game from just the title of file, or the title of the folder that some files sit in. Please examine the list of files below. Each item is a file/folder name - these all refer to a game that runs on ${platformName}. For each item return ONLY AS JSON: a cleaned up title, a short 1-2 sentence description, genre, release date and also include ${platformName} as 'platform'. The JSON should be an array of objects, where each object corresponds to an item in the list and includes an 'original_filename' field that matches the input filename.
-
-The list follows:
-${fileNamesForPrompt}`;
-
-      console.log("Sending prompt to AI for batch:", batch.map(f=>f.name));
-      // console.log("Prompt:", prompt);
+      console.log("Sending game list to AI for batch:", gameListForApi.map(g => g.title));
 
       try {
-        const response = await fetch('/api/gemini/generatecontent', {
+        const response = await fetch('/api/gemini/enrich-gamelist', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
+            gameList: gameListForApi,
           }),
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Error from Gemini API proxy:', errorData);
-          alert(`Error fetching details from AI: ${errorData.message || response.statusText}`);
-          // Continue to next batch or stop? For now, try next batch.
-          continue;
+          const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+          console.error('Error from Gemini API proxy (enrich-gamelist):', errorData);
+          alert(`Error fetching details from AI: ${errorData.message || errorData.error || response.statusText}`);
+          continue; // Try next batch
         }
 
-        const result = await response.json();
-        console.log("AI Raw Result:", result);
-        // The actual text is nested in result.generated_text (based on proxy-server.js)
-        // And this text itself is expected to be a JSON string.
-        if (result.generated_text) {
-          try {
-            // Clean the text: remove backticks and "json" prefix if present
-            const cleanedJsonString = result.generated_text.replace(/^```json\s*|```$/g, '').trim();
-            const aiDataArray = JSON.parse(cleanedJsonString) as Array<{original_filename: string, title: string, description: string, genre: string, releaseDate: string, platform: string}>;
+        const result = await response.json(); // Expecting { source: 'Gemini', enriched_games: [...] }
+        console.log("AI Enrich Result:", result);
 
-            aiDataArray.forEach(aiDataItem => {
-              const originalFile = batch.find(f => f.name === aiDataItem.original_filename);
-              if (originalFile) {
-                allAiResults[originalFile.id] = {
-                  title: aiDataItem.title,
-                  description: aiDataItem.description,
-                  genre: aiDataItem.genre,
-                  releaseDate: aiDataItem.releaseDate,
-                  // platform from AI can be used for verification if needed: aiDataItem.platform
-                };
-              }
-            });
-          } catch (parseError) {
-            console.error('Error parsing AI JSON response:', parseError, "Raw text:", result.generated_text);
-            alert('Received malformed data from AI. Check console for details.');
-          }
+        if (result.enriched_games && Array.isArray(result.enriched_games)) {
+          result.enriched_games.forEach((enrichedGame: any, index: number) => {
+            // The backend's enrich-gamelist currently doesn't return 'original_filename'.
+            // It processes titles in order. So we map back by index in the batch.
+            // This assumes the AI returns one enriched object per game title sent, in the same order.
+            const originalFile = batch[index]; // Get the original file by index from the batch
+            if (originalFile && enrichedGame.title && enrichedGame.description) {
+              allAiResults[originalFile.id] = {
+                title: enrichedGame.title,
+                description: enrichedGame.description,
+                genre: enrichedGame.genre || '', // Ensure genre and releaseDate are handled if missing
+                releaseDate: enrichedGame.releaseDate || '',
+              };
+            } else if (originalFile) {
+              console.warn(`Missing title or description for ${originalFile.name} in AI response batch item:`, enrichedGame);
+            }
+          });
         } else {
-           console.warn('AI response did not contain generated_text field:', result);
+           console.warn('AI response did not contain an enriched_games array:', result);
         }
 
       } catch (error) {
-        console.error('Network error or other issue calling /api/gemini/generatecontent:', error);
+        console.error('Network error or other issue calling /api/gemini/enrich-gamelist:', error);
         alert(`Network error fetching AI details: ${error instanceof Error ? error.message : 'Unknown error'}`);
         // Stop processing further batches on network error
         setIsLoadingAi(false);
