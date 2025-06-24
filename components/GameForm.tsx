@@ -256,36 +256,45 @@ export const GameForm: React.FC<GameFormProps> = ({
   let finalPlatformIdToSet: string = '';
   let apiMessage = null;
 
-  if (sourcePlatformDetails) {
-    // Try to find existing local platform
-    matchedPlatform = platforms.find(p =>
-      p.id.toString() === sourcePlatformDetails.id.toString() || // Match by TGDB ID (converted to string)
-      p.name.toLowerCase() === sourcePlatformDetails.name.toLowerCase() ||
-      (p.alias && sourcePlatformDetails.alias && p.alias.toLowerCase() === sourcePlatformDetails.alias.toLowerCase()) ||
-      (p.alias && p.alias.toLowerCase() === sourcePlatformDetails.name.toLowerCase()) || // Match local alias against TGDB name
-      (sourcePlatformDetails.alias && p.name.toLowerCase() === sourcePlatformDetails.alias.toLowerCase()) // Match local name against TGDB alias
-    );
+  // selectedTGDBGame.platform is the numeric ID from TheGamesDB results.
+  // platforms in local state have string IDs.
+  const searchPlatformIdStr = selectedTGDBGame.platform.toString();
 
-    console.log("Attempt 1: Matched local platform:", matchedPlatform);
+  matchedPlatform = platforms.find(p =>
+    p.id === searchPlatformIdStr || // Direct ID match
+    (sourcePlatformDetails && p.name.toLowerCase() === sourcePlatformDetails.name.toLowerCase()) ||
+    (sourcePlatformDetails && p.alias && sourcePlatformDetails.alias && p.alias.toLowerCase() === sourcePlatformDetails.alias.toLowerCase()) ||
+    (sourcePlatformDetails && p.alias && p.alias.toLowerCase() === sourcePlatformDetails.name.toLowerCase()) ||
+    (sourcePlatformDetails && sourcePlatformDetails.alias && p.name.toLowerCase() === sourcePlatformDetails.alias.toLowerCase())
+  );
 
-    if (matchedPlatform) {
-      finalPlatformIdToSet = matchedPlatform.id.toString();
-    } else {
-      // No local match found, so add this platform from TGDB source
-      console.log(`Platform "${sourcePlatformDetails.name}" (ID: ${sourcePlatformDetails.id}) not found locally. Adding it.`);
-      const newPlatformData = {
-        id: sourcePlatformDetails.id.toString(), // Use TGDB ID as string for local ID
-        name: sourcePlatformDetails.name,
-        alias: sourcePlatformDetails.alias || '', // Ensure alias is a string
-      };
-      onAddPlatform(newPlatformData); // Call prop passed from App.tsx
-      finalPlatformIdToSet = newPlatformData.id; // Use the ID of the (to be) newly added platform
-      apiMessage = `Platform "${sourcePlatformDetails.name}" was not found locally and has been added to your platforms.`;
-      // Note: The 'platforms' prop might not update immediately within this function's closure.
-      // The selection to the form field will use the ID, and App.tsx state update will make it available later.
-    }
+  console.log("Attempt 1: Matched local platform:", matchedPlatform);
+
+  if (matchedPlatform) {
+    finalPlatformIdToSet = matchedPlatform.id; // matchedPlatform.id is already a string
+  } else if (sourcePlatformDetails && sourcePlatformDetails.name) {
+    // No local match, but we have details from the source to create a new platform.
+    // Use selectedTGDBGame.platform (searchPlatformIdStr) for the ID.
+    console.log(`Platform "${sourcePlatformDetails.name}" (Source ID: ${searchPlatformIdStr}) not found locally. Adding it.`);
+    const newPlatformData = {
+      id: searchPlatformIdStr, // Use TGDB ID (as string) for local ID
+      name: sourcePlatformDetails.name,
+      alias: sourcePlatformDetails.alias || '', // Ensure alias is a string
+    };
+    onAddPlatform(newPlatformData);
+    finalPlatformIdToSet = newPlatformData.id;
+    apiMessage = `Platform "${sourcePlatformDetails.name}" was not found locally and has been added to your platforms.`;
   } else {
-    apiMessage = "No platform information received from TheGamesDB search. Please select a platform manually.";
+    // No sourcePlatformDetails or name, cannot create a new platform entry intelligently.
+    // User might need to select platform manually if searchPlatformIdStr doesn't match any existing.
+    // We could try to match just by searchPlatformIdStr if no sourcePlatformDetails given.
+    const existingPlatformById = platforms.find(p => p.id === searchPlatformIdStr);
+    if (existingPlatformById) {
+        finalPlatformIdToSet = existingPlatformById.id;
+    } else {
+        apiMessage = "Platform details from search could not be matched or used to create a new platform. Please select a platform manually or ensure the platform exists.";
+        console.warn(`Could not match or create platform for TGDB ID ${searchPlatformIdStr}. Source details:`, sourcePlatformDetails);
+    }
   }
 
   setApiError(apiMessage);
