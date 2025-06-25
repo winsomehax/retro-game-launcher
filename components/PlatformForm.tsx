@@ -2,10 +2,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Platform, TheGamesDBImage, TheGamesDBPlatformImagesResponse } from '../types'; // Added TheGamesDBImage types
 import { Input } from './Input';
+import { Textarea } from './Textarea'; // Import Textarea component
 import { Button } from './Button';
 import { Modal } from './Modal';
 import { Select } from './Select'; // Import Select component
-import { Textarea } from './Textarea'; // Import Textarea component
 
 interface PlatformFormProps {
   isOpen: boolean;
@@ -211,17 +211,16 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
     }
   };
 
-  // Use platformData.name if available (i.e., if it's being edited), otherwise fallback.
-  const displayNameInModalTitle = (initialPlatform && platformData.name) ? platformData.name :
-                                  initialPlatform?.name ||
-                                  (availableTgdbPlatforms.find(p => p.id.toString() === selectedTgdbPlatformId)?.name || 'New Platform');
-
+  // Use platformData.name if available and different from initial, otherwise fallback.
+  const displayNameInModalTitle = (initialPlatform && platformData.name !== undefined && platformData.name !== initialPlatform.name)
+                                  ? platformData.name
+                                  : initialPlatform?.name || (availableTgdbPlatforms.find(p => p.id.toString() === selectedTgdbPlatformId)?.name || 'New Platform');
 
   return (
     <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title={initialPlatform ? `Edit Platform: ${currentName}` : 'Add New Platform from TheGamesDB'}
+        title={initialPlatform ? `Edit Platform: ${displayNameInModalTitle}` : 'Add New Platform from TheGamesDB'}
         footer={
             <>
                 <Button variant="ghost" onClick={onClose}>Cancel</Button>
@@ -434,6 +433,7 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
               onChange={handleDetailsChange}
               placeholder="e.g., https://www.youtube.com/watch?v=VIDEO_ID or VIDEO_ID"
             />
+            {/* Controller field was missing from original display, adding it based on Platform type */}
             <Input
               label="Controller Type(s)"
               name="controller"
