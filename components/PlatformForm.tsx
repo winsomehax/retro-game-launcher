@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Platform, TheGamesDBImage, TheGamesDBPlatformImagesResponse } from '../types'; // Added TheGamesDBImage types
 import { Input } from './Input';
+import { Textarea } from './Textarea'; // Import Textarea component
 import { Button } from './Button';
 import { Modal } from './Modal';
 import { Select } from './Select'; // Import Select component
@@ -144,6 +145,15 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
     setPlatformData(prev => ({ ...prev, userIconUrl: e.target.value }));
   };
 
+  // Generic handler for most text input fields
+  const handleDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setPlatformData(prev => ({
+      ...prev,
+      [name]: value || '', // Ensure empty string if value is null/undefined from input
+    }));
+  };
+
   const handleTgdbPlatformSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = e.target.value;
     setSelectedTgdbPlatformId(selectedId); // This will trigger the useEffect above to fetch images
@@ -168,19 +178,20 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (initialPlatform) { // Editing existing platform
-        if (!platformData.id) { // Should always have an ID when editing
-            console.error("Attempting to submit edit for platform without an ID.");
+        if (!initialPlatform.id) {
+            console.error("Attempting to submit edit for platform without an ID (from initialPlatform).");
             return;
         }
-        const editedPlatform: Omit<Platform, 'emulators'> = {
-            ...(initialPlatform as Omit<Platform, 'emulators'>), // Start with all original data
-            id: initialPlatform.id, // ensure numeric ID
-            name: initialPlatform.name, // Name shouldn't change if from TGDB
-            // Update only user-editable fields
-            userIconUrl: platformData.userIconUrl || '',
-            // Potentially other TGDB fields if we decide they can be locally overridden, though plan implies they are cached as-is
+        // Construct the updated platform data, taking fresh info from platformData
+        // and preserving essential parts like emulators from initialPlatform.
+        const finalEditedPlatform: Platform = {
+            ...(initialPlatform as Platform), // Start with all original data, critically including emulators
+            ...(platformData as Partial<Omit<Platform, 'emulators'>>), // Overlay with form state (icon, and any other fields made editable)
+            id: initialPlatform.id, // ID must be from the platform being edited
+            name: platformData.name || initialPlatform.name, // Prioritize name from form data if it exists and changed
+            userIconUrl: platformData.userIconUrl || '', // User's chosen icon from form state
         };
-        onSubmit(editedPlatform);
+        onSubmit(finalEditedPlatform);
 
     } else { // Adding new platform
       if (!selectedTgdbPlatformId || !platformData.id) {
@@ -190,23 +201,27 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
       }
       // platformData should already be populated by handleTgdbPlatformSelect
       // and userIconUrl can be further edited by handleUserIconUrlChange
-      const newPlatform: Omit<Platform, 'emulators'> = {
+      const newPlatformSubmission: Omit<Platform, 'emulators'> = {
         ...(platformData as Omit<Platform, 'emulators'>), // Type assertion
         id: Number(platformData.id), // Ensure id is number
         name: platformData.name || '', // Should be set from TGDB selection
         userIconUrl: platformData.userIconUrl || '',
       };
-      onSubmit(newPlatform);
+      onSubmit(newPlatformSubmission);
     }
   };
 
-  const currentName = initialPlatform ? initialPlatform.name : (availableTgdbPlatforms.find(p => p.id.toString() === selectedTgdbPlatformId)?.name || 'New Platform');
+  // Use platformData.name if available (i.e., if it's being edited), otherwise fallback.
+  const displayNameInModalTitle = (initialPlatform && platformData.name !== undefined && platformData.name !== initialPlatform.name) ? platformData.name :
+                                  initialPlatform?.name ||
+                                  (availableTgdbPlatforms.find(p => p.id.toString() === selectedTgdbPlatformId)?.name || 'New Platform');
+
 
   return (
     <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title={initialPlatform ? `Edit Platform: ${currentName}` : 'Add New Platform from TheGamesDB'}
+        title={initialPlatform ? `Edit Platform: ${displayNameInModalTitle}` : 'Add New Platform from TheGamesDB'}
         footer={
             <>
                 <Button variant="ghost" onClick={onClose}>Cancel</Button>
@@ -303,15 +318,131 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
           </div>
         )}
 
-        {/* Display other TGDB info if available and a platform is selected (for new platforms) or when editing */}
-        {platformData && (initialPlatform || selectedTgdbPlatformId) && !initialPlatform && (
+        {/* Display other TGDB info if available and a platform is selected (for new platforms) */}
+        {platformData && selectedTgdbPlatformId && !initialPlatform && (
             <div className="space-y-2 text-xs text-neutral-400 border-t border-neutral-700 pt-4 mt-4">
                 <h4 className="text-sm font-medium text-neutral-300 mb-1">Selected Platform Details (from TheGamesDB):</h4>
+                {platformData.name && <p><strong>Name:</strong> {platformData.name}</p>}
                 {platformData.alias && <p><strong>Alias:</strong> {platformData.alias}</p>}
                 {platformData.manufacturer && <p><strong>Manufacturer:</strong> {platformData.manufacturer}</p>}
-                {platformData.console && <p><strong>Console:</strong> {platformData.console}</p>}
+                {platformData.developer && <p><strong>Developer:</strong> {platformData.developer}</p>}
+                {platformData.console && <p><strong>Console/Type:</strong> {platformData.console}</p>}
                 {platformData.overview && <p className="max-h-20 overflow-y-auto"><strong>Overview:</strong> {platformData.overview}</p>}
             </div>
+        )}
+
+        {/* Editable Platform Details - only when editing */}
+        {initialPlatform && (
+          <div className="space-y-4 pt-4 mt-4 border-t border-neutral-700">
+            <h4 className="text-base font-medium text-neutral-200 mb-3">Edit Platform Details</h4>
+            <Input
+              label="Platform Name"
+              name="name"
+              value={platformData.name || ''}
+              onChange={handleDetailsChange}
+              placeholder="e.g., Commodore 64"
+            />
+            <Input
+              label="Alias"
+              name="alias"
+              value={platformData.alias || ''}
+              onChange={handleDetailsChange}
+              placeholder="e.g., C64"
+            />
+            <Textarea
+              label="Overview"
+              name="overview"
+              value={platformData.overview || ''}
+              onChange={handleDetailsChange}
+              rows={4}
+              placeholder="Brief description of the platform"
+            />
+            <Input
+              label="Manufacturer"
+              name="manufacturer"
+              value={platformData.manufacturer || ''}
+              onChange={handleDetailsChange}
+              placeholder="e.g., Commodore"
+            />
+            <Input
+              label="Developer"
+              name="developer"
+              value={platformData.developer || ''}
+              onChange={handleDetailsChange}
+              placeholder="e.g., Commodore Business Machines"
+            />
+            <Input
+              label="Console/Type"
+              name="console"
+              value={platformData.console || ''}
+              onChange={handleDetailsChange}
+              placeholder="e.g., Home computer"
+            />
+            <Input
+              label="Media Type"
+              name="media"
+              value={platformData.media || ''}
+              onChange={handleDetailsChange}
+              placeholder="e.g., Cartridge, Disk, Cassette"
+            />
+            <Input
+              label="CPU"
+              name="cpu"
+              value={platformData.cpu || ''}
+              onChange={handleDetailsChange}
+              placeholder="e.g., MOS Technology 6510"
+            />
+            <Input
+              label="Memory"
+              name="memory"
+              value={platformData.memory || ''}
+              onChange={handleDetailsChange}
+              placeholder="e.g., 64 KB RAM"
+            />
+            <Input
+              label="Graphics"
+              name="graphics"
+              value={platformData.graphics || ''}
+              onChange={handleDetailsChange}
+              placeholder="e.g., VIC-II"
+            />
+            <Input
+              label="Sound"
+              name="sound"
+              value={platformData.sound || ''}
+              onChange={handleDetailsChange}
+              placeholder="e.g., SID 6581"
+            />
+             <Input
+              label="Max Controllers"
+              name="maxcontrollers"
+              value={platformData.maxcontrollers || ''}
+              onChange={handleDetailsChange}
+              placeholder="e.g., 2"
+            />
+            <Input
+              label="Display"
+              name="display"
+              value={platformData.display || ''}
+              onChange={handleDetailsChange}
+              placeholder="e.g., RF, Composite"
+            />
+            <Input
+              label="YouTube Video Link/ID"
+              name="youtube"
+              value={platformData.youtube || ''}
+              onChange={handleDetailsChange}
+              placeholder="e.g., https://www.youtube.com/watch?v=VIDEO_ID or VIDEO_ID"
+            />
+            {/* Controller field was missing from original display, adding it based on Platform type */}
+            <Input
+              label="Controller Type(s)"
+              name="controller"
+              value={platformData.controller || ''}
+              onChange={handleDetailsChange}
+              placeholder="e.g., Joystick, Keyboard"
+            />
+          </div>
         )}
       </form>
 
