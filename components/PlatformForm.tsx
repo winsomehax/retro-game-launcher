@@ -35,6 +35,10 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null); // For hover preview
   const [previewTimeoutId, setPreviewTimeoutId] = useState<NodeJS.Timeout | null>(null); // For hover delay
 
+  // State for the explicit "Refresh from TheGamesDB" action when editing
+  const [isRefreshingTgdbDetails, setIsRefreshingTgdbDetails] = useState(false);
+  const [refreshTgdbDetailsError, setRefreshTgdbDetailsError] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (isOpen && !initialPlatform) { // Only fetch for new platforms (the list of all platforms)
@@ -73,14 +77,16 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
     }
 
     if (initialPlatform) {
-      // When editing, populate form with existing data
-      // Note: Platform 'name' (and other TGDB fields) are not directly editable if it's from TGDB.
-      // User can only edit 'userIconUrl' and emulators (handled elsewhere).
+      // When editing, populate form with existing local data.
+      // TGDB details can be refreshed via an explicit button.
       setPlatformData({
-        ...initialPlatform, // Spread all fields from initialPlatform
-        userIconUrl: initialPlatform.userIconUrl || initialPlatform.icon || '', // Prioritize userIconUrl
+        ...initialPlatform, // Spread all fields from initialPlatform (local data)
+        userIconUrl: initialPlatform.userIconUrl || initialPlatform.icon || '', // Prioritize userIconUrl from local, then TGDB icon from local
       });
-      setSelectedTgdbPlatformId(initialPlatform.id.toString()); // id is number, select expects string
+      setSelectedTgdbPlatformId(initialPlatform.id.toString()); // id is number, select expects string. Used for TGDB image list.
+      // Clear any previous loading/error states related to TGDB platform list fetching (which is for 'add new')
+      setIsLoadingTgdbPlatforms(false);
+      setErrorTgdbPlatforms(null);
     } else {
       // Reset for new platform
       setPlatformData(newPlatformBase);
@@ -93,7 +99,9 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
 
   // Effect to fetch platform images when a TGDB platform is selected
   useEffect(() => {
-    if (selectedTgdbPlatformId && isOpen && !initialPlatform) { // Only for new platforms being added
+    // Fetch images if a platform ID is selected, form is open,
+    // and (it's a new platform OR it's an existing platform and we want to allow image fetching for edits)
+    if (selectedTgdbPlatformId && isOpen) {
       setIsLoadingPlatformImages(true);
       setErrorPlatformImages(null);
       setPlatformImages([]); // Clear previous images
@@ -138,11 +146,51 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
       setPlatformImagesBaseUrl(null);
       setErrorPlatformImages(null);
     }
-  }, [selectedTgdbPlatformId, isOpen, initialPlatform]);
+  }, [selectedTgdbPlatformId, isOpen]); // Removed initialPlatform from dependency array as its effect is via selectedTgdbPlatformId
 
   const handleUserIconUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPlatformData(prev => ({ ...prev, userIconUrl: e.target.value }));
   };
+
+  const handleRefreshTgdbDetails = useCallback(() => {
+    if (!initialPlatform) return;
+
+    setIsRefreshingTgdbDetails(true);
+    setRefreshTgdbDetailsError(null);
+
+    // IMPORTANT: This assumes a new backend endpoint /api/thegamesdb/platform_details?id=<ID>
+    fetch(`/api/thegamesdb/platform_details?id=${initialPlatform.id}`)
+      .then(res => {
+        if (!res.ok) {
+          return res.json().then(errData => {
+            throw new Error(errData.error || `Failed to fetch platform details: ${res.statusText}`);
+          }).catch(() => { // Fallback if error response isn't JSON
+            throw new Error(`Failed to fetch platform details: ${res.statusText} (status ${res.status})`);
+          });
+        }
+        return res.json();
+      })
+      .then((freshTgdbPlatformData: Omit<Platform, 'emulators' | 'userIconUrl'>) => {
+        setPlatformData(prevData => {
+          const currentIconUrl = prevData.userIconUrl; // Preserve current userIconUrl
+          // If currentIconUrl is empty, and TGDB has an icon, use that. Otherwise, stick to currentIconUrl.
+          const newIconUrl = currentIconUrl || freshTgdbPlatformData.icon || '';
+
+          return {
+            ...prevData, // Spread previous state (includes ID, potentially other local edits not from TGDB)
+            ...freshTgdbPlatformData, // Overlay with fresh TGDB data (name, overview, etc.)
+            id: initialPlatform.id, // Ensure original ID is maintained from initialPlatform
+            userIconUrl: newIconUrl, // Apply preserved or newly adopted TGDB icon
+          };
+        });
+        setIsRefreshingTgdbDetails(false);
+      })
+      .catch(err => {
+        console.error("Error refreshing TGDB platform details:", err);
+        setRefreshTgdbDetailsError(err.message || 'Could not refresh details from TheGamesDB.');
+        setIsRefreshingTgdbDetails(false);
+      });
+  }, [initialPlatform, setPlatformData]); // Added setPlatformData to dependencies
 
   const handleTgdbPlatformSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = e.target.value;
@@ -168,19 +216,21 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (initialPlatform) { // Editing existing platform
-        if (!platformData.id) { // Should always have an ID when editing
+        if (!platformData.id && !initialPlatform.id) { // Should always have an ID when editing
             console.error("Attempting to submit edit for platform without an ID.");
             return;
         }
-        const editedPlatform: Omit<Platform, 'emulators'> = {
-            ...(initialPlatform as Omit<Platform, 'emulators'>), // Start with all original data
-            id: initialPlatform.id, // ensure numeric ID
-            name: initialPlatform.name, // Name shouldn't change if from TGDB
-            // Update only user-editable fields
-            userIconUrl: platformData.userIconUrl || '',
-            // Potentially other TGDB fields if we decide they can be locally overridden, though plan implies they are cached as-is
+        // Construct the updated platform data, taking fresh info from platformData
+        // and preserving essential parts like emulators from initialPlatform.
+        const finalEditedPlatform: Platform = {
+            ...(initialPlatform as Platform), // Start with all original data, including emulators
+            ...(platformData as Partial<Omit<Platform, 'emulators'>>), // Overlay with form state (fresh TGDB data, new icon)
+            id: Number(platformData.id || initialPlatform.id), // Ensure ID is correct and numeric from form or initial
+            name: platformData.name || initialPlatform.name, // Prioritize name from form data (potentially updated by TGDB fetch)
+            userIconUrl: platformData.userIconUrl || '', // User's chosen icon
+            // Emulators are already included from the initialPlatform spread.
         };
-        onSubmit(editedPlatform);
+        onSubmit(finalEditedPlatform);
 
     } else { // Adding new platform
       if (!selectedTgdbPlatformId || !platformData.id) {
@@ -252,9 +302,30 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
             />
         )}
 
-        {/* Section for selecting from fetched TheGamesDB images - only for new platforms */}
-        {!initialPlatform && selectedTgdbPlatformId && (
-          <div className="mt-4 pt-4 border-t border-neutral-700">
+        {initialPlatform && (
+          <div className="my-4 py-3 border-t border-b border-neutral-700">
+            <Button
+              type="button"
+              onClick={handleRefreshTgdbDetails} // Will be implemented next
+              disabled={isRefreshingTgdbDetails}
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto"
+            >
+              {isRefreshingTgdbDetails ? 'Refreshing Details...' : 'Refresh Details from TheGamesDB'}
+            </Button>
+            {refreshTgdbDetailsError && <p className="text-red-500 text-xs mt-2">{refreshTgdbDetailsError}</p>}
+            {!isRefreshingTgdbDetails && !refreshTgdbDetailsError && platformData.id && (
+                 <p className="text-xs text-neutral-500 mt-2">
+                    Updates details like overview, developer, etc., from TheGamesDB. Your custom icon URL will be preserved.
+                </p>
+            )}
+          </div>
+        )}
+
+        {/* Section for selecting from fetched TheGamesDB images - now for new and editing platforms */}
+        {selectedTgdbPlatformId && ( // Condition changed: Show if a TGDB platform is selected (either new or existing)
+          <div className="mt-0 pt-0"> {/* Adjusted padding as the button group above has padding */}
             <h4 className="text-sm font-medium text-neutral-300 mb-2">Choose Platform Image (from TheGamesDB)</h4>
             {isLoadingPlatformImages && <p className="text-neutral-400">Loading images...</p>}
             {errorPlatformImages && <p className="text-red-500">Error: {errorPlatformImages}</p>}
