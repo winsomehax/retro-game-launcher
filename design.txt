@@ -17,22 +17,16 @@ This document outlines the design for a system that automates the import of ROM 
 
 ### 3.1. Frontend
 
-*   **Framework:** Electron (for cross-platform desktop application development)
 *   **UI Library:** React or Vue.js (for building a responsive and interactive user interface)
 *   **Styling:** CSS-in-JS (e.g., Styled Components) or a utility-first CSS framework (e.g., Tailwind CSS)
 
 ### 3.2. Backend (Core Logic)
 
-*   **Language:** Python (due to its extensive libraries for file system operations, web scraping, and general scripting)
-*   **Key Libraries:**
-    *   `os`, `shutil`, `pathlib`: For file system interactions.
-    *   `requests`, `BeautifulSoup`: For web scraping metadata (if official APIs are not available).
-    *   `sqlite3`: For local database storage.
-    *   `subprocess`: For launching emulators.
+*   **Language:** Javascript
 
 ### 3.3. Data Storage
 
-*   **ROM Library Database:** SQLite will be used to store information about imported ROMs, including:
+*   **ROM Library Database:** JSON will be used to store information about imported ROMs, including:
     *   `rom_id` (Primary Key)
     *   `file_path` (Path to the ROM file)
     *   `platform_id` (Foreign Key to Platforms table)
@@ -45,18 +39,18 @@ This document outlines the design for a system that automates the import of ROM 
     *   `box_art_url` (or path to local cache)
     *   `last_played_timestamp`
     *   `play_count`
-*   **Platforms Database:** SQLite will be used to store information about supported gaming platforms and their associated emulators:
+*   **Platforms Database:** JSON will be used to store information about supported gaming platforms and their associated emulators:
     *   `platform_id` (Primary Key)
     *   `name` (e.g., "Nintendo Entertainment System", "Sega Genesis")
     *   `short_name` (e.g., "NES", "GEN")
     *   `emulator_id` (Foreign Key to Emulators table)
     *   `rom_extensions` (e.g., ".nes", ".smc")
-*   **Emulators Database:** SQLite will be used to store information about configured emulators:
+*   **Emulators Database:** JSON will be used to store information about configured emulators:
     *   `emulator_id` (Primary Key)
     *   `name` (e.g., "RetroArch", "Mesen")
     *   `executable_path`
     *   `command_line_args` (template for launching ROMs, e.g., `"{emulator_path}" -L "{core_path}" "{rom_path}"`)
-*   **User Configuration:** A JSON or INI file will store user-specific settings, such as:
+*   **User Configuration:** INI file will store user-specific settings, such as:
     *   Paths to ROM directories.
     *   Emulator configurations (if not managed in the database).
     *   Frontend theme preferences.
@@ -70,14 +64,13 @@ The system will consist of two main components:
     *   **ROM Scanner:** Periodically scans designated folders for new ROM files.
     *   **Platform Identifier:** Determines the gaming platform of a ROM based on its file extension or other heuristics.
     *   **Metadata Scraper/Fetcher:** Retrieves metadata for ROMs from online databases (e.g., TheGamesDB, IGDB) or user-provided sources.
-    *   **Database Manager:** Manages the SQLite databases for ROMs, platforms, and emulators.
     *   **Emulator Launcher:** Constructs and executes the command to launch a ROM with the configured emulator.
-    *   **API Server (Optional but Recommended):** A lightweight local HTTP server (e.g., using Flask or FastAPI) to expose backend functionality to the Electron frontend. This promotes better separation of concerns.
+    *   **API Server (Optional but Recommended):** A lightweight express local HTTP server  to expose backend functionality. This promotes better separation of concerns.
 
 2.  **Frontend Application (Electron + React/Vue.js):**
     *   **UI Components:** Displays ROM library, search results, game details, settings, etc.
     *   **State Management:** Manages application state (e.g., selected game, current view).
-    *   **API Client:** Communicates with the backend service (either directly via IPC if Python logic is embedded, or via HTTP if a separate API server is used).
+    *   **API Client:** Communicates with the backend service (either directly via IPC HTTP if a separate API server is used).
     *   **User Input Handling:** Processes user actions like selecting a game, changing settings, or initiating a ROM scan.
 
 ## 5. Data Flow and Processes
@@ -99,14 +92,14 @@ The system will consist of two main components:
         *   The **Metadata Scraper/Fetcher** attempts to find metadata for the game.
             *   It may use the ROM filename (cleaned up) to search online databases.
             *   It prioritizes reliable sources and may allow users to choose preferred metadata providers.
-        *   The fetched metadata (title, description, box art URL, etc.) and file path are stored in the `ROM Library` database.
+        *   The fetched metadata (title, description, box art URL, etc.) and file path are stored in the `ROM Library` (games.json).
         *   Box art images may be downloaded and cached locally for offline access and faster loading.
 4.  The frontend is updated to reflect any new additions to the library.
 
 ### 5.3. Launching a Game
 
 1.  User browses or searches their ROM library in the **Frontend Application**.
-2.  User selects a game and clicks a "Play" button.
+2.  User selects a game and clicks a "Launch" button.
 3.  The frontend sends a request to the backend (e.g., "launch ROM with `rom_id` X").
 4.  The backend:
     *   Retrieves the `file_path` for the ROM and the associated `platform_id` from the `ROM Library` database.
@@ -118,7 +111,7 @@ The system will consist of two main components:
 
 ## 6. APIs (Conceptual)
 
-If a local HTTP API server is implemented for communication between the Python backend and Electron frontend:
+If a local HTTP API server is implemented for communication:
 
 ### 6.1. ROMs API
 
