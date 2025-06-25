@@ -65,7 +65,8 @@
         "executablePath": "/usr/bin/vice",
         "args": "-fullscreen {ROM}"
       }
-    ]
+    ],
+    "userIconUrl": "https://cdn.thegamesdb.net/images/original/platform/fanart/40-2.jpg"
   },
   {
     "id": 2,
