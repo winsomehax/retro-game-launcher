@@ -5,6 +5,7 @@ import { Input } from './Input';
 import { Button } from './Button';
 import { Modal } from './Modal';
 import { Select } from './Select'; // Import Select component
+import { Textarea } from './Textarea'; // Import Textarea component
 
 interface PlatformFormProps {
   isOpen: boolean;
@@ -210,10 +211,10 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
     }
   };
 
-  const currentName = initialPlatform ? initialPlatform.name : (availableTgdbPlatforms.find(p => p.id.toString() === selectedTgdbPlatformId)?.name || 'New Platform');
-  // If platformData.name is being edited, the title might ideally reflect platformData.name.
-  // For now, keep initialPlatform.name for simplicity in title, actual data saved uses platformData.name.
-  const displayNameInModalTitle = initialPlatform?.name || (availableTgdbPlatforms.find(p => p.id.toString() === selectedTgdbPlatformId)?.name || 'New Platform');
+  // Use platformData.name if available (i.e., if it's being edited), otherwise fallback.
+  const displayNameInModalTitle = (initialPlatform && platformData.name) ? platformData.name :
+                                  initialPlatform?.name ||
+                                  (availableTgdbPlatforms.find(p => p.id.toString() === selectedTgdbPlatformId)?.name || 'New Platform');
 
 
   return (
@@ -433,8 +434,6 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
               onChange={handleDetailsChange}
               placeholder="e.g., https://www.youtube.com/watch?v=VIDEO_ID or VIDEO_ID"
             />
-            {/* Controller field was missing, adding it if it's in the types.ts Platform interface */}
-            {/* Checking types.ts: 'controller' is present. */}
             <Input
               label="Controller Type(s)"
               name="controller"
