@@ -6,6 +6,7 @@ import { Textarea } from './Textarea'; // Import Textarea component
 import { Button } from './Button';
 import { Modal } from './Modal';
 import { Select } from './Select'; // Import Select component
+import { Textarea } from './Textarea'; // Import Textarea component
 
 interface PlatformFormProps {
   isOpen: boolean;
@@ -213,6 +214,7 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
 
   // Use platformData.name if available (i.e., if it's being edited), otherwise fallback.
   const displayNameInModalTitle = (initialPlatform && platformData.name !== undefined && platformData.name !== initialPlatform.name) ? platformData.name :
+
                                   initialPlatform?.name ||
                                   (availableTgdbPlatforms.find(p => p.id.toString() === selectedTgdbPlatformId)?.name || 'New Platform');
 
@@ -434,7 +436,7 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
               onChange={handleDetailsChange}
               placeholder="e.g., https://www.youtube.com/watch?v=VIDEO_ID or VIDEO_ID"
             />
-            {/* Controller field was missing from original display, adding it based on Platform type */}
+
             <Input
               label="Controller Type(s)"
               name="controller"
