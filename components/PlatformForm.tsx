@@ -94,7 +94,8 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
 
   // Effect to fetch platform images when a TGDB platform is selected
   useEffect(() => {
-    if (selectedTgdbPlatformId && isOpen && !initialPlatform) { // Only for new platforms being added
+    // Fetch images if a platform ID is selected and form is open (for new platforms OR for editing)
+    if (selectedTgdbPlatformId && isOpen) {
       setIsLoadingPlatformImages(true);
       setErrorPlatformImages(null);
       setPlatformImages([]); // Clear previous images
@@ -139,7 +140,7 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
       setPlatformImagesBaseUrl(null);
       setErrorPlatformImages(null);
     }
-  }, [selectedTgdbPlatformId, isOpen, initialPlatform]);
+  }, [selectedTgdbPlatformId, isOpen]); // initialPlatform removed from dependencies
 
   const handleUserIconUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPlatformData(prev => ({ ...prev, userIconUrl: e.target.value }));
@@ -266,8 +267,8 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
             />
         )}
 
-        {/* Section for selecting from fetched TheGamesDB images - only for new platforms */}
-        {!initialPlatform && selectedTgdbPlatformId && (
+        {/* Section for selecting from fetched TheGamesDB images - now for new AND editing platforms */}
+        {selectedTgdbPlatformId && (
           <div className="mt-4 pt-4 border-t border-neutral-700">
             <h4 className="text-sm font-medium text-neutral-300 mb-2">Choose Platform Image (from TheGamesDB)</h4>
             {isLoadingPlatformImages && <p className="text-neutral-400">Loading images...</p>}
