@@ -1,0 +1,186 @@
+# Design Document: ROM Importer and Emulator Frontend
+
+## 1. Introduction
+
+This document outlines the design for a system that automates the import of ROM files for various emulators and provides a user-friendly frontend for launching and managing these ROMs. The primary goal is to simplify the process of setting up and using emulators, making retro gaming more accessible.
+
+## 2. Objectives
+
+*   **Automated ROM Importing:** The system will automatically scan specified directories for ROM files, identify the associated gaming platform, and import them into a central library.
+*   **Emulator Integration:** The system will integrate with various emulators, allowing users to launch ROMs directly from the frontend.
+*   **Metadata Fetching:** The system will fetch metadata for ROMs, such as box art, descriptions, and release dates, to enhance the user experience.
+*   **User-Friendly Frontend:** The system will provide an intuitive and visually appealing frontend for browsing, searching, and launching ROMs.
+*   **Cross-Platform Compatibility:** The frontend will be designed to work on multiple operating systems (Windows, macOS, Linux).
+*   **Extensibility:** The system will be designed to easily support new emulators and ROM formats.
+
+## 3. Tech Stack
+
+### 3.1. Frontend
+
+*   **Framework:** Electron (for cross-platform desktop application development)
+*   **UI Library:** React or Vue.js (for building a responsive and interactive user interface)
+*   **Styling:** CSS-in-JS (e.g., Styled Components) or a utility-first CSS framework (e.g., Tailwind CSS)
+
+### 3.2. Backend (Core Logic)
+
+*   **Language:** Python (due to its extensive libraries for file system operations, web scraping, and general scripting)
+*   **Key Libraries:**
+    *   `os`, `shutil`, `pathlib`: For file system interactions.
+    *   `requests`, `BeautifulSoup`: For web scraping metadata (if official APIs are not available).
+    *   `sqlite3`: For local database storage.
+    *   `subprocess`: For launching emulators.
+
+### 3.3. Data Storage
+
+*   **ROM Library Database:** SQLite will be used to store information about imported ROMs, including:
+    *   `rom_id` (Primary Key)
+    *   `file_path` (Path to the ROM file)
+    *   `platform_id` (Foreign Key to Platforms table)
+    *   `title`
+    *   `description`
+    *   `release_date`
+    *   `genre`
+    *   `developer`
+    *   `publisher`
+    *   `box_art_url` (or path to local cache)
+    *   `last_played_timestamp`
+    *   `play_count`
+*   **Platforms Database:** SQLite will be used to store information about supported gaming platforms and their associated emulators:
+    *   `platform_id` (Primary Key)
+    *   `name` (e.g., "Nintendo Entertainment System", "Sega Genesis")
+    *   `short_name` (e.g., "NES", "GEN")
+    *   `emulator_id` (Foreign Key to Emulators table)
+    *   `rom_extensions` (e.g., ".nes", ".smc")
+*   **Emulators Database:** SQLite will be used to store information about configured emulators:
+    *   `emulator_id` (Primary Key)
+    *   `name` (e.g., "RetroArch", "Mesen")
+    *   `executable_path`
+    *   `command_line_args` (template for launching ROMs, e.g., `"{emulator_path}" -L "{core_path}" "{rom_path}"`)
+*   **User Configuration:** A JSON or INI file will store user-specific settings, such as:
+    *   Paths to ROM directories.
+    *   Emulator configurations (if not managed in the database).
+    *   Frontend theme preferences.
+    *   Metadata source preferences.
+
+## 4. System Architecture
+
+The system will consist of two main components:
+
+1.  **Core Logic/Backend Service (Python):**
+    *   **ROM Scanner:** Periodically scans designated folders for new ROM files.
+    *   **Platform Identifier:** Determines the gaming platform of a ROM based on its file extension or other heuristics.
+    *   **Metadata Scraper/Fetcher:** Retrieves metadata for ROMs from online databases (e.g., TheGamesDB, IGDB) or user-provided sources.
+    *   **Database Manager:** Manages the SQLite databases for ROMs, platforms, and emulators.
+    *   **Emulator Launcher:** Constructs and executes the command to launch a ROM with the configured emulator.
+    *   **API Server (Optional but Recommended):** A lightweight local HTTP server (e.g., using Flask or FastAPI) to expose backend functionality to the Electron frontend. This promotes better separation of concerns.
+
+2.  **Frontend Application (Electron + React/Vue.js):**
+    *   **UI Components:** Displays ROM library, search results, game details, settings, etc.
+    *   **State Management:** Manages application state (e.g., selected game, current view).
+    *   **API Client:** Communicates with the backend service (either directly via IPC if Python logic is embedded, or via HTTP if a separate API server is used).
+    *   **User Input Handling:** Processes user actions like selecting a game, changing settings, or initiating a ROM scan.
+
+## 5. Data Flow and Processes
+
+### 5.1. Initial Setup
+
+1.  User installs the application.
+2.  On first launch, the user is prompted to:
+    *   Specify directories containing their ROMs.
+    *   Configure emulators (either by auto-detecting installed emulators or manually providing paths and command-line arguments).
+
+### 5.2. ROM Importing Process
+
+1.  The **ROM Scanner** (backend) is triggered (either automatically on startup/periodically or manually by the user).
+2.  It recursively scans the user-defined ROM directories.
+3.  For each file found:
+    *   The **Platform Identifier** attempts to determine the platform based on the file extension (e.g., `.nes` -> NES, `.sfc` -> SNES). It consults the `Platforms` database.
+    *   If the ROM is new (not already in the `ROM Library` database by path):
+        *   The **Metadata Scraper/Fetcher** attempts to find metadata for the game.
+            *   It may use the ROM filename (cleaned up) to search online databases.
+            *   It prioritizes reliable sources and may allow users to choose preferred metadata providers.
+        *   The fetched metadata (title, description, box art URL, etc.) and file path are stored in the `ROM Library` database.
+        *   Box art images may be downloaded and cached locally for offline access and faster loading.
+4.  The frontend is updated to reflect any new additions to the library.
+
+### 5.3. Launching a Game
+
+1.  User browses or searches their ROM library in the **Frontend Application**.
+2.  User selects a game and clicks a "Play" button.
+3.  The frontend sends a request to the backend (e.g., "launch ROM with `rom_id` X").
+4.  The backend:
+    *   Retrieves the `file_path` for the ROM and the associated `platform_id` from the `ROM Library` database.
+    *   Looks up the `emulator_id` for that platform in the `Platforms` database.
+    *   Retrieves the `executable_path` and `command_line_args` template for that emulator from the `Emulators` database.
+    *   Constructs the full command-line string, substituting placeholders (like `{rom_path}`, `{emulator_path}`).
+    *   Uses the `subprocess` module to execute the command, launching the emulator with the selected ROM.
+5.  The system may update `last_played_timestamp` and `play_count` for the ROM.
+
+## 6. APIs (Conceptual)
+
+If a local HTTP API server is implemented for communication between the Python backend and Electron frontend:
+
+### 6.1. ROMs API
+
+*   `GET /api/roms`: List all ROMs.
+    *   Query parameters: `platform={platform_id}`, `search={query}`, `sort_by={field}`, `limit={int}`, `offset={int}`.
+    *   Response: JSON array of ROM objects.
+*   `GET /api/roms/{rom_id}`: Get details for a specific ROM.
+    *   Response: JSON object of the ROM.
+*   `POST /api/roms/scan`: Trigger a scan of ROM directories.
+    *   Response: Status message (e.g., "Scan initiated").
+*   `PUT /api/roms/{rom_id}`: Update metadata for a ROM (e.g., user-edited details).
+    *   Request Body: JSON object with fields to update.
+    *   Response: Updated ROM object.
+*   `POST /api/roms/{rom_id}/launch`: Launch a specific ROM.
+    *   Response: Status message (e.g., "Launching game...").
+
+### 6.2. Platforms API
+
+*   `GET /api/platforms`: List all supported platforms.
+    *   Response: JSON array of platform objects.
+*   `GET /api/platforms/{platform_id}`: Get details for a specific platform.
+    *   Response: JSON object of the platform.
+
+### 6.3. Emulators API
+
+*   `GET /api/emulators`: List all configured emulators.
+    *   Response: JSON array of emulator objects.
+*   `POST /api/emulators`: Add a new emulator configuration.
+    *   Request Body: JSON object with emulator details (`name`, `executable_path`, `command_line_args`).
+    *   Response: Newly created emulator object.
+*   `PUT /api/emulators/{emulator_id}`: Update an emulator configuration.
+    *   Request Body: JSON object with fields to update.
+    *   Response: Updated emulator object.
+*   `DELETE /api/emulators/{emulator_id}`: Remove an emulator configuration.
+    *   Response: Success/failure message.
+
+### 6.4. Settings API
+
+*   `GET /api/settings`: Get current user settings.
+    *   Response: JSON object of settings.
+*   `PUT /api/settings`: Update user settings.
+    *   Request Body: JSON object with settings to update (e.g., ROM directories).
+    *   Response: Updated settings object.
+
+**Note on API Security:** Since this is a local application, API security is less critical than for a web-facing service. However, the API should only be accessible from `localhost`.
+
+## 7. Future Considerations and Potential Enhancements
+
+*   **Controller Configuration:** Integrated support for mapping controllers per emulator or per platform.
+*   **Save State Management:** UI for managing emulator save states.
+*   **Cloud Sync:** Option to sync ROM library data (not ROMs themselves) and settings across devices.
+*   **Themes and Customization:** More advanced theming options for the frontend.
+*   **Plugin System:** Allow community contributions for new emulators, metadata sources, or features.
+*   **Achievements:** Integration with retro achievement systems (e.g., RetroAchievements.org).
+*   **Netplay Support:** UI for facilitating online multiplayer for supported emulators.
+*   **Automatic Emulator Installation:** Helper for downloading and setting up common emulators.
+*   **ROM Hashing and Verification:** Use ROM hashes (MD5, SHA1) for more accurate identification and metadata fetching, and to identify duplicate or bad dumps.
+*   **Pre-compiled Emulator Cores:** For emulators like RetroArch, manage and update cores directly from the application.
+
+## 8. Non-Goals
+
+*   **ROM Distribution:** The system will not provide or facilitate the downloading of ROM files. Users are responsible for sourcing their own ROMs legally.
+*   **Emulator Development:** The system is a frontend and management tool, not an emulator itself.
+
+This design document provides a comprehensive overview for building the ROM importer and emulator frontend. It can be used as a blueprint for development, allowing for flexibility in specific technology choices while maintaining the core functional requirements.
