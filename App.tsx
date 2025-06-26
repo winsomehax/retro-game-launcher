@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Platform, Game, EmulatorConfig, NavView, ApiKeyEntry } from './types';
@@ -15,75 +14,32 @@ import {
   createDefaultApiKeyEntry 
 } from './constants';
 
-const LOCAL_STORAGE_API_KEYS_KEY = 'retroGameLauncherApiKeys';
 
 // Helper function to load initial API keys
-const loadInitialApiKeys = async (): Promise<[ApiKeyEntry, ApiKeyEntry]> => {
+const loadInitialApiKeys = async (): Promise<ApiKeyEntry[]> => {
   try {
-    const storedKeysString = localStorage.getItem(LOCAL_STORAGE_API_KEYS_KEY);
-    if (storedKeysString) {
-      const parsedKeys = JSON.parse(storedKeysString) as ApiKeyEntry[];
-      const tgdbKey = parsedKeys.find(k => k.id === THEGAMESDB_API_KEY_ID);
-      const geminiKey = parsedKeys.find(k => k.id === GEMINI_API_KEY_ID);
-      if (tgdbKey && geminiKey) {
-        // Ensure the structure matches the tuple, even if loaded from a generic array
-        return [
-          { ...createDefaultApiKeyEntry(THEGAMESDB_API_KEY_ID, SERVICE_NAME_THEGAMESDB), apiKey: tgdbKey.apiKey },
-          { ...createDefaultApiKeyEntry(GEMINI_API_KEY_ID, SERVICE_NAME_GEMINI), apiKey: geminiKey.apiKey }
-        ];
-      }
-    }
-  } catch (error) {
-    console.error("Error parsing API keys from localStorage:", error);
-    // Proceed to load from file/defaults
-  }
-
-  try {
-    const response = await fetch('/data/keys.json');
+    const response = await fetch('/api/env/keys');
     if (!response.ok) {
-        // If keys.json is not found (e.g., 404), it's not a critical error, just proceed to defaults.
-        if (response.status === 404) {
-            console.log("/data/keys.json not found, proceeding with defaults.");
-        } else {
-            throw new Error(`HTTP error! status: ${response.status} for keys.json`);
-        }
-    } else {
-        const loadedKeysFromFile = await response.json() as ApiKeyEntry[];
-        
-        const tgdbKeyFromFile = loadedKeysFromFile.find(k => k.id === THEGAMESDB_API_KEY_ID);
-        const geminiKeyFromFile = loadedKeysFromFile.find(k => k.id === GEMINI_API_KEY_ID);
-
-        const keysToStore: [ApiKeyEntry, ApiKeyEntry] = [
-        createDefaultApiKeyEntry(THEGAMESDB_API_KEY_ID, SERVICE_NAME_THEGAMESDB),
-        createDefaultApiKeyEntry(GEMINI_API_KEY_ID, SERVICE_NAME_GEMINI)
-        ];
-        if (tgdbKeyFromFile) keysToStore[0].apiKey = tgdbKeyFromFile.apiKey;
-        if (geminiKeyFromFile) keysToStore[1].apiKey = geminiKeyFromFile.apiKey;
-        
-        localStorage.setItem(LOCAL_STORAGE_API_KEYS_KEY, JSON.stringify(keysToStore));
-        return keysToStore;
+      throw new Error(`HTTP error! status: ${response.status} for /api/env/keys`);
     }
+    const loadedKeys = await response.json();
+    const apiKeys = Object.entries(loadedKeys).map(([key, value]) => {
+      return { id: key, serviceName: key, apiKey: value as string };
+    });
+    return apiKeys;
   } catch (error) {
-    console.error("Could not load API keys from data/keys.json, using defaults:", error);
+    console.error("Could not load API keys from server, using defaults:", error);
+    // Default fallback
+    return [];
   }
-
-  // Default fallback if all else fails
-  const defaultKeys: [ApiKeyEntry, ApiKeyEntry] = [
-    createDefaultApiKeyEntry(THEGAMESDB_API_KEY_ID, SERVICE_NAME_THEGAMESDB),
-    createDefaultApiKeyEntry(GEMINI_API_KEY_ID, SERVICE_NAME_GEMINI),
-  ];
-  // Save defaults to localStorage if they are being used for the first time
-  if (!localStorage.getItem(LOCAL_STORAGE_API_KEYS_KEY)) {
-    localStorage.setItem(LOCAL_STORAGE_API_KEYS_KEY, JSON.stringify(defaultKeys));
-  }
-  return defaultKeys;
 };
+
 
 
 const AppContent: React.FC = () => {
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [games, setGames] = useState<Game[]>([]);
-  const [apiKeys, setApiKeys] = useState<[ApiKeyEntry, ApiKeyEntry] | null>(null);
+  const [apiKeys, setApiKeys] = useState<ApiKeyEntry[] | null>(null);
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -248,15 +204,36 @@ const AppContent: React.FC = () => {
 
   const handleUpdateApiKey = useCallback((updatedApiKey: ApiKeyEntry) => {
     setApiKeys(prevKeys => {
-      if (!prevKeys) return null; // Should ideally not be null if update is called
-      const newKeysTuple: [ApiKeyEntry, ApiKeyEntry] = [{...prevKeys[0]}, {...prevKeys[1]}];
-      if (newKeysTuple[0].id === updatedApiKey.id) {
-        newKeysTuple[0] = { ...updatedApiKey };
-      } else if (newKeysTuple[1].id === updatedApiKey.id) {
-        newKeysTuple[1] = { ...updatedApiKey };
-      }
-      localStorage.setItem(LOCAL_STORAGE_API_KEYS_KEY, JSON.stringify(newKeysTuple));
-      return newKeysTuple;
+      if (!prevKeys) return null;
+      const newKeys = prevKeys.map(key => key.id === updatedApiKey.id ? updatedApiKey : key);
+      const keysToSave = newKeys.reduce((acc, key) => {
+        acc[key.id] = key.apiKey;
+        return acc;
+      }, {} as Record<string, string>);
+
+      fetch('/api/env/keys', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(keysToSave),
+      })
+      .then(async response => {
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: "Unknown error during save." }));
+          throw new Error(`Failed to save API keys: ${response.status} ${response.statusText}. ${errorData.message || errorData.error || ''}`);
+        }
+        return response.json();
+      })
+      .then(result => {
+        console.log(`API keys saved successfully:`, result.message);
+        // Optionally, you can show a notification to the user to restart the server.
+      })
+      .catch(error => {
+        console.error(`Error saving API keys:`, error);
+      });
+
+      return newKeys;
     });
   }, []);
 
@@ -286,9 +263,17 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const emulatorsCount = platforms.reduce((acc, p) => acc + p.emulators.length, 0);
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-neutral-900">
-      <Navbar currentView={currentView} onNavigate={handleNavigation} />
+      <Navbar 
+        currentView={currentView} 
+        onNavigate={handleNavigation} 
+        gamesCount={games.length}
+        platformsCount={platforms.length}
+        emulatorsCount={emulatorsCount}
+      />
       <main className="flex-1 overflow-y-auto">
         <Routes>
           <Route path="/games" element={
@@ -324,7 +309,7 @@ const AppContent: React.FC = () => {
           <Route path="/apikeys" element={
              apiKeys ? ( 
               <ApiKeysView
-                apiKeys={apiKeys} 
+                apiKeys={apiKeys as ApiKeyEntry[]} 
                 onUpdateApiKey={handleUpdateApiKey}
               />
             ) : (
