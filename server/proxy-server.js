@@ -23,13 +23,12 @@ const corsOptions = {
     // allowedHeaders: "Content-Type,Authorization"
 };
 
-const EXTERNAL_API_KEY = process.env.EXTERNAL_API_KEY; // General key, might not be used if specific keys are present
-const PROXY_SECRET = process.env.PROXY_SECRET;
+const GITHUB_PAT_TOKEN = process.env.GITHUB_PAT_TOKEN;
+const THEGAMESDB_API_KEY = process.env.THEGAMESDB_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const RAWG_API_KEY = process.env.RAWG_API_KEY;
 const EXTERNAL_API_TIMEOUT = parseInt(process.env.EXTERNAL_API_TIMEOUT, 10) || 10000; // Default 10s
-
-// --- TheGamesDB Platforms Cache ---
 const TGDB_PLATFORMS_CACHE_PATH = path.join(__dirname, './data/thegamesdb_platforms.json');
-const TGDB_API_KEY = process.env.THEGAMESDB_API_KEY;
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 let tgdbPlatformsMap = new Map(); // For game enrichment
@@ -394,7 +393,7 @@ app.get('/api/search/thegamesdb/bygamename', async (req, res) => {
         name,
         fields: fields || 'platform,overview,players,publishers,genres,last_updated,rating,coop,youtube,alternates', // Sensible defaults
         include: include || 'boxart,platform', // Sensible defaults
-        ...(page && { page }) // Add page if provided
+        ...(page && { page })
     };
 
     // Simplified response transformation
@@ -697,7 +696,7 @@ app.listen(PORT, () => {
 const DATA_DIR = path.join(__dirname, 'data');
 const PLATFORMS_FILE_PATH = path.join(DATA_DIR, 'platforms.json');
 const GAMES_FILE_PATH = path.join(DATA_DIR, 'games.json');
-// const EMULATORS_FILE_PATH = path.join(DATA_DIR, 'emulators.json'); // Placeholder for when we add emulators
+const ENV_FILE_PATH = path.join(__dirname, '..', '.env');
 
 // Helper function to ensure data directory exists
 const ensureDataDirExists = () => {
@@ -707,8 +706,6 @@ const ensureDataDirExists = () => {
             console.log(`Created data directory: ${DATA_DIR}`);
         } catch (error) {
             console.error(`Error creating data directory ${DATA_DIR}:`, error);
-            // If the directory can't be made, saving will fail.
-            // Depending on requirements, we might throw here or let save attempts fail.
         }
     }
 };
@@ -725,11 +722,10 @@ app.get('/api/data/games', async (req, res) => {
             res.status(200).json(gamesData);
         } else {
             console.log(`${GAMES_FILE_PATH} not found. Returning empty array for games.`);
-            res.status(200).json([]); // Return empty array if file doesn't exist
+            res.status(200).json([]);
         }
     } catch (error) {
         console.error(`Error reading games data from ${GAMES_FILE_PATH}:`, error);
-        // If file exists but is corrupt or other read error, also return empty array for robustness on client
         res.status(200).json([]);
     }
 });
@@ -743,7 +739,7 @@ app.get('/api/data/platforms', async (req, res) => {
             res.status(200).json(platformsData);
         } else {
             console.log(`${PLATFORMS_FILE_PATH} not found. Returning empty array for platforms.`);
-            res.status(200).json([]); // Return empty array if file doesn't exist
+            res.status(200).json([]);
         }
     } catch (error) {
         console.error(`Error reading platforms data from ${PLATFORMS_FILE_PATH}:`, error);
@@ -753,14 +749,13 @@ app.get('/api/data/platforms', async (req, res) => {
 
 // Endpoint to save platforms data
 app.post('/api/data/platforms', async (req, res) => {
-    const platformsData = req.body; // Expecting an array of platform objects
+    const platformsData = req.body;
 
     if (!Array.isArray(platformsData)) {
         return res.status(400).json({ error: 'Invalid data format: Expected an array of platforms.' });
     }
 
     try {
-        // Convert the array to a JSON string with pretty printing
         const jsonString = JSON.stringify(platformsData, null, 2);
         await fs.promises.writeFile(PLATFORMS_FILE_PATH, jsonString, 'utf8');
         console.log(`Platforms data successfully saved to ${PLATFORMS_FILE_PATH}`);
@@ -773,16 +768,15 @@ app.post('/api/data/platforms', async (req, res) => {
 
 // Endpoint to save games data
 app.post('/api/data/games', async (req, res) => {
-    console.log('--- Received POST request at /api/data/games: ---'); // Re-added log
-    console.log('Request body:', JSON.stringify(req.body, null, 2));    // Re-added log
-    const gamesData = req.body; // Expecting an array of game objects
+    console.log('--- Received POST request at /api/data/games: ---');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    const gamesData = req.body;
 
     if (!Array.isArray(gamesData)) {
         return res.status(400).json({ error: 'Invalid data format: Expected an array of games.' });
     }
 
     try {
-        // Convert the array to a JSON string with pretty printing
         const jsonString = JSON.stringify(gamesData, null, 2);
         await fs.promises.writeFile(GAMES_FILE_PATH, jsonString, 'utf8');
         console.log(`Games data successfully saved to ${GAMES_FILE_PATH}`);
@@ -790,5 +784,50 @@ app.post('/api/data/games', async (req, res) => {
     } catch (error) {
         console.error(`Error saving games data to ${GAMES_FILE_PATH}:`, error);
         res.status(500).json({ error: 'Failed to save games data.', details: error.message });
+    }
+});
+
+// Endpoint to get API keys from .env
+app.get('/api/env/keys', async (req, res) => {
+    try {
+        const envFileContent = await fs.promises.readFile(ENV_FILE_PATH, 'utf8');
+        const envConfig = dotenv.parse(envFileContent);
+        res.status(200).json(envConfig);
+    } catch (error) {
+        console.error('Error reading API keys from .env file:', error);
+        res.status(500).json({ error: 'Failed to read API keys.' });
+    }
+});
+
+// Endpoint to update API keys in .env file
+app.post('/api/env/keys', async (req, res) => {
+    const newKeys = req.body;
+
+    try {
+        let envFileContent = '';
+        if (fs.existsSync(ENV_FILE_PATH)) {
+            envFileContent = await fs.promises.readFile(ENV_FILE_PATH, 'utf8');
+        }
+
+        const updateEnvVariable = (content, key, value) => {
+            const regex = new RegExp(`^${key}=.*$`, 'm');
+            if (regex.test(content)) {
+                return content.replace(regex, `${key}=${value}`);
+            } else {
+                return `${content}\n${key}=${value}`;
+            }
+        };
+
+        for (const [key, value] of Object.entries(newKeys)) {
+            envFileContent = updateEnvVariable(envFileContent, key, value);
+        }
+
+        await fs.promises.writeFile(ENV_FILE_PATH, envFileContent.trim(), 'utf8');
+        
+        console.log(`API keys successfully updated in ${ENV_FILE_PATH}`);
+        res.status(200).json({ message: 'API keys updated successfully. Restart the server for changes to take effect.' });
+    } catch (error) {
+        console.error(`Error saving API keys to ${ENV_FILE_PATH}:`, error);
+        res.status(500).json({ error: 'Failed to save API keys.', details: error.message });
     }
 });

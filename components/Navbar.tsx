@@ -6,6 +6,9 @@ import { NavView } from '../types';
 interface NavbarProps {
   currentView: NavView;
   onNavigate: (view: NavView) => void;
+  gamesCount: number;
+  platformsCount: number;
+  emulatorsCount: number;
 }
 
 interface IconProps {
@@ -36,7 +39,7 @@ const NavItem: React.FC<{
   </button>
 );
 
-export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
+export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, gamesCount, platformsCount, emulatorsCount }) => {
   const navItemsData: { view: NavView; label: string; icon: React.ReactNode }[] = [
     { view: 'games', label: 'Games', icon: <GameControllerIcon /> },
     { view: 'platforms', label: 'Platforms', icon: <CogIcon /> },
@@ -97,7 +100,14 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
         ))}
       </div>
       <div className="mt-auto pt-4 border-t border-neutral-700">
-         <p className="text-xs text-neutral-500 text-center">© 2024 Retro Systems Inc.</p>
+        <div className="px-4 py-3 space-y-2 text-xs text-neutral-400">
+          <div className="flex justify-between"><span>Games:</span> <span className="font-medium text-neutral-200">{gamesCount}</span></div>
+          <div className="flex justify-between"><span>Platforms:</span> <span className="font-medium text-neutral-200">{platformsCount}</span></div>
+          <div className="flex justify-between"><span>Emulators:</span> <span className="font-medium text-neutral-200">{emulatorsCount}</span></div>
+        </div>
+         <div className="mt-2 pt-4 border-t border-neutral-700">
+            <p className="text-xs text-neutral-500 text-center">© 2024 Retro Systems Inc.</p>
+         </div>
       </div>
     </nav>
   );

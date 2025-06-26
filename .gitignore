@@ -31,3 +31,6 @@ dist
 # Environment variables file
 .env
 reqexample.txt
+server/data/games.json
+server/data/platforms.json
+server/data/thegamesdb_platforms.json

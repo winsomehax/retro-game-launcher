@@ -67,11 +67,12 @@ The system will consist of two main components:
     *   **Emulator Launcher:** Constructs and executes the command to launch a ROM with the configured emulator.
     *   **API Server (Optional but Recommended):** A lightweight express local HTTP server  to expose backend functionality. This promotes better separation of concerns.
 
-2.  **Frontend Application (Electron + React/Vue.js):**
+2.  **Frontend Application (React/Vue.js):**
     *   **UI Components:** Displays ROM library, search results, game details, settings, etc.
     *   **State Management:** Manages application state (e.g., selected game, current view).
     *   **API Client:** Communicates with the backend service (either directly via IPC HTTP if a separate API server is used).
     *   **User Input Handling:** Processes user actions like selecting a game, changing settings, or initiating a ROM scan.
+    *   **The app deliberately does not use Electron as it is a bloated mess.
 
 ## 5. Data Flow and Processes
 

@@ -4,8 +4,8 @@
     "title": "Impossible Mission",
     "platformId": "40",
     "romPath": "/roms/c64/impossible_mission.d64",
-    "coverImageUrl": "https://picsum.photos/seed/impossmission/300/400",
-    "description": "tay FOREVER! Avoid deadly robots and search for puzzle pieces in this classic action-platformer.",
+    "coverImageUrl": "https://cdn.thegamesdb.net/images/medium/boxart/front/6416-2.jpg",
+    "description": "You play a secret agent on a quest to stop the evil Professor Elvin Atombender, who is believed to be tampering with national security computers. You must penetrate Atombender's stronghold, avoid his deadly robot creations, and acquire various pieces of a password to use in the main control room.\r\n\r\nThe robots, rooms, and puzzle pieces will be switched around when starting over which provides replay value.",
     "genre": "Platformer",
     "releaseDate": "1984"
   },
@@ -31,22 +31,22 @@
   },
   {
     "id": "79f83428-2b7d-40c4-a096-798d2448dffb",
-    "title": "Manic Miner.z80",
+    "title": "Manic Miner",
     "platformId": 4913,
     "romPath": "zxspectrum/Manic Miner.z80",
-    "coverImageUrl": "",
-    "description": "A classic platformer where you must navigate treacherous levels to collect gems and escape. Prepare for intense action and near-impossible challenges!",
+    "coverImageUrl": "https://cdn.thegamesdb.net/images/medium/boxart/front/17934-1.jpg",
+    "description": "Manic Miner is a platform video game originally written for the ZX Spectrum by Matthew Smith and released by Bug-Byte in 1983 (later re-released by Software Projects). It is the first game in the Miner Willy series and among the early titles in the platform game genre. The game itself was inspired by the Atari 800 game Miner 2049er.[1] It has since been ported to numerous home computers and video game consoles.",
     "genre": "Platformer",
-    "releaseDate": ""
+    "releaseDate": "1983"
   },
   {
     "id": "80b264e9-4834-4287-a0bb-4319ad11ff48",
-    "title": "Jet Set Willy.z80",
+    "title": "Jet Set Willy",
     "platformId": 4913,
     "romPath": "zxspectrum/Jet Set Willy.z80",
-    "coverImageUrl": "",
-    "description": "Willy's back, and he's on a quest to collect all the items in his mansion before his wife returns.  Expect a massive house full of quirky obstacles and hidden treasures!",
+    "coverImageUrl": "https://cdn.thegamesdb.net/images/medium/boxart/front/17943-1.jpg",
+    "description": "Jet Set Willy is a flip-screen platform game in which the player moves the protagonist, Willy, from room to room in his mansion collecting objects. The game is an early example of a nonlinear title since, unlike the screen-by-screen style of its prequel, the player can explore the mansion at will. Willy is controlled using only left, right and jump. He can climb stairs by walking into them (jumping through them to avoid them) and climb swinging ropes by pushing left or right depending on what direction the rope is swinging. The play area itself consists of 60 screens making up the mansion and its grounds and contains hazards (static killer objects), guardians (killer monsters which move along predetermined paths), various platforms and collectable objects. The collectable items glow to distinguish them from other items in the room.",
     "genre": "Platformer",
-    "releaseDate": ""
+    "releaseDate": "1984"
   }
 ]
