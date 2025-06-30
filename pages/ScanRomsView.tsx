@@ -4,7 +4,6 @@ import { Select } from '../components/Select';
 import { Input } from '../components/Input';
 import { Platform, Game } from '../types';
 import { DEFAULT_ROM_FOLDER } from '../constants';
-import { joinPathSegments } from '../utils';
 
 // Define the structure for a scanned ROM object
 interface ScannedRom {
@@ -128,7 +127,7 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
       id: crypto.randomUUID(), // Use crypto.randomUUID() for ID
       title: romObject.displayName, // Use displayName for title
       platformId: selectedPlatformId,
-      romPath: joinPathSegments(romsPath, romObject.fileName), // Use joinPathSegments
+      romPath: `${romsPath}/${romObject.fileName}`, // Use fileName for full path
       coverImageUrl: '',
       description: '',
       genre: '',
