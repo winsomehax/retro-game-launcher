@@ -323,14 +323,7 @@ const AppContent: React.FC = () => {
           <Route path="/scan-roms" element={ // New route for ScanRomsView
             <ScanRomsView
               platforms={platforms}
-              onAddGames={(newGames) => handleAddMultipleGames(newGames, '')} // Pass platforms and onAddGames
-                                                                                // For onAddGames, platformId is less critical here as ScanRomsView itself knows it.
-                                                                                // However, handleAddMultipleGames expects it. We can pass an empty string or the selected one.
-                                                                                // Let's assume ScanRomsView will provide the correct platformId when calling onAddGames.
-                                                                                // The current handleAddMultipleGames in App.tsx uses platformId to filter existing games.
-                                                                                // This might need adjustment if ScanRomsView doesn't pass platformId with each game.
-                                                                                // For now, let's adapt the call slightly or ensure ScanRomsView provides it.
-                                                                                // The implementation in ScanRomsView already includes platformId in the Game object.
+              onAddGames={handleAddMultipleGames} // Pass the function directly
             />
           } />
           <Route path="/apikeys" element={
