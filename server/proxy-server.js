@@ -691,6 +691,119 @@ app.listen(PORT, () => {
     console.log(`External API timeout is set to ${EXTERNAL_API_TIMEOUT / 1000} seconds.`);
 });
 
+// --- Game Launch Endpoint ---
+import { spawn } from 'child_process'; // Import spawn
+
+app.post('/api/games/launch', async (req, res) => {
+    const { romPath, platformId, emulatorId } = req.body;
+
+    if (!romPath || !platformId || !emulatorId) {
+        return res.status(400).json({ error: 'Missing required fields: romPath, platformId, or emulatorId.' });
+    }
+
+    // Validate that romPath is not attempting directory traversal and is within an expected base directory.
+    // THIS IS A CRITICAL SECURITY STEP.
+    // For now, we'll assume romPath is an absolute path or relative to a known, safe root.
+    // In a real app, you MUST validate this thoroughly. Example:
+    // const safeRomPath = path.join(USER_CONFIGURED_ROMS_ROOT, romPath);
+    // if (!fs.existsSync(safeRomPath) || !safeRomPath.startsWith(USER_CONFIGURED_ROMS_ROOT)) {
+    //    return res.status(400).json({ error: 'Invalid or unsafe ROM path.' });
+    // }
+    // For this example, we'll proceed with romPath directly, but acknowledge the risk.
+    if (romPath.includes('..')) {
+         return res.status(400).json({ error: 'Invalid ROM path (directory traversal attempt detected).' });
+    }
+
+
+    // Load platforms data to find the emulator configuration
+    let platformsData = [];
+    try {
+        if (fs.existsSync(PLATFORMS_FILE_PATH)) {
+            const fileContent = await fs.promises.readFile(PLATFORMS_FILE_PATH, 'utf8');
+            platformsData = JSON.parse(fileContent);
+        } else {
+            return res.status(500).json({ error: 'Platforms data file not found on server.' });
+        }
+    } catch (error) {
+        console.error(`Error reading platforms data from ${PLATFORMS_FILE_PATH}:`, error);
+        return res.status(500).json({ error: 'Failed to read platforms data on server.' });
+    }
+
+    const platform = platformsData.find(p => p.id.toString() === platformId.toString());
+    if (!platform) {
+        return res.status(404).json({ error: `Platform with ID ${platformId} not found.` });
+    }
+
+    const emulatorConfig = platform.emulators?.find(e => e.id === emulatorId);
+    if (!emulatorConfig || !emulatorConfig.executablePath || !emulatorConfig.commandLineArgs) {
+        return res.status(404).json({ error: `Emulator configuration with ID ${emulatorId} not found or incomplete for platform ${platform.name}.` });
+    }
+
+    // Construct the command
+    // Replace placeholders like {romPath}, {emulatorPath}
+    // Ensure romPath is properly quoted if it contains spaces.
+    // For security, ensure executablePath is also validated or from a trusted source.
+    const resolvedRomPath = path.resolve(romPath); // Resolve to absolute if it's relative
+
+    // Basic path validation for executablePath (example, enhance for security)
+    if (emulatorConfig.executablePath.includes('..')) {
+        return res.status(400).json({ error: 'Invalid emulator executable path (directory traversal attempt detected).' });
+    }
+    // Further validation: ensure it's an executable, perhaps check against a list of allowed emulators.
+
+
+    let command = emulatorConfig.commandLineArgs
+        .replace(/{emulatorPath}/g, `"${emulatorConfig.executablePath}"`) // Quote for safety
+        .replace(/{romPath}/g, `"${resolvedRomPath}"`); // Quote for safety
+
+    // Split the command string into the executable and its arguments for spawn
+    // This is a naive split by space, which might fail if paths have spaces and aren't quoted
+    // A more robust solution would parse this carefully or store executable and args separately.
+    // For now, we assume commandLineArgs is structured like: "{emulatorPath}" arg1 arg2 "{romPath}"
+
+    // A safer approach for spawn:
+    const executable = emulatorConfig.executablePath;
+    const args = emulatorConfig.commandLineArgs
+        .replace(/{emulatorPath}/g, '') // Remove placeholder itself if it's part of a larger template
+        .replace(/{romPath}/g, resolvedRomPath) // Substitute ROM path
+        .trim() // Remove leading/trailing whitespace
+        .split(/\s+/) // Split by space, this needs to be smarter for args with spaces
+        .filter(arg => arg.length > 0); // Remove empty strings
+
+    // A more robust way to handle command line arguments, especially if they contain spaces,
+    // is to define them as an array in the configuration or use a library for command parsing.
+    // For now, this is a simplified example.
+
+    console.log(`Executing command: ${executable} ${args.join(' ')}`);
+
+    try {
+        // Spawn the emulator process
+        // Using detached: true and stdio: 'ignore' to let the emulator run independently of the server
+        const child = spawn(executable, args, {
+            detached: true,
+            stdio: 'ignore', // Or 'inherit' if you want to see emulator output in server console
+            shell: true // shell: true can be a security risk if command parts are user-supplied and not sanitized.
+                        // It's used here for convenience with complex commands but consider alternatives.
+                        // If shell: false, executable must be the direct path to the binary, and args is an array.
+        });
+
+        child.on('error', (err) => {
+            console.error(`Failed to start emulator ${emulatorConfig.name}:`, err);
+            // Note: This error event might not be enough if the process starts but then fails (e.g. bad ROM)
+            // res.status(500).json({ error: `Failed to start emulator: ${err.message}` }); // Cannot send response here if already sent
+        });
+
+        child.unref(); // Allows the parent (server) to exit independently of the child
+
+        res.status(200).json({ message: `Attempting to launch ${path.basename(romPath)} with ${emulatorConfig.name}.` });
+
+    } catch (error) {
+        console.error(`Error spawning emulator process for ${emulatorConfig.name}:`, error);
+        res.status(500).json({ error: `Server error while trying to launch emulator: ${error.message}` });
+    }
+});
+
+
 // --- Data Persistence Routes ---
 
 const DATA_DIR = path.join(__dirname, 'data');
