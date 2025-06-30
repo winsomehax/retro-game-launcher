@@ -15,6 +15,20 @@ export const GameControllerIcon: React.FC<IconProps> = ({ className = "w-6 h-6",
   </svg>
 );
 
+export const ExternalLinkIcon: React.FC<IconProps> = ({ className = "w-6 h-6", style }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+    className={className}
+    style={{...iconStyle, ...style}}
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+  </svg>
+);
+
 export const CogIcon: React.FC<IconProps> = ({ className = "w-6 h-6", style }) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className} style={{...iconStyle, ...style}}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12a7.5 7.5 0 0015 0m-15 0a7.5 7.5 0 1115 0m-15 0H3m18 0h-1.5m-15.036-7.026A7.5 7.5 0 004.5 12H3m18 0h-1.5m-1.5-6.974A7.5 7.5 0 0019.5 12H21m0-7.026A7.5 7.5 0 0012 3v1.5m0 0V3m0 1.5A7.5 7.5 0 0019.5 5.026M12 21v-1.5m0 0V21m0-1.5A7.5 7.5 0 004.5 19.026m15-14.002V12A7.5 7.5 0 0012 21M12 3v1.5m0 16.5V12A7.5 7.5 0 0019.5 5.026M12 3c2.8 0 5.3 1.2 7.071 3.229M4.929 15.771A9.964 9.964 0 013 12m1.929-3.229A9.964 9.964 0 0112 3m7.071 3.229A9.964 9.964 0 0121 12m-1.929 3.229A9.964 9.964 0 0112 21m-7.071-3.229A9.964 9.964 0 013 12" />
