@@ -123,8 +123,8 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
       return;
     }
 
-    const gamesToImport: Game[] = selectedRomObjects.map((romObject, index) => ({ // Iterate over selectedRomObjects
-      id: `${selectedPlatformId}-${romObject.fileName.replace(/\s+/g, '-')}-${Date.now() + index}`, // Use fileName for ID base
+    const gamesToImport: Game[] = selectedRomObjects.map((romObject) => ({ // Iterate over selectedRomObjects, index no longer needed for ID
+      id: crypto.randomUUID(), // Use crypto.randomUUID() for ID
       title: romObject.displayName, // Use displayName for title
       platformId: selectedPlatformId,
       romPath: `${romsPath}/${romObject.fileName}`, // Use fileName for full path

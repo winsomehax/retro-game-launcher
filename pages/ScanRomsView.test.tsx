@@ -215,6 +215,7 @@ describe('ScanRomsView Component', () => {
       expect(mockOnAddGames).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
+            id: expect.any(String), // Check for any string for ID
             title: romObjectToSelect.displayName, // title is displayName
             platformId: mockPlatforms[1].id.toString(), // SNES was selected
             romPath: `${currentRomsPath}/${romObjectToSelect.fileName}`, // romPath uses fileName
