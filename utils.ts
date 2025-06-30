@@ -15,7 +15,7 @@ export function joinPathSegments(...segments: string[]): string {
 
   const pathString = validSegments.join('/');
   // Replace multiple slashes (e.g., //, ///) with a single slash
-  const simplifiedPath = pathString.replace(/\/{2,}/g, '/');
+  const simplifiedPath = pathString.replace(/(?<!:)\/{2,}/g, '/');
 
   // Remove trailing slash if not the only character (e.g., if path is just "/")
   if (simplifiedPath.length > 1 && simplifiedPath.endsWith('/')) {
