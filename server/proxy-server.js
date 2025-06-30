@@ -13,6 +13,13 @@ dotenv.config(); // For loading .env file from the project root
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Default base directory for user ROMs, relative to the project root
+// __dirname is server/ so ../ goes to project root.
+const DEFAULT_ROMS_BASE_PATH = path.resolve(__dirname, '..', 'user_rom_files');
+const ROMS_BASE_DIRECTORY = process.env.ROMS_BASE_DIR
+  ? path.resolve(process.env.ROMS_BASE_DIR)
+  : DEFAULT_ROMS_BASE_PATH;
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -805,6 +812,7 @@ app.listen(PORT, () => {
     if (!process.env.RAWG_API_KEY) console.warn("Warning: RAWG_API_KEY is not set. /api/search/rawg/* endpoints will fail.");
     if (!process.env.GEMINI_API_KEY) console.warn("Warning: GEMINI_API_KEY is not set. /api/gemini/* endpoints will fail.");
     console.log(`External API timeout is set to ${EXTERNAL_API_TIMEOUT / 1000} seconds.`);
+    console.log(`User ROMs base directory configured to: ${ROMS_BASE_DIRECTORY}`);
 });
 
 // --- Game Launch Endpoint ---
