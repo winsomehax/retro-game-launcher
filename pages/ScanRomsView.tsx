@@ -2,32 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../components/Button';
 import { Select } from '../components/Select';
 import { Input } from '../components/Input';
-import { Platform, Game } from '../types';
+import { Platform, Game } from '../types'; // Game type will be used for creating Game objects
 import { DEFAULT_ROM_FOLDER } from '../constants';
-
-// Define the structure for a scanned ROM object
-interface ScannedRom {
-  displayName: string;
-  fileName: string;
-}
 
 interface ScanRomsViewProps {
   platforms: Platform[];
-  onAddGames: (games: Game[], platformId: string) => void;
+  onAddGames: (games: Game[], platformId: string) => void; // To add multiple games to the main state
+  // isLoading: boolean; // Might be useful later for showing loading state during API calls
 }
 
 export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGames }) => {
   const [selectedPlatformId, setSelectedPlatformId] = useState<string>('');
   const [romsPath, setRomsPath] = useState<string>(DEFAULT_ROM_FOLDER);
-  const [scannedRoms, setScannedRoms] = useState<ScannedRom[]>([]); // Updated type
-  const [selectedRomObjects, setSelectedRomObjects] = useState<ScannedRom[]>([]); // Updated state name and type
+  const [scannedRoms, setScannedRoms] = useState<string[]>([]);
+  const [selectedRoms, setSelectedRoms] = useState<string[]>([]);
+  // const [enrichedRomsData, setEnrichedRomsData] = useState<any[]>([]); // Placeholder for future AI enrichment
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
 
+  // Effect to clear selections and messages when platform changes
   useEffect(() => {
     setScannedRoms([]);
-    setSelectedRomObjects([]); // Update state name
+    setSelectedRoms([]);
     setScanError(null);
     setImportMessage(null);
   }, [selectedPlatformId]);
@@ -45,7 +42,7 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
     setIsLoading(true);
     setScanError(null);
     setScannedRoms([]);
-    setSelectedRomObjects([]); // Update state name
+    setSelectedRoms([]);
     setImportMessage(null);
 
     try {
@@ -60,7 +57,7 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
-      const data: ScannedRom[] = await response.json(); // Updated expected data type
+      const data: string[] = await response.json();
       setScannedRoms(data);
       if (data.length === 0) {
         setScanError('No ROM files found in the specified directory. Check the path and ignored extensions.');
@@ -73,48 +70,47 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
     }
   };
 
-  const toggleRomSelection = (romObject: ScannedRom) => { // Argument is now an object
-    setSelectedRomObjects(prevSelected =>
-      prevSelected.some(selected => selected.fileName === romObject.fileName) // Check by fileName for uniqueness
-        ? prevSelected.filter(selected => selected.fileName !== romObject.fileName)
-        : [...prevSelected, romObject]
+  const toggleRomSelection = (romName: string) => {
+    setSelectedRoms(prevSelected =>
+      prevSelected.includes(romName)
+        ? prevSelected.filter(name => name !== romName)
+        : [...prevSelected, romName]
     );
   };
 
   const toggleSelectAllRoms = () => {
-    if (selectedRomObjects.length === scannedRoms.length) {
-      setSelectedRomObjects([]);
+    if (selectedRoms.length === scannedRoms.length) {
+      setSelectedRoms([]);
     } else {
-      setSelectedRomObjects([...scannedRoms]); // Store the full objects
+      setSelectedRoms([...scannedRoms]);
     }
   };
 
   const handleEnrichRoms = async () => {
-    if (selectedRomObjects.length === 0) {
-      setImportMessage("No ROMs selected to enrich.");
-      return;
-    }
-    const romNamesToEnrich = selectedRomObjects.map(rom => rom.displayName);
-    console.log('Enrich with AI button clicked. ROM display names to enrich:', romNamesToEnrich);
+    // Placeholder for future AI enrichment functionality
+    // This function would likely take `selectedRoms` or all `scannedRoms`
+    // and call an endpoint like `/api/enrich-roms`
+    console.log('Enrich with AI button clicked. Selected ROMs:', selectedRoms);
     setImportMessage('AI Enrichment feature is not yet implemented.');
-    // Example of what might happen next:
+    // Example:
     // setIsLoading(true);
     // try {
     //   const response = await fetch('/api/enrich-roms', {
     //     method: 'POST',
     //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ romNames: romNamesToEnrich, platformId: selectedPlatformId }),
+    //     body: JSON.stringify({ romNames: selectedRoms, platformId: selectedPlatformId }),
     //   });
-    //   // ... process response ...
+    //   // ... process response and update enrichedRomsData state ...
     // } catch (error) {
-    //   // ... handle error ...
+    //   console.error('Failed to enrich ROMs:', error);
+    //   setImportMessage('Error during AI enrichment.');
     // } finally {
     //   setIsLoading(false);
     // }
   };
 
   const handleImportRoms = () => {
-    if (selectedRomObjects.length === 0) { // Use selectedRomObjects
+    if (selectedRoms.length === 0) {
       setImportMessage('No ROMs selected for import.');
       return;
     }
@@ -123,21 +119,27 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
       return;
     }
 
-    const gamesToImport: Game[] = selectedRomObjects.map((romObject) => ({ // Iterate over selectedRomObjects, index no longer needed for ID
-      id: crypto.randomUUID(), // Use crypto.randomUUID() for ID
-      title: romObject.displayName, // Use displayName for title
+    const gamesToImport: Game[] = selectedRoms.map((romName, index) => ({
+      // Generate a unique ID - simple example, consider more robust generation
+      id: `${selectedPlatformId}-${romName.replace(/\s+/g, '-')}-${Date.now() + index}`,
+      title: romName, // Cleaned filename is used as title initially
       platformId: selectedPlatformId,
-      romPath: `${romsPath}/${romObject.fileName}`, // Use fileName for full path
-      coverImageUrl: '',
-      description: '',
-      genre: '',
-      releaseDate: '',
+      romPath: `${romsPath}/${romName}`, // This needs the original extension. The current backend only returns names.
+                                        // This is a simplification. For a real app, the backend should return full filenames or relative paths.
+                                        // For now, we'll assume the user needs to manually verify/add extensions or the backend is updated.
+      coverImageUrl: '', // To be fetched later or manually added
+      description: '',   // To be enriched or manually added
+      genre: '',         // To be enriched or manually added
+      releaseDate: '',   // To be enriched or manually added
     }));
 
     try {
       onAddGames(gamesToImport, selectedPlatformId);
       setImportMessage(`${gamesToImport.length} game(s) successfully prepared for import. Check your games list.`);
-      setSelectedRomObjects([]); // Clear selection
+      // Clear selections after import
+      setSelectedRoms([]);
+      // Optionally clear scannedRoms as well or keep them for further actions
+      // setScannedRoms([]);
     } catch (error) {
       console.error('Error importing games:', error);
       setImportMessage('An error occurred while importing games.');
@@ -160,6 +162,7 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
         </p>
       </header>
 
+      {/* --- Scan Configuration Section --- */}
       <section className="space-y-4 md:space-y-6 max-w-3xl mx-auto bg-neutral-800 p-6 md:p-8 rounded-lg shadow-xl mb-8">
         {platforms.length === 0 ? (
           <p className="text-center text-yellow-400 bg-yellow-900/30 p-3 rounded-md">
@@ -168,7 +171,7 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
         ) : (
           <Select
             label="1. Select Platform"
-            value={selectedPlatformId}
+            value={selectedPlatformId} // selectedPlatformId is already initialized to ''
             onChange={(e) => setSelectedPlatformId(e.target.value)}
             options={platformOptions}
             placeholder="-- Select a Platform --"
@@ -199,6 +202,7 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
         >
           {isLoading ? (
             <>
+              {/* Add a spinner icon here if available */}
               <span>Scanning...</span>
             </>
           ) : (
@@ -208,6 +212,7 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
         {scanError && <p className="text-sm text-red-400 bg-red-900/30 p-3 rounded-md text-center">{scanError}</p>}
       </section>
 
+      {/* --- Scanned ROMs Display and Actions Section --- */}
       {scannedRoms.length > 0 && (
         <section className="space-y-4 md:space-y-6 max-w-3xl mx-auto bg-neutral-800 p-6 md:p-8 rounded-lg shadow-xl">
           <h2 className="text-2xl font-semibold text-primary border-b border-neutral-700 pb-3 mb-4">
@@ -220,24 +225,24 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
                 <input
                   type="checkbox"
                   id="select-all-roms"
-                  checked={selectedRomObjects.length === scannedRoms.length && scannedRoms.length > 0}
+                  checked={selectedRoms.length === scannedRoms.length && scannedRoms.length > 0}
                   onChange={toggleSelectAllRoms}
                   className="form-checkbox h-5 w-5 text-primary bg-neutral-700 border-neutral-600 focus:ring-primary-dark"
                 />
-                <span>Select All ({selectedRomObjects.length}/{scannedRoms.length})</span> {/* Use selectedRomObjects.length */}
+                <span>Select All ({selectedRoms.length}/{scannedRoms.length})</span>
               </label>
             </div>
-            {scannedRoms.map((rom) => ( // rom is now an object
-              <div key={rom.fileName} className="flex items-center p-2 hover:bg-neutral-700 rounded-md transition-colors duration-150"> {/* key is rom.fileName */}
-                <label htmlFor={`rom-${rom.fileName.replace(/\s+/g, '-')}`} className="flex items-center space-x-2 cursor-pointer text-neutral-200 flex-grow">
+            {scannedRoms.map((romName) => (
+              <div key={romName} className="flex items-center p-2 hover:bg-neutral-700 rounded-md transition-colors duration-150">
+                <label htmlFor={`rom-${romName.replace(/\s+/g, '-')}`} className="flex items-center space-x-2 cursor-pointer text-neutral-200 flex-grow">
                   <input
                     type="checkbox"
-                    id={`rom-${rom.fileName.replace(/\s+/g, '-')}`}
-                    checked={selectedRomObjects.some(selected => selected.fileName === rom.fileName)} // Check if object with fileName exists
-                    onChange={() => toggleRomSelection(rom)} // Pass the whole object
+                    id={`rom-${romName.replace(/\s+/g, '-')}`} // Create unique ID
+                    checked={selectedRoms.includes(romName)}
+                    onChange={() => toggleRomSelection(romName)}
                     className="form-checkbox h-5 w-5 text-primary bg-neutral-700 border-neutral-600 focus:ring-primary-dark"
                   />
-                  <span>{rom.displayName}</span> {/* Display rom.displayName */}
+                  <span>{romName}</span>
                 </label>
               </div>
             ))}
@@ -246,18 +251,18 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
           <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 pt-4 border-t border-neutral-700">
             <Button
               onClick={handleEnrichRoms}
-              disabled={isLoading || scannedRoms.length === 0} // Keep general disable logic, specific logic in handler
+              disabled={isLoading || scannedRoms.length === 0}
               className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-150 ease-in-out disabled:opacity-60 disabled:cursor-not-allowed"
               title="Use AI to fetch descriptions, genres, etc. (Not implemented)"
             >
-              Enrich Selected ({selectedRomObjects.length}) {/* Use selectedRomObjects.length */}
+              Enrich Selected ({selectedRoms.length})
             </Button>
             <Button
               onClick={handleImportRoms}
-              disabled={isLoading || selectedRomObjects.length === 0} // Disable if no roms are selected
+              disabled={isLoading || selectedRoms.length === 0}
               className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-150 ease-in-out disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Import Selected ({selectedRomObjects.length}) to Library {/* Use selectedRomObjects.length */}
+              Import Selected ({selectedRoms.length}) to Library
             </Button>
           </div>
           {importMessage && <p className={`text-sm p-3 rounded-md text-center ${importMessage.includes("Error") || importMessage.includes("Failed") ? 'text-red-400 bg-red-900/30' : 'text-green-400 bg-green-900/30'}`}>{importMessage}</p>}
