@@ -3,12 +3,13 @@ import { ApiKeyEntry } from '../types';
 import { Button } from '../components/Button';
 import { KeyIcon, EditIcon, CheckIcon, XIcon } from '../components/Icons'; // Assuming XIcon and CheckIcon exist
 import { Input } from '../components/Input';
-import {
-  THEGAMESDB_API_KEY_ID,
-  GEMINI_API_KEY_ID,
-  RAWG_API_KEY_ID,
-  GITHUB_PAT_TOKEN_ID
-} from '../constants'; // Import constants for keys
+// Removed incorrect import of constants for API key IDs
+// import {
+//   THEGAMESDB_API_KEY_ID,
+//   GEMINI_API_KEY_ID,
+//   RAWG_API_KEY_ID,
+//   GITHUB_PAT_TOKEN_ID
+// } from '../constants';
 
 interface ApiKeysViewProps {
   // apiKeys: ApiKeyEntry[]; // Props no longer passed, fetched internally
@@ -203,26 +204,26 @@ export const ApiKeysView: React.FC<ApiKeysViewProps> = (
         <ApiKeyField
           label="GitHub Personal Access Token"
           description="Used for fetching data from GitHub repositories. Requires `public_repo` scope."
-          value={getKey(GITHUB_PAT_TOKEN_ID)}
-          onSave={(value) => handleSave(GITHUB_PAT_TOKEN_ID, value)}
+          value={getKey('GITHUB_PAT_TOKEN')}
+          onSave={(value) => handleSave('GITHUB_PAT_TOKEN', value)}
         />
         <ApiKeyField
           label="TheGamesDB API Key"
           description="Used for fetching game metadata and artwork from TheGamesDB.net."
-          value={getKey(THEGAMESDB_API_KEY_ID)}
-          onSave={(value) => handleSave(THEGAMESDB_API_KEY_ID, value)}
+          value={getKey('THEGAMESDB_API_KEY')}
+          onSave={(value) => handleSave('THEGAMESDB_API_KEY', value)}
         />
         <ApiKeyField
           label="Google Gemini API Key"
           description="Used for generating game descriptions and other AI-powered features."
-          value={getKey(GEMINI_API_KEY_ID)}
-          onSave={(value) => handleSave(GEMINI_API_KEY_ID, value)}
+          value={getKey('GEMINI_API_KEY')}
+          onSave={(value) => handleSave('GEMINI_API_KEY', value)}
         />
         <ApiKeyField
           label="RAWG.io API Key"
           description="Used as an alternative source for game information from RAWG.io."
-          value={getKey(RAWG_API_KEY_ID)}
-          onSave={(value) => handleSave(RAWG_API_KEY_ID, value)}
+          value={getKey('RAWG_API_KEY')}
+          onSave={(value) => handleSave('RAWG_API_KEY', value)}
         />
       </div>
       
