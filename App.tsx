@@ -220,8 +220,8 @@ const AppContent: React.FC = () => {
     });
   }, []);
 
-  const theGamesDbApiKey = apiKeys ? (apiKeys.find(k => k.id === THEGAMESDB_API_KEY_ID)?.apiKey || "") : "";
-  const geminiApiKey = apiKeys ? (apiKeys.find(k => k.id === GEMINI_API_KEY_ID)?.apiKey || "") : "";
+  // const theGamesDbApiKey = apiKeys ? (apiKeys.find(k => k.id === THEGAMESDB_API_KEY_ID)?.apiKey || "") : ""; // REMOVED
+  // const geminiApiKey = apiKeys ? (apiKeys.find(k => k.id === GEMINI_API_KEY_ID)?.apiKey || "") : ""; // REMOVED
 
   // Helper function to save data to backend
   const saveDataToBackend = async (endpoint: string, data: any, entityName: string) => {
