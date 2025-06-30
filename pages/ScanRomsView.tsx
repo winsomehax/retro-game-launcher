@@ -211,28 +211,29 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
   };
 
   const handleImportRoms = () => {
+    if (!selectedPlatformId) {
+      setImportMessage('No platform selected. This should not happen if the import button is enabled.');
+      return;
+    }
+
+    const createGameData = (title: string, filename: string): Game => ({
+      id: crypto.randomUUID(),
+      title,
+      platformId: selectedPlatformId,
+      romPath: `${romsPath}/${filename}`,
+      coverImageUrl: '', description: '', genre: '', releaseDate: '',
+    });
+
     let gamesToImport: Game[];
 
     if (showingEnrichedResults) {
       gamesToImport = enrichedGameSuggestions
         .filter(suggestion => suggestion.is_selected_for_import)
-        .map((suggestion, index) => ({
-          id: `${selectedPlatformId}-${suggestion.original_name.replace(/\s+/g, '-')}-${Date.now() + index}`,
-          title: suggestion.user_title,
-          platformId: selectedPlatformId,
-          romPath: `${romsPath}/${suggestion.filename}`,
-          coverImageUrl: '', description: '', genre: '', releaseDate: '',
-        }));
-    } else { // Importing from initial scan (enrichment skipped or failed)
+        .map((suggestion) => createGameData(suggestion.user_title, suggestion.filename));
+    } else { // Importing from initial scan
       gamesToImport = scannedRoms
         .filter(rom => selectedRomIdentifiers.includes(rom.filename))
-        .map((rom, index) => ({
-          id: `${selectedPlatformId}-${rom.name.replace(/\s+/g, '-')}-${Date.now() + index}`,
-          title: rom.name,
-          platformId: selectedPlatformId,
-          romPath: `${romsPath}/${rom.filename}`,
-          coverImageUrl: '', description: '', genre: '', releaseDate: '',
-        }));
+        .map((rom) => createGameData(rom.name, rom.filename));
     }
 
     if (gamesToImport.length === 0) {
