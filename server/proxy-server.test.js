@@ -37,11 +37,13 @@ describe('/api/scan-roms endpoint', () => {
   const callScanRomsHandler = async (reqBody) => {
     // This is a simplified simulation of how an Express handler is called.
     // In a real test with supertest, this would be an HTTP request.
+
     const req = { body: reqBody };
     const res = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
+
     // Simulate the handler logic directly for now
     // This requires extracting the handler logic from proxy-server.js
     // For now, let's assume 'scanRomsHandlerLogic' is that extracted function.
@@ -294,6 +296,7 @@ describe('/api/enrich-roms endpoint', () => {
   });
 
   // Conceptual handler call, similar to scan-roms
+
   const callEnrichRomsHandler = async (reqBody) => {
     const req = { body: reqBody };
     const res = {
@@ -309,6 +312,7 @@ describe('/api/enrich-roms endpoint', () => {
     if (!romNames || !Array.isArray(romNames) || romNames.length === 0) {
       return res.status(400).json({ error: 'Request body must contain a non-empty "romNames" array.' });
     }
+
     if (!GEMINI_API_KEY) { // Check for API key (as in actual code)
       return res.status(500).json({ error: 'Gemini API key is not configured on the server.' });
     }
@@ -394,7 +398,6 @@ Ensure the output is only the JSON array, with no surrounding text, comments, or
         mockAxiosPost.mockRestore();
     }
   });
-
 
   it('should return enriched ROM names on successful AI call', async () => {
     const mockAiResponse = {
@@ -490,7 +493,6 @@ Ensure the output is only the JSON array, with no surrounding text, comments, or
 
   it('should handle AI service timeout', async () => {
     mockAxiosPost.mockRejectedValue({ request: {}, message: 'Timeout' }); // Simulate timeout
-
     const response = await callEnrichRomsHandler({ romNames: ['smb'] });
     expect(response.status).toHaveBeenCalledWith(504);
     expect(response.json).toHaveBeenCalledWith({ error: 'Gateway Timeout: No response from AI API (enrich ROMs).' });
@@ -553,5 +555,4 @@ Ensure the output is only the JSON array, with no surrounding text, comments, or
       error: 'AI content generation blocked: SAFETY'
     }));
   });
-
 });
