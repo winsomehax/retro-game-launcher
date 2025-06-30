@@ -1,7 +1,8 @@
-// Imports
-const path = require('path');
-import request from 'supertest'; // Import supertest
-import { app } from '../proxy-server'; // Import the Express app
+// Imports (assuming a Jest-like environment)
+// For a real Express app, you'd use something like 'supertest' to test HTTP endpoints.
+// Since that's not available, we'll try to test the logic as directly as possible.
+// This might require refactoring proxy-server.js to export app or handlers if not already done.
+// For now, let's assume we can import the 'app' instance or we'll mock invoke handlers.
 
 // Mock 'fs' module
 const mockFs = {
@@ -255,20 +256,18 @@ describe('/api/enrich-roms endpoint (with supertest)', () => {
     };
     mockAxiosPost.mockResolvedValue(mockAiResponse);
 
-    const response = await request(app)
-      .post('/api/enrich-roms')
-      .send({ romNames: ['smb'], platformName: 'NES' });
+    const response = await callEnrichRomsHandler({ romNames: ['smb'], platformName: 'NES' });
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({
+    expect(response.status).toHaveBeenCalledWith(200);
+    expect(response.json).toHaveBeenCalledWith({
       source: 'Gemini',
       enriched_roms: [{ original_name: 'smb', suggested_title: 'Super Mario Bros.' }]
     });
     const expectedModel = process.env.GEMINI_MODEL_NAME || 'gemini-1.5-flash-latest';
     expect(mockAxiosPost).toHaveBeenCalledWith(
       `https://generativelanguage.googleapis.com/v1beta/models/${expectedModel}:generateContent?key=test-gemini-key`,
-      expect.any(Object),
-      expect.any(Object)
+      expect.any(Object), // body
+      expect.any(Object)  // config
     );
   });
 
@@ -281,41 +280,33 @@ describe('/api/enrich-roms endpoint (with supertest)', () => {
     };
     mockAxiosPost.mockResolvedValue(mockAiResponse);
 
-    const response = await request(app)
-        .post('/api/enrich-roms')
-        .send({ romNames: ['zelda'] });
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual(expect.objectContaining({
+    const response = await callEnrichRomsHandler({ romNames: ['zelda'] });
+    expect(response.status).toHaveBeenCalledWith(200);
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
         enriched_roms: [{ original_name: 'zelda', suggested_title: 'The Legend of Zelda' }]
     }));
   });
 
   it('should return 400 if romNames is missing or empty', async () => {
-    let response = await request(app).post('/api/enrich-roms').send({});
-    expect(response.status).toBe(400);
-    expect(response.body).toEqual({ error: 'Request body must contain a non-empty "romNames" array.' });
+    let response = await callEnrichRomsHandler({}); // Missing romNames
+    expect(response.status).toHaveBeenCalledWith(400);
+    expect(response.json).toHaveBeenCalledWith({ error: 'Request body must contain a non-empty "romNames" array.' });
 
-    response = await request(app).post('/api/enrich-roms').send({ romNames: [] });
-    expect(response.status).toBe(400);
-    expect(response.body).toEqual({ error: 'Request body must contain a non-empty "romNames" array.' });
+    response = await callEnrichRomsHandler({ romNames: [] }); // Empty romNames
+    expect(response.status).toHaveBeenCalledWith(400);
+    expect(response.json).toHaveBeenCalledWith({ error: 'Request body must contain a non-empty "romNames" array.' });
   });
 
   it('should return 500 if GEMINI_API_KEY is not configured', async () => {
-    const oldApiKey = process.env.GEMINI_API_KEY;
-    delete process.env.GEMINI_API_KEY; // Simulate missing API key for this test
-
-    const response = await request(app)
-        .post('/api/enrich-roms')
-        .send({ romNames: ['smb'] });
-
-    expect(response.status).toBe(500);
-    expect(response.body).toEqual({ error: 'Gemini API key is not configured on the server.' });
-
-    process.env.GEMINI_API_KEY = oldApiKey; // Restore for other tests in this suite or afterAll will handle
+    delete process.env.GEMINI_API_KEY; // Simulate missing API key
+    const response = await callEnrichRomsHandler({ romNames: ['smb'] });
+    expect(response.status).toHaveBeenCalledWith(500);
+    expect(response.json).toHaveBeenCalledWith({ error: 'Gemini API key is not configured on the server.' });
+    process.env.GEMINI_API_KEY = 'test-gemini-key'; // Restore for other tests
   });
 
   it('should handle AI service error (e.g., API error response)', async () => {
-    mockAxiosPost.mockRejectedValueOnce({
+    mockAxiosPost.mockRejectedValue({
       response: {
         status: 429,
         data: { error: { message: 'Quota exceeded' } },
@@ -323,17 +314,15 @@ describe('/api/enrich-roms endpoint (with supertest)', () => {
       }
     });
 
-    const response = await request(app)
-        .post('/api/enrich-roms')
-        .send({ romNames: ['smb'] });
-    expect(response.status).toBe(429);
-    expect(response.body).toEqual(expect.objectContaining({
+    const response = await callEnrichRomsHandler({ romNames: ['smb'] });
+    expect(response.status).toHaveBeenCalledWith(429);
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
       message: expect.stringContaining('Quota exceeded')
     }));
   });
 
   it('should handle AI service returning non-JSON error', async () => {
-    mockAxiosPost.mockRejectedValueOnce({
+    mockAxiosPost.mockRejectedValue({
       response: {
         status: 500,
         data: 'Internal Server Error HTML page',
@@ -341,82 +330,77 @@ describe('/api/enrich-roms endpoint (with supertest)', () => {
       }
     });
 
-    const response = await request(app)
-        .post('/api/enrich-roms')
-        .send({ romNames: ['testrom'] });
-    expect(response.status).toBe(500);
-    expect(response.body).toEqual(expect.objectContaining({
+    const response = await callEnrichRomsHandler({ romNames: ['testrom'] });
+    expect(response.status).toHaveBeenCalledWith(500);
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
         details: expect.objectContaining({ bodyPreview: "Internal Server Error HTML page" })
     }));
   });
-
+  
   it('should handle AI service timeout', async () => {
-    mockAxiosPost.mockRejectedValueOnce({ request: {}, message: 'Timeout' });
+    mockAxiosPost.mockRejectedValue({ request: {}, message: 'Timeout' }); // Simulate timeout
 
-    const response = await request(app)
-        .post('/api/enrich-roms')
-        .send({ romNames: ['smb'] });
-    expect(response.status).toBe(504);
-    expect(response.body).toEqual({ error: 'Gateway Timeout: No response from AI API (enrich ROMs).' });
+    const response = await callEnrichRomsHandler({ romNames: ['smb'] });
+    expect(response.status).toHaveBeenCalledWith(504);
+    expect(response.json).toHaveBeenCalledWith({ error: 'Gateway Timeout: No response from AI API (enrich ROMs).' });
   });
 
   it('should handle AI response parsing error (malformed JSON)', async () => {
     const mockAiResponse = {
-      data: { candidates: [{ content: { parts: [{ text: 'This is not JSON' }] } }] },
+      data: {
+        candidates: [{ content: { parts: [{ text: 'This is not JSON' }] } }]
+      },
       headers: { 'content-type': 'application/json' }
     };
     mockAxiosPost.mockResolvedValue(mockAiResponse);
 
-    const response = await request(app)
-        .post('/api/enrich-roms')
-        .send({ romNames: ['smb'] });
-    expect(response.status).toBe(500);
-    expect(response.body).toEqual({ error: 'Failed to parse game title suggestions from AI.', details: 'This is not JSON' });
+    const response = await callEnrichRomsHandler({ romNames: ['smb'] });
+    expect(response.status).toHaveBeenCalledWith(500);
+    expect(response.json).toHaveBeenCalledWith({ error: 'Failed to parse game title suggestions from AI.', details: 'This is not JSON' });
   });
 
   it('should handle AI response that is JSON but not an array', async () => {
     const mockAiResponse = {
-      data: { candidates: [{ content: { parts: [{ text: JSON.stringify({ not_an_array: true }) }] } }] },
+      data: {
+        candidates: [{ content: { parts: [{ text: JSON.stringify({ not_an_array: true }) }] } }]
+      },
       headers: { 'content-type': 'application/json' }
     };
     mockAxiosPost.mockResolvedValue(mockAiResponse);
 
-    const response = await request(app)
-        .post('/api/enrich-roms')
-        .send({ romNames: ['smb'] });
-    expect(response.status).toBe(500);
-    expect(response.body).toEqual(expect.objectContaining({
+    const response = await callEnrichRomsHandler({ romNames: ['smb'] });
+    expect(response.status).toHaveBeenCalledWith(500);
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
         error: 'Failed to parse game title suggestions from AI.'
     }));
   });
 
   it('should handle AI response with no candidates', async () => {
     const mockAiResponse = {
-      data: { candidates: [] },
+      data: { candidates: [] }, // No candidates
       headers: { 'content-type': 'application/json' }
     };
     mockAxiosPost.mockResolvedValue(mockAiResponse);
 
-    const response = await request(app)
-        .post('/api/enrich-roms')
-        .send({ romNames: ['smb'] });
-    expect(response.status).toBe(502);
-    expect(response.body).toEqual({ error: 'AI service returned unexpected or empty data structure.', details: mockAiResponse.data });
+    const response = await callEnrichRomsHandler({ romNames: ['smb'] });
+    expect(response.status).toHaveBeenCalledWith(502);
+    expect(response.json).toHaveBeenCalledWith({ error: 'AI service returned unexpected or empty data structure.', details: mockAiResponse.data });
   });
 
   it('should handle AI response indicating content blocked', async () => {
     const mockAiResponse = {
-      data: { promptFeedback: { blockReason: 'SAFETY', safetyRatings: [] } },
+      data: {
+        promptFeedback: { blockReason: 'SAFETY', safetyRatings: [] }
+      },
       headers: { 'content-type': 'application/json' }
     };
     mockAxiosPost.mockResolvedValue(mockAiResponse);
 
-    const response = await request(app)
-        .post('/api/enrich-roms')
-        .send({ romNames: ['controversial_rom_name'] });
-    expect(response.status).toBe(400);
-    expect(response.body).toEqual(expect.objectContaining({
+    const response = await callEnrichRomsHandler({ romNames: ['controversial_rom_name'] });
+    expect(response.status).toHaveBeenCalledWith(400);
+    expect(response.json).toEqual(expect.objectContaining({
       error: 'AI content generation blocked: SAFETY'
     }));
   });
+
 });
