@@ -359,7 +359,7 @@ export const GameForm: React.FC<GameFormProps> = ({
             <Button 
                 type="button" 
                 onClick={handleFetchFromGamesDB} 
-                disabled={!theGamesDbApiKey || isFetchingDB || isGeneratingDesc || !gameData.title}
+                disabled={isFetchingDB || isGeneratingDesc || !gameData.title}
                 leftIcon={isFetchingDB ? <SpinnerIcon className="w-4 h-4" /> : <CloudDownloadIcon className="w-4 h-4"/>}
                 size="md"
                 variant="secondary"
@@ -409,7 +409,7 @@ export const GameForm: React.FC<GameFormProps> = ({
             <Button 
                 type="button" 
                 onClick={handleGenerateDescription}
-                disabled={!geminiApiKey || isGeneratingDesc || isFetchingDB || !gameData.title}
+                disabled={isGeneratingDesc || isFetchingDB || !gameData.title}
                 leftIcon={isGeneratingDesc ? <SpinnerIcon className="w-4 h-4" /> : <SparklesIcon className="w-4 h-4"/>}
                 size="md"
                 variant="secondary"
