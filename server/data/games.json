@@ -28,25 +28,5 @@
     "description": "Turrican II: The Final Fight is a platformer/shooter as typically seen on consoles, but designed for home computers from the ground up.\r\n\r\nIts plot is - naturally - very simple: an evil mega-robot called The Machine attacks the United Planets Ship Avalon 1, slaughtering all who resist. All - except Bren McGuire, who manages to escape and slips into the experimental Turrican bionic armor. As Turrican, he strives to show The Machine who's the boss.\r\n\r\nUnlike other games of its type, this game contains three levels of horizontal shooter action in the spirit of R-Type or the developers' own Katakis. Six large worlds are to be explored, where you are basically free to go everywhere you want, since there is no automatic scrolling and the levels are packed with hidden extra lives and weapons. All those levels are very different: the first one in the rock desert is pretty colorful with parallaxing rainbow background and happy music, while the following worlds get darker and darker.",
     "genre": "Run and Gun",
     "releaseDate": "1991"
-  },
-  {
-    "id": "79f83428-2b7d-40c4-a096-798d2448dffb",
-    "title": "Manic Miner",
-    "platformId": 4913,
-    "romPath": "zxspectrum/Manic Miner.z80",
-    "coverImageUrl": "https://cdn.thegamesdb.net/images/medium/boxart/front/17934-1.jpg",
-    "description": "Manic Miner is a platform video game originally written for the ZX Spectrum by Matthew Smith and released by Bug-Byte in 1983 (later re-released by Software Projects). It is the first game in the Miner Willy series and among the early titles in the platform game genre. The game itself was inspired by the Atari 800 game Miner 2049er.[1] It has since been ported to numerous home computers and video game consoles.",
-    "genre": "Platformer",
-    "releaseDate": "1983"
-  },
-  {
-    "id": "80b264e9-4834-4287-a0bb-4319ad11ff48",
-    "title": "Jet Set Willy",
-    "platformId": 4913,
-    "romPath": "zxspectrum/Jet Set Willy.z80",
-    "coverImageUrl": "https://cdn.thegamesdb.net/images/medium/boxart/front/17943-1.jpg",
-    "description": "Jet Set Willy is a flip-screen platform game in which the player moves the protagonist, Willy, from room to room in his mansion collecting objects. The game is an early example of a nonlinear title since, unlike the screen-by-screen style of its prequel, the player can explore the mansion at will. Willy is controlled using only left, right and jump. He can climb stairs by walking into them (jumping through them to avoid them) and climb swinging ropes by pushing left or right depending on what direction the rope is swinging. The play area itself consists of 60 screens making up the mansion and its grounds and contains hazards (static killer objects), guardians (killer monsters which move along predetermined paths), various platforms and collectable objects. The collectable items glow to distinguish them from other items in the room.",
-    "genre": "Platformer",
-    "releaseDate": "1984"
   }
 ]
