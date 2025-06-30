@@ -131,10 +131,7 @@ export const GameForm: React.FC<GameFormProps> = ({
   };
 
   const handleFetchFromGamesDB = async () => {
-    if (!theGamesDbApiKey) {
-      setApiError("TheGamesDB API key is not configured.");
-      return;
-    }
+    // Removed client-side API key check: if (!theGamesDbApiKey) { ... }
     if (!gameData.title) {
       setApiError("Please enter a game title to fetch information.");
       return;
@@ -194,10 +191,7 @@ export const GameForm: React.FC<GameFormProps> = ({
   };
 
   const handleGenerateDescription = async () => {
-    if (!geminiApiKey) {
-      setApiError("Gemini API key is not configured.");
-      return;
-    }
+    // Removed client-side API key check: if (!geminiApiKey) { ... }
     if (!gameData.title) {
       setApiError("Please enter a game title to generate a description.");
       return;
