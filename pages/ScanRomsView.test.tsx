@@ -66,6 +66,7 @@ describe('ScanRomsView Component', () => {
     // How to verify internal state? React Testing Library encourages testing user-visible changes.
     // For example, if the selected platform name appears somewhere, or if a button becomes enabled.
     // Here, the "Begin Scan" button becomes enabled if a platform is selected.
+
     expect(screen.getByRole('button', { name: /3. Begin Scan/i })).not.toBeDisabled();
   });
 
@@ -120,7 +121,6 @@ describe('ScanRomsView Component', () => {
       });
 
       fireEvent.click(screen.getByRole('button', { name: /3. Begin Scan/i }));
-
       expect(await screen.findByText(/Scanning.../i)).toBeInTheDocument();
       await waitFor(() => expect(screen.getByText(/Test API Error/i)).toBeInTheDocument());
     });
@@ -179,7 +179,6 @@ describe('ScanRomsView Component', () => {
     test('"Select All" checkbox works', () => {
       const selectAllCheckbox = screen.getByLabelText(/Select All/i) as HTMLInputElement;
       fireEvent.click(selectAllCheckbox);
-
       mockScanResults.forEach(rom => {
         expect(screen.getByLabelText(rom)).toBeChecked();
       });
