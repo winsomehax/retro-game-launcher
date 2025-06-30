@@ -104,24 +104,30 @@ const AppContent: React.FC = () => {
   const getCurrentView = (): NavView => {
     const path = location.pathname;
     if (path.startsWith('/platforms')) return 'platforms';
-    if (path.startsWith('/scan')) return 'scan';
-    if (path.startsWith('/apikeys')) return 'apikeys';
-    return 'games';
+    if (path.startsWith('/games')) return 'games';
+    // If the path is '/apikeys', '/scan', or anything else,
+    // it doesn't correspond to a direct NavView item anymore.
+    // Default to 'games' for Navbar highlighting.
+    // The settings button itself is not highlighted based on path.
+    return 'games'; // Default highlight
   };
   
   const [currentView, setCurrentView] = useState<NavView>(getCurrentView());
 
   useEffect(() => {
-    setCurrentView(getCurrentView());
-     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
+    // When the modal is not open, the currentView should reflect the path.
+    if (!isSettingsModalOpen) {
+      setCurrentView(getCurrentView());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, isSettingsModalOpen]); // Add isSettingsModalOpen dependency
 
   const handleNavigation = (view: NavView) => {
     if (view === 'settings') {
       setIsSettingsModalOpen(true);
-      // setCurrentView(view); // Keep the current route active, modal is an overlay
+      setCurrentView('settings'); // Highlight 'Settings' in Navbar
     } else {
-      setCurrentView(view);
+      setCurrentView(view); // Highlight the navigated item
       navigate(`/${view}`);
       setIsSettingsModalOpen(false); // Close settings modal if navigating elsewhere
     }
@@ -129,7 +135,7 @@ const AppContent: React.FC = () => {
 
   const handleCloseSettingsModal = () => {
     setIsSettingsModalOpen(false);
-    // No need to restore previousView as the underlying route remains the current one
+    setCurrentView(getCurrentView()); // Revert to path-based view for Navbar highlight
   };
 
   const handleNavigateFromSettings = (path: string) => {
