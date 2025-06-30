@@ -15,3 +15,5 @@ export const createDefaultApiKeyEntry = (id: string, serviceName: string): ApiKe
   serviceName,
   apiKey: '',
 });
+
+export const DEFAULT_ROM_FOLDER = "./roms";
