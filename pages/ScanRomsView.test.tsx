@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+
 import '@testing-library/jest-dom';
 import { ScanRomsView } from './ScanRomsView';
 import { Platform, Game } from '../types'; // Added Game for type usage
@@ -21,6 +22,7 @@ const mockPlatforms: Platform[] = [
     name: 'Nintendo Entertainment System',
     alias: 'nes',
     emulators: [{ id: 'emu1', name: 'Nestopia', executablePath: '/path/to/nestopia', args: '-rom {romPath}' }],
+
     icon: '', console: '', controller: '', developer: '', manufacturer: '', media: '', cpu: '', memory: '', graphics: '', sound: '', maxcontrollers: '', display: '', overview: '', youtube: '', userIconUrl: '',
   },
   {
@@ -186,13 +188,11 @@ describe('ScanRomsView Component', () => {
     test('"Select All" checkbox works', () => {
       const selectAllCheckbox = screen.getByLabelText(/Select All/i) as HTMLInputElement;
       fireEvent.click(selectAllCheckbox);
-
       mockSuiteScanResults.forEach(rom => {
         expect(screen.getByLabelText(rom.displayName)).toBeChecked();
       });
       expect(screen.getByRole('button', { name: /Import Selected/i })).not.toBeDisabled();
       expect(selectAllCheckbox.checked).toBe(true);
-
       fireEvent.click(selectAllCheckbox);
       mockSuiteScanResults.forEach(rom => {
         expect(screen.getByLabelText(rom.displayName)).not.toBeChecked();
