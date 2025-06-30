@@ -218,6 +218,122 @@ app.get('/api/thegamesdb/platforms', async (req, res) => {
     }
 });
 
+// Endpoint for Gemini API - Enrich ROM Names to Game Titles
+app.post('/api/enrich-roms', async (req, res) => {
+    const { romNames, platformName } = req.body; // Expecting { "romNames": ["rom1", "rom2"], "platformName": "Nintendo Entertainment System" }
+
+    if (!romNames || !Array.isArray(romNames) || romNames.length === 0) {
+        return res.status(400).json({ error: 'Request body must contain a non-empty "romNames" array.' });
+    }
+    if (!GEMINI_API_KEY) {
+        return res.status(500).json({ error: 'Gemini API key is not configured on the server.' });
+    }
+
+    const modelName = process.env.GEMINI_MODEL_NAME || 'gemini-1.5-flash-latest';
+    const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
+
+    const romNameExamples = romNames.map(name => `"${name}"`).join(', ');
+    const platformContext = platformName ? `for the gaming platform "${platformName}"` : "";
+
+    const prompt = `Given the following list of ROM file names: ${romNameExamples}${platformContext}. These are often abbreviated or slightly incorrect. Provide the accurate or commonly accepted full game title for each.
+Return the data as a valid JSON array of objects, where each object has exactly two keys: "original_name" (the input ROM name) and "suggested_title" (the full, corrected game title).
+For example, if the input is ["mkombat", "stfighter2"], the output should be similar to:
+[
+  { "original_name": "mkombat", "suggested_title": "Mortal Kombat" },
+  { "original_name": "stfighter2", "suggested_title": "Street Fighter II" }
+]
+Ensure the output is only the JSON array, with no surrounding text, comments, or markdown formatting like \`\`\`json.`;
+
+    const contents = [{ "parts": [{ "text": prompt }] }];
+    console.log(`Gemini /api/enrich-roms prompt for ${romNames.length} roms (platform: ${platformName || 'N/A'}): First few - ${romNames.slice(0,3).join(', ')}`);
+
+    try {
+        const apiResponse = await axios.post(targetUrl, { contents }, {
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            timeout: EXTERNAL_API_TIMEOUT * 2, // Potentially longer timeout for multiple items
+        });
+
+        const contentType = apiResponse.headers['content-type'];
+        if (contentType && contentType.includes('application/json')) {
+            if (apiResponse.data.candidates && apiResponse.data.candidates.length > 0 &&
+                apiResponse.data.candidates[0].content && apiResponse.data.candidates[0].content.parts &&
+                apiResponse.data.candidates[0].content.parts.length > 0) {
+
+                const generatedText = apiResponse.data.candidates[0].content.parts[0].text;
+                try {
+                    // Attempt to parse the text directly as JSON, assuming AI follows instructions.
+                    // Remove markdown backticks if present.
+                    const cleanedText = generatedText.replace(/^```json\s*|```\s*$/g, '');
+                    const enrichedData = JSON.parse(cleanedText);
+
+                    if (!Array.isArray(enrichedData)) {
+                        throw new Error("AI response was valid JSON but not an array.");
+                    }
+                    // Further validation could check if each object has the required keys.
+                    // For now, we trust the AI's structure if it's a valid JSON array.
+
+                    console.log(`Gemini /api/enrich-roms successful for ${romNames.length} roms. Parsed ${enrichedData.length} results.`);
+                    res.json({
+                        source: 'Gemini',
+                        enriched_roms: enrichedData,
+                    });
+
+                } catch (parseError) {
+                    console.error("Gemini /api/enrich-roms: Error parsing generated text as JSON:", parseError.message);
+                    console.error("Gemini raw response text for parsing error:", generatedText);
+                    res.status(500).json({ error: 'Failed to parse game title suggestions from AI.', details: generatedText });
+                }
+            } else {
+                console.warn("Gemini /api/enrich-roms: No candidates or unexpected JSON structure.", apiResponse.data);
+                // Check for safetyRatings or other non-content responses
+                if (apiResponse.data.promptFeedback && apiResponse.data.promptFeedback.blockReason) {
+                    console.error("Gemini /api/enrich-roms: Prompt blocked.", apiResponse.data.promptFeedback);
+                    return res.status(400).json({ error: `AI content generation blocked: ${apiResponse.data.promptFeedback.blockReason}`, details: apiResponse.data.promptFeedback });
+                }
+                res.status(502).json({ error: 'AI service returned unexpected or empty data structure.', details: apiResponse.data });
+            }
+        } else {
+            console.error("Gemini /api/enrich-roms returned non-JSON response. Content-Type:", contentType);
+            console.error("Gemini /api/enrich-roms response data:", apiResponse.data);
+            res.status(502).json({
+                error: 'Bad Gateway: AI API (enrich ROMs) returned non-JSON response.',
+                details: { contentType: contentType, bodyPreview: String(apiResponse.data).substring(0, 200) }
+            });
+        }
+    } catch (error) {
+        console.error("Gemini /api/enrich-roms request failed:", error.message);
+        if (error.response) {
+            const contentType = error.response.headers['content-type'];
+            let responseData = error.response.data;
+            let errorDetails = responseData;
+
+            if (contentType && contentType.includes('application/json')) {
+                errorDetails = responseData.error || responseData; // Gemini often has a nested 'error' object
+                console.error("Gemini /api/enrich-roms API error details:", errorDetails);
+                res.status(error.response.status).json({
+                    message: `Error from AI API (enrich ROMs): ${errorDetails.message || 'Unknown error'}`,
+                    details: errorDetails
+                });
+            } else {
+                console.error("Gemini /api/enrich-roms error response was not JSON. Content-Type:", contentType);
+                console.error("Gemini /api/enrich-roms error response data:", responseData);
+                res.status(error.response.status).json({
+                    error: 'Error from AI API (enrich ROMs, non-JSON response).',
+                    details: {
+                        statusCode: error.response.status,
+                        contentType: contentType,
+                        bodyPreview: String(responseData).substring(0, 200)
+                    }
+                });
+            }
+        } else if (error.request) {
+            res.status(504).json({ error: 'Gateway Timeout: No response from AI API (enrich ROMs).' });
+        } else {
+            res.status(500).json({ error: 'Internal Server Error while calling AI API for ROM name enrichment.' });
+        }
+    }
+});
+
 app.get('/api/thegamesdb/platform_images', async (req, res) => {
     const { id } = req.query; // Platform ID from the client
     if (!id) {
@@ -825,6 +941,65 @@ const ensureDataDirExists = () => {
 
 // Ensure data directory exists on server startup
 ensureDataDirExists();
+
+// --- ROM Scanning Endpoint ---
+const IGNORED_ROM_EXTENSIONS = ['.txt', '.doc', '.png', '.jpg', '.jpeg', '.gif', '.mkv', '.mpg', '.avi', '.nfo'];
+
+app.post('/api/scan-roms', async (req, res) => {
+    const { platformId, folderPath } = req.body;
+
+    if (!platformId || !folderPath) {
+        return res.status(400).json({ error: 'Missing required fields: platformId or folderPath.' });
+    }
+
+    // Security: Basic validation to prevent directory traversal.
+    // Resolve the path to normalize it (e.g., remove '..') and then check if it still tries to go "up".
+    // This is a simplified check; a more robust solution might involve checking against a list of allowed base paths.
+    const resolvedPath = path.resolve(folderPath);
+    if (resolvedPath.includes('..')) {
+        return res.status(400).json({ error: 'Invalid folder path: Directory traversal detected.' });
+    }
+    // Further check: ensure the resolved path does not navigate "above" a conceptual root if you have one.
+    // For example, if all ROMs must be under /mnt/roms:
+    // const SAFE_BASE = '/mnt/roms'; // This should be configurable or derived
+    // if (!resolvedPath.startsWith(SAFE_BASE)) {
+    //    return res.status(400).json({ error: 'Invalid folder path: Path is outside allowed directories.' });
+    // }
+
+
+    try {
+        // Check if the path exists and is a directory
+        const stats = await fs.promises.stat(resolvedPath);
+        if (!stats.isDirectory()) {
+            return res.status(400).json({ error: `Specified path is not a directory: ${resolvedPath}` });
+        }
+
+        const dirents = await fs.promises.readdir(resolvedPath, { withFileTypes: true });
+        const potentialRomFiles = [];
+
+        for (const dirent of dirents) {
+            if (dirent.isFile()) {
+                const ext = path.extname(dirent.name).toLowerCase();
+                if (!IGNORED_ROM_EXTENSIONS.includes(ext)) {
+                    potentialRomFiles.push(path.parse(dirent.name).name); // Add filename without extension
+                }
+            }
+        }
+
+        console.log(`Scan for platform ${platformId} in ${resolvedPath} found ${potentialRomFiles.length} potential ROMs.`);
+        res.status(200).json(potentialRomFiles);
+
+    } catch (error) {
+        console.error(`Error scanning ROMs folder ${resolvedPath} for platform ${platformId}:`, error);
+        if (error.code === 'ENOENT') {
+            return res.status(404).json({ error: `Folder not found: ${resolvedPath}` });
+        } else if (error.code === 'EACCES') {
+            return res.status(403).json({ error: `Permission denied for folder: ${resolvedPath}` });
+        }
+        res.status(500).json({ error: 'Failed to scan ROMs folder due to a server error.', details: error.message });
+    }
+});
+
 
 // Endpoint to load games data
 app.get('/api/data/games', async (req, res) => {
