@@ -143,3 +143,17 @@ export const SpinnerIcon: React.FC<IconProps & {as?: string}> = ({ className = "
   if (as === 'span') return <span className={className} style={style}>{SvgElement}</span>; // Pass style to span if applicable
   return SvgElement;
 };
+
+export const SlidersIcon: React.FC<IconProps> = ({ className = "w-6 h-6", style }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+    className={className} // Apply className from props
+    style={{...iconStyle, ...style}} // Apply style from props, merged with default
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a2.25 2.25 0 11-4.5 0m4.5 0a2.25 2.25 0 10-4.5 0M3.75 6H7.5m3 12h9.75m-9.75 0a2.25 2.25 0 01-4.5 0m4.5 0a2.25 2.25 0 00-4.5 0m-3.75 0H7.5m9-6h3.75m-3.75 0a2.25 2.25 0 01-4.5 0m4.5 0a2.25 2.25 0 00-4.5 0m-12.75 0h3.75" />
+  </svg>
+);
