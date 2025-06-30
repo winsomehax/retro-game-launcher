@@ -10,6 +10,11 @@ interface ScannedRomFile {
   filename: string; // Full filename with extension
 }
 
+interface EnrichedRomFromApi {
+  original_name: string;
+  suggested_title: string;
+}
+
 // Structure for holding enriched data and user choices
 interface EnrichedGameSuggestion {
   original_name: string; // From ScannedRomFile.name
@@ -128,10 +133,11 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
         throw new Error(errorData.error || errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      const enrichmentResult = await response.json();
-      // Expected: { source: 'Gemini', enriched_roms: Array<{ original_name: string, suggested_title: string }> }
+      const enrichmentResult: { source: string; enriched_roms: EnrichedRomFromApi[] } = await response.json();
 
-      const suggestionsMap = new Map(enrichmentResult.enriched_roms.map((item: any) => [item.original_name, item.suggested_title]));
+      const suggestionsMap = new Map<string, string>(
+        enrichmentResult.enriched_roms.map((item: EnrichedRomFromApi) => [item.original_name, item.suggested_title])
+      );
 
       const newSuggestions: EnrichedGameSuggestion[] = romsToEnrich.map(scannedRom => ({
         original_name: scannedRom.name,
