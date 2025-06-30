@@ -983,21 +983,19 @@ app.post('/api/scan-roms', async (req, res) => {
         }
 
         const dirents = await fs.promises.readdir(resolvedPath, { withFileTypes: true });
-        const scannedFileObjects = [];
+        const potentialRomFiles = [];
 
         for (const dirent of dirents) {
             if (dirent.isFile()) {
-                const fileNameWithExt = dirent.name;
-                const ext = path.extname(fileNameWithExt).toLowerCase();
+                const ext = path.extname(dirent.name).toLowerCase();
                 if (!IGNORED_ROM_EXTENSIONS.includes(ext)) {
-                    const displayName = path.parse(fileNameWithExt).name;
-                    scannedFileObjects.push({ displayName: displayName, fileName: fileNameWithExt });
+                    potentialRomFiles.push(path.parse(dirent.name).name); // Add filename without extension
                 }
             }
         }
 
-        console.log(`Scan for platform ${platformId} in ${resolvedPath} found ${scannedFileObjects.length} potential ROMs.`);
-        res.status(200).json(scannedFileObjects);
+        console.log(`Scan for platform ${platformId} in ${resolvedPath} found ${potentialRomFiles.length} potential ROMs.`);
+        res.status(200).json(potentialRomFiles);
 
     } catch (error) {
         console.error(`Error scanning ROMs folder ${resolvedPath} for platform ${platformId}:`, error);
