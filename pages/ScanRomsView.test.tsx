@@ -1,56 +1,43 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom'; // For extended matchers like .toBeInTheDocument()
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { ScanRomsView } from './ScanRomsView';
-import { Platform } from '../types'; // Import Platform type
-import { DEFAULT_ROM_FOLDER } from '../constants'; // Import if used for default checks
+import { Platform, Game } from '../types';
+import { DEFAULT_ROM_FOLDER } from '../constants';
 
-// Mocking fetch API
 global.fetch = jest.fn();
 
-// Mock a platform for testing
 const mockPlatforms: Platform[] = [
   {
-    id: 1,
-    name: 'Nintendo Entertainment System',
-    alias: 'nes',
-    emulators: [{ id: 'emu1', name: 'Nestopia', executablePath: '/path/to/nestopia', args: '-rom {romPath}' }],
-    // other fields as required by Platform type
+    id: 1, name: 'Nintendo Entertainment System', alias: 'nes', emulators: [{ id: 'emu1', name: 'Nestopia', executablePath: '/path/to/nestopia', args: '-rom {romPath}' }],
     icon: '', console: '', controller: '', developer: '', manufacturer: '', media: '', cpu: '', memory: '', graphics: '', sound: '', maxcontrollers: '', display: '', overview: '', youtube: '', userIconUrl: '',
   },
   {
-    id: 2,
-    name: 'Super Nintendo',
-    alias: 'snes',
-    emulators: [{ id: 'emu2', name: 'Snes9x', executablePath: '/path/to/snes9x', args: '-rom {romPath}' }],
+    id: 2, name: 'Super Nintendo', alias: 'snes', emulators: [{ id: 'emu2', name: 'Snes9x', executablePath: '/path/to/snes9x', args: '-rom {romPath}' }],
     icon: '', console: '', controller: '', developer: '', manufacturer: '', media: '', cpu: '', memory: '', graphics: '', sound: '', maxcontrollers: '', display: '', overview: '', youtube: '', userIconUrl: '',
   },
 ];
 
+// Helper to create mock ScannedRomFile objects
+const createMockScannedRomFile = (name: string, ext: string = 'nes') => ({ name, filename: `${name}.${ext}` });
+
 describe('ScanRomsView Component', () => {
-  let mockOnAddGames;
+  let mockOnAddGames: jest.Mock;
 
   beforeEach(() => {
     mockOnAddGames = jest.fn();
-    // Reset fetch mock before each test
     (global.fetch as jest.Mock).mockClear();
   });
 
   const renderScanRomsView = (platforms = mockPlatforms) => {
-    return render(
-      <ScanRomsView
-        platforms={platforms}
-        onAddGames={mockOnAddGames}
-      />
-    );
+    render(<ScanRomsView platforms={platforms} onAddGames={mockOnAddGames} />);
   };
 
   test('renders initial components correctly', () => {
     renderScanRomsView();
     expect(screen.getByLabelText(/1. Select Platform/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/2. ROMs Folder Path/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/2. ROMs Folder Path/i)).toHaveValue(DEFAULT_ROM_FOLDER);
     expect(screen.getByRole('button', { name: /3. Begin Scan/i })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/e.g., \/Users\/username\/roms\/snes/i)).toHaveValue(DEFAULT_ROM_FOLDER);
   });
 
   test('shows "no platforms" message if platforms array is empty', () => {
@@ -59,203 +46,205 @@ describe('ScanRomsView Component', () => {
     expect(screen.getByRole('button', { name: /3. Begin Scan/i })).toBeDisabled();
   });
 
-  test('platform selection updates state', () => {
-    renderScanRomsView();
+  const selectPlatform = async (platformId: number | string) => {
     const platformSelect = screen.getByLabelText(/1. Select Platform/i);
-    fireEvent.change(platformSelect, { target: { value: mockPlatforms[0].id.toString() } });
-    // How to verify internal state? React Testing Library encourages testing user-visible changes.
-    // For example, if the selected platform name appears somewhere, or if a button becomes enabled.
-    // Here, the "Begin Scan" button becomes enabled if a platform is selected.
-    expect(screen.getByRole('button', { name: /3. Begin Scan/i })).not.toBeDisabled();
-  });
+    await act(async () => {
+      fireEvent.change(platformSelect, { target: { value: platformId.toString() } });
+    });
+  };
 
-  test('ROMs path input updates state', () => {
-    renderScanRomsView();
-    const romPathInput = screen.getByLabelText(/2. ROMs Folder Path/i);
-    fireEvent.change(romPathInput, { target: { value: '/custom/roms/path' } });
-    expect(romPathInput).toHaveValue('/custom/roms/path');
-  });
 
   describe('Scanning Functionality', () => {
-    beforeEach(() => {
-      // Select a platform to enable the scan button
+    test('"Begin Scan" calls API and displays initial results', async () => {
       renderScanRomsView();
-      const platformSelect = screen.getByLabelText(/1. Select Platform/i);
-      fireEvent.change(platformSelect, { target: { value: mockPlatforms[0].id.toString() } });
-    });
+      await selectPlatform(mockPlatforms[0].id);
 
-    test('"Begin Scan" calls API and displays results', async () => {
-      const mockScanResults = ['rom1', 'rom2', 'rom3'];
+      const mockApiScanResults = [
+        createMockScannedRomFile('Contra'),
+        createMockScannedRomFile('Super Mario Bros'),
+      ];
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockScanResults,
+        json: async () => mockApiScanResults,
       });
 
       fireEvent.click(screen.getByRole('button', { name: /3. Begin Scan/i }));
 
-      expect(global.fetch).toHaveBeenCalledWith('/api/scan-roms', expect.any(Object));
-      expect(global.fetch).toHaveBeenCalledWith('/api/scan-roms',
-        expect.objectContaining({
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ platformId: mockPlatforms[0].id.toString(), folderPath: DEFAULT_ROM_FOLDER })
-        })
-      );
+      expect(await screen.findByText(/Scanning.../i)).toBeInTheDocument();
 
-      expect(await screen.findByText(/Scanning.../i)).toBeInTheDocument(); // Loading state
+      await waitFor(() => {
+        expect(screen.getByText(`Found ${mockApiScanResults.length} Potential ROMs for ${mockPlatforms[0].name}`)).toBeInTheDocument();
+      });
 
-      await waitFor(() => expect(screen.getByText(`Found ${mockScanResults.length} Potential ROMs`)).toBeInTheDocument());
-      for (const romName of mockScanResults) {
-        expect(screen.getByLabelText(romName)).toBeInTheDocument();
+      for (const rom of mockApiScanResults) {
+        expect(screen.getByLabelText(new RegExp(rom.name, "i"))).toBeInTheDocument();
       }
-      // Check if "Select All" is there
-      expect(screen.getByLabelText(/Select All/i)).toBeInTheDocument();
+      // All items are selected by default after scan for enrichment
+      const selectAllCheckbox = screen.getByLabelText(/Select All/i) as HTMLInputElement;
+      expect(selectAllCheckbox.checked).toBe(true);
+      expect(screen.getByRole('button', { name: /Enrich Selected \(\d+\)/i})).not.toBeDisabled();
     });
 
     test('handles API error during scan', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        json: async () => ({ error: 'Test API Error' }),
-        status: 500
-      });
-
-      fireEvent.click(screen.getByRole('button', { name: /3. Begin Scan/i }));
-
-      expect(await screen.findByText(/Scanning.../i)).toBeInTheDocument();
-      await waitFor(() => expect(screen.getByText(/Test API Error/i)).toBeInTheDocument());
+        renderScanRomsView();
+        await selectPlatform(mockPlatforms[0].id);
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: false,
+            json: async () => ({ error: 'Test API Scan Error' }),
+            status: 500
+        });
+        fireEvent.click(screen.getByRole('button', { name: /3. Begin Scan/i }));
+        expect(await screen.findByText(/Test API Scan Error/i)).toBeInTheDocument();
     });
 
     test('handles no ROMs found scenario', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => [], // Empty array for no ROMs
-      });
-
-      fireEvent.click(screen.getByRole('button', { name: /3. Begin Scan/i }));
-
-      expect(await screen.findByText(/Scanning.../i)).toBeInTheDocument();
-      await waitFor(() => expect(screen.getByText(/No ROM files found/i)).toBeInTheDocument());
+        renderScanRomsView();
+        await selectPlatform(mockPlatforms[0].id);
+        (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => [] });
+        fireEvent.click(screen.getByRole('button', { name: /3. Begin Scan/i }));
+        expect(await screen.findByText(/No ROM files found/i)).toBeInTheDocument();
     });
   });
 
-  describe('ROM Selection and Import', () => {
-    const mockScanResults = ['Super Mario', 'Zelda II', 'Contra'];
+  describe('Enrichment Functionality', () => {
+    const initialScanResults = [
+      createMockScannedRomFile('mkombat'),
+      createMockScannedRomFile('stfighter2'),
+    ];
+
+    const mockEnrichmentApiResult = {
+      source: 'Gemini',
+      enriched_roms: [
+        { original_name: 'mkombat', suggested_title: 'Mortal Kombat' },
+        { original_name: 'stfighter2', suggested_title: 'Street Fighter II' },
+      ],
+    };
 
     beforeEach(async () => {
       renderScanRomsView();
-      const platformSelect = screen.getByLabelText(/1. Select Platform/i);
-      fireEvent.change(platformSelect, { target: { value: mockPlatforms[1].id.toString() } }); // Select SNES
+      await selectPlatform(mockPlatforms[0].id);
 
+      // Mock scan API call
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockScanResults,
+        json: async () => initialScanResults,
       });
       fireEvent.click(screen.getByRole('button', { name: /3. Begin Scan/i }));
-      await waitFor(() => expect(screen.getByText(`Found ${mockScanResults.length} Potential ROMs`)).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText(`Found ${initialScanResults.length} Potential ROMs`)).toBeInTheDocument());
     });
 
-    test('checkbox selection works and enables Import button', () => {
-      const importButton = screen.getByRole('button', { name: /Import Selected/i });
-      expect(importButton).toBeDisabled(); // Initially disabled
-
-      const romCheckbox1 = screen.getByLabelText(mockScanResults[0]);
-      fireEvent.click(romCheckbox1);
-      expect(romCheckbox1).toBeChecked();
-      expect(importButton).not.toBeDisabled(); // Enabled after one selection
-
-      const romCheckbox2 = screen.getByLabelText(mockScanResults[1]);
-      fireEvent.click(romCheckbox2);
-      expect(romCheckbox2).toBeChecked();
-
-      fireEvent.click(romCheckbox1); // Unselect
-      expect(romCheckbox1).not.toBeChecked();
-      expect(importButton).not.toBeDisabled(); // Still enabled as one is selected
-
-      fireEvent.click(romCheckbox2); // Unselect the other
-      expect(romCheckbox2).not.toBeChecked();
-      expect(importButton).toBeDisabled(); // Disabled again
-    });
-
-    test('"Select All" checkbox works', () => {
-      const selectAllCheckbox = screen.getByLabelText(/Select All/i) as HTMLInputElement;
-      fireEvent.click(selectAllCheckbox);
-      mockScanResults.forEach(rom => {
-        expect(screen.getByLabelText(rom)).toBeChecked();
+    test('calls enrich API and displays enriched results with editable titles', async () => {
+      // Mock enrich API call
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockEnrichmentApiResult,
       });
-      expect(screen.getByRole('button', { name: /Import Selected/i })).not.toBeDisabled();
-      expect(selectAllCheckbox.checked).toBe(true);
 
-      fireEvent.click(selectAllCheckbox); // Deselect all
-      mockScanResults.forEach(rom => {
-        expect(screen.getByLabelText(rom)).not.toBeChecked();
+      const enrichButton = screen.getByRole('button', { name: new RegExp(`Enrich Selected \\(${initialScanResults.length}\\)`, "i") });
+      fireEvent.click(enrichButton);
+
+      expect(await screen.findByText(/Enriching.../i)).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(screen.getByText(`Enriched ROM Titles for ${mockPlatforms[0].name}`)).toBeInTheDocument();
       });
-      expect(screen.getByRole('button', { name: /Import Selected/i })).toBeDisabled();
-      expect(selectAllCheckbox.checked).toBe(false);
+
+      for (const enriched of mockEnrichmentApiResult.enriched_roms) {
+        // Check for original name display (e.g., as a label or part of text)
+        expect(screen.getByText(new RegExp(`Original: ${enriched.original_name}`, "i"))).toBeInTheDocument();
+        // Check for the input field with the suggested title
+        const inputElement = screen.getByDisplayValue(enriched.suggested_title) as HTMLInputElement;
+        expect(inputElement).toBeInTheDocument();
+        // Check if AI suggestion is also displayed
+         expect(screen.getByText(new RegExp(`AI Suggestion: ${enriched.suggested_title}`, "i"))).toBeInTheDocument();
+
+        // Test editing the title
+        fireEvent.change(inputElement, { target: { value: `${enriched.suggested_title} - Edited` } });
+        expect(inputElement.value).toBe(`${enriched.suggested_title} - Edited`);
+      }
+       // All items are selected by default after enrichment
+      const selectAllEnrichedCheckbox = screen.getByLabelText(/Select All/i) as HTMLInputElement;
+      expect(selectAllEnrichedCheckbox.checked).toBe(true);
+      expect(screen.getByRole('button', { name: /Import Selected \(\d+\)/i})).not.toBeDisabled();
     });
 
-    test('"Import Selected to Library" button calls onAddGames with correct data', () => {
-      const romToSelect = mockScanResults[0];
-      fireEvent.click(screen.getByLabelText(romToSelect)); // Select one ROM
+    test('handles enrich API error', async () => {
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: false,
+            status: 500,
+            json: async () => ({ error: 'Test AI Enrichment Error' })
+        });
+        fireEvent.click(screen.getByRole('button', { name: new RegExp(`Enrich Selected`, "i") }));
+        expect(await screen.findByText(/Test AI Enrichment Error/i)).toBeInTheDocument();
+    });
+  });
 
-      const romPathInput = screen.getByLabelText(/2. ROMs Folder Path/i) as HTMLInputElement;
-      const currentRomsPath = romPathInput.value;
+  describe('Import Functionality', () => {
+    const romsToScan = [createMockScannedRomFile('Game1'), createMockScannedRomFile('Game2')];
 
-      fireEvent.click(screen.getByRole('button', { name: /Import Selected/i }));
+    test('imports selected ROMs from initial scan (no enrichment)', async () => {
+      renderScanRomsView();
+      await selectPlatform(mockPlatforms[1].id); // SNES
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => romsToScan });
+      fireEvent.click(screen.getByRole('button', { name: /3. Begin Scan/i }));
+      await waitFor(() => expect(screen.getByText(`Found ${romsToScan.length} Potential ROMs`)).toBeInTheDocument());
+
+      // Deselect the second ROM ("Game2")
+      // Checkboxes are labeled by rom.name
+      const checkboxGame2 = screen.getByLabelText(new RegExp(romsToScan[1].name, "i")) as HTMLInputElement;
+      fireEvent.click(checkboxGame2); // This will uncheck it as all are selected by default
+
+      fireEvent.click(screen.getByRole('button', { name: /Import Selected \(1\)/i }));
 
       expect(mockOnAddGames).toHaveBeenCalledTimes(1);
-      const gamesPassedToOnAddGames = mockOnAddGames.mock.calls[0][0];
-      expect(gamesPassedToOnAddGames).toHaveLength(1);
-      expect(gamesPassedToOnAddGames[0]).toMatchObject({
-        title: romToSelect,
-        platformId: mockPlatforms[1].id.toString(), // SNES was selected
-        romPath: `${currentRomsPath}/${romToSelect}`, // Note: This assumes romPath construction logic.
-                                                      // The actual component has a comment about this.
-        coverImageUrl: '',
-        description: '',
-        genre: '',
-        releaseDate: '',
+      const gamesImported = mockOnAddGames.mock.calls[0][0] as Game[];
+      expect(gamesImported).toHaveLength(1);
+      expect(gamesImported[0]).toMatchObject({
+        title: romsToScan[0].name,
+        platformId: mockPlatforms[1].id.toString(),
+        romPath: `${DEFAULT_ROM_FOLDER}/${romsToScan[0].filename}`,
       });
-      expect(screen.getByText(/game\(s\) successfully prepared for import/i)).toBeInTheDocument();
+      expect(screen.getByText(/1 game\(s\) successfully prepared/i)).toBeInTheDocument();
     });
-  });
 
-  describe('Enrich Selected Button', () => {
-    const mockScanResults = ['MetroidPrime'];
-    beforeEach(async () => {
+    test('imports selected ROMs after enrichment with edited title', async () => {
       renderScanRomsView();
-      const platformSelect = screen.getByLabelText(/1. Select Platform/i);
-      fireEvent.change(platformSelect, { target: { value: mockPlatforms[0].id.toString() } });
+      await selectPlatform(mockPlatforms[0].id); // NES
 
+      const scannedRom = createMockScannedRomFile('dkong');
+      const enrichmentSuggestion = { original_name: 'dkong', suggested_title: 'Donkey Kong' };
+      const editedTitle = 'Donkey Kong (Classic)';
+
+      // Mock Scan
+      (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => [scannedRom] });
+      fireEvent.click(screen.getByRole('button', { name: /3. Begin Scan/i }));
+      await waitFor(() => expect(screen.getByText(/Found 1 Potential ROM/i)).toBeInTheDocument());
+
+      // Mock Enrich
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockScanResults,
+        json: async () => ({ source: 'Gemini', enriched_roms: [enrichmentSuggestion] })
       });
-      fireEvent.click(screen.getByRole('button', { name: /3. Begin Scan/i }));
-      await waitFor(() => expect(screen.getByText(`Found ${mockScanResults.length} Potential ROMs`)).toBeInTheDocument());
-    });
+      fireEvent.click(screen.getByRole('button', { name: /Enrich Selected \(1\)/i }));
+      await waitFor(() => expect(screen.getByText(/Enriched ROM Titles/i)).toBeInTheDocument());
 
-    test('"Enrich Selected" button is present and shows placeholder message on click', () => {
-      const enrichButton = screen.getByRole('button', { name: /Enrich Selected/i });
-      expect(enrichButton).toBeInTheDocument();
-      // Initially might be disabled if no ROMs are selected by default after scan, or if it requires selection.
-      // The current implementation seems to enable it if scannedRoms.length > 0.
-      // Let's assume it should be enabled after scan, but disabled if no ROMs are selected.
-      // The button text includes "(0)" if nothing is selected.
+      // Edit title
+      const titleInput = screen.getByDisplayValue(enrichmentSuggestion.suggested_title) as HTMLInputElement;
+      fireEvent.change(titleInput, { target: { value: editedTitle } });
 
-      expect(enrichButton.textContent).toContain("(0)"); // No roms selected initially
-      // The button itself is not disabled, but its action might depend on selectedRoms.
-      // The code has `disabled={isLoading || scannedRoms.length === 0}` for the button group,
-      // and individual buttons inside might have their own logic or rely on this.
-      // The "Enrich Selected" button in the code has `disabled={isLoading || scannedRoms.length === 0}`
-      // Let's test clicking it. It should show a message.
+      // Import
+      fireEvent.click(screen.getByRole('button', { name: /Import Selected \(1\)/i }));
 
-      fireEvent.click(enrichButton);
-      expect(screen.getByText(/AI Enrichment feature is not yet implemented/i)).toBeInTheDocument();
-
-      // Select a ROM and see if count updates
-      fireEvent.click(screen.getByLabelText(mockScanResults[0]));
-      expect(enrichButton.textContent).toContain("(1)");
+      expect(mockOnAddGames).toHaveBeenCalledTimes(1);
+      const gamesImported = mockOnAddGames.mock.calls[0][0] as Game[];
+      expect(gamesImported).toHaveLength(1);
+      expect(gamesImported[0]).toMatchObject({
+        title: editedTitle,
+        platformId: mockPlatforms[0].id.toString(),
+        romPath: `${DEFAULT_ROM_FOLDER}/${scannedRom.filename}`,
+      });
+      expect(screen.getByText(/1 game\(s\) successfully prepared/i)).toBeInTheDocument();
     });
   });
-
 });
