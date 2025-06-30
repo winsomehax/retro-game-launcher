@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../components/Button';
 import { Select } from '../components/Select';
 import { Input } from '../components/Input';
+import { FolderBrowser } from '../components/FolderBrowser';
 import { Platform, Game } from '../types';
 import { DEFAULT_ROM_FOLDER } from '../constants';
 
@@ -32,6 +33,7 @@ interface ScanRomsViewProps {
 export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGames }) => {
   const [selectedPlatformId, setSelectedPlatformId] = useState<string>('');
   const [romsPath, setRomsPath] = useState<string>(DEFAULT_ROM_FOLDER);
+  const [isFolderBrowserVisible, setIsFolderBrowserVisible] = useState<boolean>(false);
 
   // Stage 1: Raw scanned files
   const [scannedRoms, setScannedRoms] = useState<ScannedRomFile[]>([]);
@@ -292,13 +294,28 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
             disabled={isLoading}
           />
         )}
-        <Input
-          label="2. ROMs Folder Path" type="text" value={romsPath} onChange={(e) => setRomsPath(e.target.value)}
-          placeholder="e.g., /Users/username/roms/snes or C:\\ROMs\\SNES" className="w-full"
-          labelClassName="text-neutral-300 text-lg" inputClassName="bg-neutral-700 border-neutral-600 text-white focus:ring-primary focus:border-primary"
-          helpText={`Default: ${DEFAULT_ROM_FOLDER}. Provide the full local path to the directory containing ROM files for ${currentPlatformName}.`}
-          disabled={isLoading || !selectedPlatformId}
-        />
+        <div>
+          <label className="text-neutral-300 text-lg mb-1 block">2. ROMs Folder Path</label>
+          <div className="flex space-x-2 items-end">
+            <Input
+              type="text" value={romsPath} onChange={(e) => setRomsPath(e.target.value)}
+              placeholder="e.g., /Users/username/roms/snes or C:\\ROMs\\SNES"
+              className="w-full" // Occupies available width
+              inputClassName="bg-neutral-700 border-neutral-600 text-white focus:ring-primary focus:border-primary"
+              disabled={isLoading || !selectedPlatformId}
+              // Removed helpText from here to place it after the div
+            />
+            <Button
+              onClick={() => setIsFolderBrowserVisible(true)}
+              className="bg-neutral-600 hover:bg-neutral-500 text-white py-2.5 px-4 rounded-md whitespace-nowrap mb-[1px]" // Adjusted for alignment with typical Input height
+              disabled={isLoading || !selectedPlatformId || platforms.length === 0}
+              title="Browse for folder"
+            >
+              Browse...
+            </Button>
+          </div>
+          <p className="text-xs text-neutral-500 mt-1">{`Default: ${DEFAULT_ROM_FOLDER}. Provide the full local path to the directory containing ROM files for ${currentPlatformName}.`}</p>
+        </div>
         <Button
           onClick={handleScan} disabled={!selectedPlatformId || isLoading || platforms.length === 0}
           className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
@@ -307,6 +324,19 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
         </Button>
         {scanError && <p className="text-sm text-red-400 bg-red-900/30 p-3 rounded-md text-center">{scanError}</p>}
       </section>
+
+      {isFolderBrowserVisible && (
+        <section className="my-4 p-4 md:p-6 border border-neutral-700 rounded-lg bg-neutral-850 shadow-xl max-w-3xl mx-auto">
+          <FolderBrowser
+            initialPath={romsPath}
+            onPathSelected={(selectedPath) => {
+              setRomsPath(selectedPath);
+              setIsFolderBrowserVisible(false);
+            }}
+            onCancel={() => setIsFolderBrowserVisible(false)}
+          />
+        </section>
+      )}
 
       {/* Section for Scanned ROMs (before enrichment OR if enrichment is skipped/failed) */}
       {!showingEnrichedResults && scannedRoms.length > 0 && (
