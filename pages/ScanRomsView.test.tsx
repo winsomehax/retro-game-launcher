@@ -79,6 +79,7 @@ describe('ScanRomsView Component', () => {
 
   describe('Scanning Functionality', () => {
     beforeEach(() => {
+
       renderScanRomsView();
       const platformSelect = screen.getByLabelText(/1. Select Platform/i);
       fireEvent.change(platformSelect, { target: { value: mockPlatforms[0].id.toString() } });
@@ -97,7 +98,6 @@ describe('ScanRomsView Component', () => {
       });
 
       fireEvent.click(screen.getByRole('button', { name: /3. Begin Scan/i }));
-
       expect(global.fetch).toHaveBeenCalledWith('/api/scan-roms',
         expect.objectContaining({
           method: 'POST',
@@ -192,7 +192,6 @@ describe('ScanRomsView Component', () => {
       });
       expect(screen.getByRole('button', { name: /Import Selected/i })).not.toBeDisabled();
       expect(selectAllCheckbox.checked).toBe(true);
-
       fireEvent.click(selectAllCheckbox);
       mockSuiteScanResults.forEach(rom => {
         expect(screen.getByLabelText(rom.displayName)).not.toBeChecked();
@@ -205,7 +204,6 @@ describe('ScanRomsView Component', () => {
       // 5. General review: romToSelect should be an object
       const romObjectToSelect = mockSuiteScanResults[0];
       fireEvent.click(screen.getByLabelText(romObjectToSelect.displayName));
-
       const romPathInput = screen.getByLabelText(/2. ROMs Folder Path/i) as HTMLInputElement;
       const currentRomsPath = romPathInput.value;
 
