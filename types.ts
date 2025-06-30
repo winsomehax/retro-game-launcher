@@ -48,7 +48,7 @@ export interface ApiKeyEntry {
   apiKey: string;
 }
 
-export type NavView = 'games' | 'platforms' | 'scan' | 'apikeys';
+export type NavView = 'games' | 'platforms' | 'settings' | 'apikeys';
 
 // Added for TheGamesDB Platform Images API
 export interface TheGamesDBImage {
