@@ -1,6 +1,6 @@
 
 import React, { useRef, useEffect, useCallback, createRef } from 'react';
-import { GameControllerIcon, CogIcon, SearchIcon, KeyIcon, SlidersIcon } from './Icons';
+import { GameControllerIcon, CogIcon, SlidersIcon } from './Icons'; // Removed SearchIcon and KeyIcon
 import { NavView } from '../types';
 
 interface NavbarProps {
@@ -44,7 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, gamesCo
     { view: 'games', label: 'Games', icon: <GameControllerIcon /> },
     { view: 'platforms', label: 'Platforms', icon: <CogIcon /> },
       { view: 'settings', label: 'Settings', icon: <SlidersIcon /> },
-    { view: 'apikeys', label: 'API Keys', icon: <KeyIcon /> },
+    // { view: 'apikeys', label: 'API Keys', icon: <KeyIcon /> }, // Removed
   ];
 
   const navItemRefs = useRef(navItemsData.map(() => createRef<HTMLButtonElement>()));
