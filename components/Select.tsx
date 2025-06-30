@@ -35,7 +35,7 @@ export const Select: React.FC<SelectProps> = ({
             The 'required' attribute on the <select> tag (if present in restProps) will work correctly with this.
           */}
           {placeholder && <option value="" disabled>{placeholder}</option>}
-          {options.map(option => (
+          {(options || []).map(option => (
             <option key={option.value} value={option.value}>{option.label}</option>
           ))}
         </select>

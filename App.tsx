@@ -5,6 +5,7 @@ import { Navbar } from './components/Navbar';
 import { GamesView } from './pages/GamesView';
 import { PlatformsView } from './pages/PlatformsView';
 import { ScanView } from './pages/ScanView';
+import { ScanRomsView } from './pages/ScanRomsView'; // Import ScanRomsView
 import { ApiKeysView } from './pages/ApiKeysView';
 // Add SettingsModal import
 import { SettingsModal } from './components/SettingsModal';
@@ -105,10 +106,8 @@ const AppContent: React.FC = () => {
     const path = location.pathname;
     if (path.startsWith('/platforms')) return 'platforms';
     if (path.startsWith('/games')) return 'games';
-    // If the path is '/apikeys', '/scan', or anything else,
-    // it doesn't correspond to a direct NavView item anymore.
-    // Default to 'games' for Navbar highlighting.
-    // The settings button itself is not highlighted based on path.
+    if (path.startsWith('/scan-roms')) return 'scan-roms'; // Added for scan-roms
+    // Settings is modal, doesn't change main view highlight directly based on path
     return 'games'; // Default highlight
   };
   
@@ -126,9 +125,13 @@ const AppContent: React.FC = () => {
     if (view === 'settings') {
       setIsSettingsModalOpen(true);
       setCurrentView('settings'); // Highlight 'Settings' in Navbar
+    } else if (view === 'scan-roms') {
+      setCurrentView('scan-roms');
+      navigate('/scan-roms');
+      setIsSettingsModalOpen(false);
     } else {
       setCurrentView(view); // Highlight the navigated item
-      navigate(`/${view}`);
+      navigate(`/${view}`); // Existing views: 'games', 'platforms'
       setIsSettingsModalOpen(false); // Close settings modal if navigating elsewhere
     }
   };
@@ -317,6 +320,12 @@ const AppContent: React.FC = () => {
               onAddGames={handleAddMultipleGames}
             />}
           />
+          <Route path="/scan-roms" element={ // New route for ScanRomsView
+            <ScanRomsView
+              platforms={platforms}
+              onAddGames={handleAddMultipleGames} // Pass the function directly
+            />
+          } />
           <Route path="/apikeys" element={
             // ApiKeysView will fetch its own data
             <ApiKeysView />
