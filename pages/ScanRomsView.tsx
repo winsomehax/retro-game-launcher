@@ -211,28 +211,39 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
   };
 
   const handleImportRoms = () => {
+    if (!selectedPlatformId) {
+      setImportMessage('No platform selected. This should not happen if the import button is enabled.');
+      return;
+    }
+
+    // Helper to create a unique ID. This is a placeholder for a more robust solution like UUID.
+    // It incorporates more elements to reduce collision probability.
+    const generateGameId = (namePart: string, filenamePart: string, index: number): string => {
+        const randomPart = Math.random().toString(36).substring(2, 8);
+        const timePart = Date.now().toString(36);
+        const safeName = namePart.replace(/[^a-zA-Z0-9]/g, '-').substring(0, 30);
+        const safeFilename = filenamePart.replace(/[^a-zA-Z0-9]/g, '-').substring(0, 30);
+        return `${selectedPlatformId}-${safeName}-${safeFilename}-${timePart}-${randomPart}-${index}`;
+    };
+
+    const createGameData = (title: string, originalName: string, filename: string, index: number): Game => ({
+      id: generateGameId(originalName, filename, index),
+      title,
+      platformId: selectedPlatformId,
+      romPath: `${romsPath}/${filename}`,
+      coverImageUrl: '', description: '', genre: '', releaseDate: '',
+    });
+
     let gamesToImport: Game[];
 
     if (showingEnrichedResults) {
       gamesToImport = enrichedGameSuggestions
         .filter(suggestion => suggestion.is_selected_for_import)
-        .map((suggestion, index) => ({
-          id: `${selectedPlatformId}-${suggestion.original_name.replace(/\s+/g, '-')}-${Date.now() + index}`,
-          title: suggestion.user_title,
-          platformId: selectedPlatformId,
-          romPath: `${romsPath}/${suggestion.filename}`,
-          coverImageUrl: '', description: '', genre: '', releaseDate: '',
-        }));
-    } else { // Importing from initial scan (enrichment skipped or failed)
+        .map((suggestion, index) => createGameData(suggestion.user_title, suggestion.original_name, suggestion.filename, index));
+    } else { // Importing from initial scan
       gamesToImport = scannedRoms
         .filter(rom => selectedRomIdentifiers.includes(rom.filename))
-        .map((rom, index) => ({
-          id: `${selectedPlatformId}-${rom.name.replace(/\s+/g, '-')}-${Date.now() + index}`,
-          title: rom.name,
-          platformId: selectedPlatformId,
-          romPath: `${romsPath}/${rom.filename}`,
-          coverImageUrl: '', description: '', genre: '', releaseDate: '',
-        }));
+        .map((rom, index) => createGameData(rom.name, rom.name, rom.filename, index));
     }
 
     if (gamesToImport.length === 0) {
