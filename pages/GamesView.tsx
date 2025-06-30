@@ -13,8 +13,8 @@ interface GamesViewProps {
   onUpdateGame: (game: Game) => void;
   onDeleteGame: (gameId: string) => void;
   onAddPlatform: (platformToAdd: { id: string; name: string; alias?: string }) => void; // Added prop
-  theGamesDbApiKey: string;
-  geminiApiKey: string;
+  // theGamesDbApiKey: string; // REMOVED - Handled by server
+  // geminiApiKey: string; // REMOVED - Handled by server
 }
 
 export const GamesView: React.FC<GamesViewProps> = ({ 
@@ -23,9 +23,9 @@ export const GamesView: React.FC<GamesViewProps> = ({
   onAddGame, 
   onUpdateGame, 
   onDeleteGame,
-  onAddPlatform, // Added prop
-  theGamesDbApiKey,
-  geminiApiKey
+  onAddPlatform // Added prop
+  // theGamesDbApiKey, // REMOVED
+  // geminiApiKey // REMOVED
 }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
@@ -52,8 +52,44 @@ export const GamesView: React.FC<GamesViewProps> = ({
     setEditingGame(null);
   };
   
-  const handleLaunchGame = (game: Game) => {
-    alert(`Launching ${game.title}...\nROM: ${game.romPath}\nPlatform: ${platforms.find(p=>p.id === game.platformId)?.name}\n(This is a simulation)`);
+  const handleLaunchGame = async (game: Game) => {
+    const platform = platforms.find(p => p.id.toString() === game.platformId.toString());
+    if (!platform) {
+      alert(`Platform configuration not found for ${game.title}.`);
+      return;
+    }
+    if (!platform.emulators || platform.emulators.length === 0) {
+      alert(`No emulator configured for platform: ${platform.name}. Please configure one in the Platforms view.`);
+      return;
+    }
+    // For simplicity, using the first configured emulator.
+    // A more advanced version might let the user choose or set a default.
+    const emulator = platform.emulators[0];
+
+    console.log(`Attempting to launch ${game.title} with emulator ${emulator.name}`);
+    try {
+      const response = await fetch('/api/games/launch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gameId: game.id, // Send gameId, server can look up details
+          romPath: game.romPath,
+          platformId: game.platformId,
+          emulatorId: emulator.id // Send selected emulatorId
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || `Failed to launch game (status: ${response.status})`);
+      }
+      alert(result.message || `Launching ${game.title}...`); // Or use a more sophisticated notification
+    } catch (error) {
+      console.error('Error launching game:', error);
+      alert(`Error launching game: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const filteredGames = useMemo(() => {
@@ -124,8 +160,8 @@ export const GamesView: React.FC<GamesViewProps> = ({
         platforms={platforms}
         initialGame={editingGame}
         onAddPlatform={onAddPlatform} // Pass down the function
-        theGamesDbApiKey={theGamesDbApiKey}
-        geminiApiKey={geminiApiKey}
+        // theGamesDbApiKey={theGamesDbApiKey} // REMOVED
+        // geminiApiKey={geminiApiKey} // REMOVED
       />
     </div>
   );

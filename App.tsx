@@ -6,40 +6,23 @@ import { GamesView } from './pages/GamesView';
 import { PlatformsView } from './pages/PlatformsView';
 import { ScanView } from './pages/ScanView';
 import { ApiKeysView } from './pages/ApiKeysView';
-import { 
-  THEGAMESDB_API_KEY_ID, 
-  SERVICE_NAME_THEGAMESDB, 
-  GEMINI_API_KEY_ID, 
-  SERVICE_NAME_GEMINI,
-  createDefaultApiKeyEntry 
-} from './constants';
+// API Key related constants are no longer needed here
+// import {
+//   THEGAMESDB_API_KEY_ID,
+//   SERVICE_NAME_THEGAMESDB,
+//   GEMINI_API_KEY_ID,
+//   SERVICE_NAME_GEMINI,
+//   createDefaultApiKeyEntry
+// } from './constants';
 
 
-// Helper function to load initial API keys
-const loadInitialApiKeys = async (): Promise<ApiKeyEntry[]> => {
-  try {
-    const response = await fetch('/api/env/keys');
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status} for /api/env/keys`);
-    }
-    const loadedKeys = await response.json();
-    const apiKeys = Object.entries(loadedKeys).map(([key, value]) => {
-      return { id: key, serviceName: key, apiKey: value as string };
-    });
-    return apiKeys;
-  } catch (error) {
-    console.error("Could not load API keys from server, using defaults:", error);
-    // Default fallback
-    return [];
-  }
-};
-
+// Helper function to load initial API keys - REMOVED as keys are handled server-side
 
 
 const AppContent: React.FC = () => {
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [games, setGames] = useState<Game[]>([]);
-  const [apiKeys, setApiKeys] = useState<ApiKeyEntry[] | null>(null);
+  // const [apiKeys, setApiKeys] = useState<ApiKeyEntry[] | null>(null); // REMOVED
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -82,9 +65,9 @@ const AppContent: React.FC = () => {
         setIsInitialGamesLoadComplete(true);
       });
 
-    loadInitialApiKeys().then(keys => {
-      setApiKeys(keys);
-    });
+    // loadInitialApiKeys().then(keys => { // REMOVED
+    //   setApiKeys(keys);
+    // });
   }, []);
 
 
@@ -284,8 +267,8 @@ const AppContent: React.FC = () => {
               onUpdateGame={handleUpdateGame}
               onDeleteGame={handleDeleteGame}
               onAddPlatform={handleAddPlatform} // Pass down the function
-              theGamesDbApiKey={theGamesDbApiKey}
-              geminiApiKey={geminiApiKey}
+              // theGamesDbApiKey={theGamesDbApiKey} // REMOVED
+              // geminiApiKey={geminiApiKey} // REMOVED
             />
           } />
           <Route path="/platforms" element={
@@ -302,19 +285,13 @@ const AppContent: React.FC = () => {
           } />
           <Route path="/scan" element={
             <ScanView
-              geminiApiKeyConfigured={!!geminiApiKey}
+              // geminiApiKeyConfigured={!!geminiApiKey} // REMOVED
               onAddGames={handleAddMultipleGames}
             />}
           />
           <Route path="/apikeys" element={
-             apiKeys ? ( 
-              <ApiKeysView
-                apiKeys={apiKeys as ApiKeyEntry[]} 
-                onUpdateApiKey={handleUpdateApiKey}
-              />
-            ) : (
-              <div className="p-8 text-center text-neutral-500">Loading API Key settings...</div>
-            )
+            // ApiKeysView will fetch its own data
+            <ApiKeysView />
           } />
           <Route path="*" element={<Navigate to="/games" replace />} />
         </Routes>

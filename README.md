@@ -9,6 +9,7 @@ This is a React-based retro game launcher intended for local desktop use. It fea
 - Search for game information on RAWG.
 - Generate game descriptions using Google's Gemini AI.
 - Configure emulators and platforms.
+- Launch games using configured emulators.
 
 ## Project Structure
 
@@ -122,10 +123,23 @@ The backend server (`server/proxy-server.js`) provides the following endpoints:
         ```
     -   Example: Send a POST request with the above JSON structure to `/api/gemini/generatecontent`.
 
+-   **`POST /api/games/launch`**: Launches a game using the configured emulator.
+    -   Request Body (JSON):
+        ```json
+        {
+          "romPath": "/path/to/your/rom.nes",
+          "platformId": "platform_id_from_platforms.json",
+          "emulatorId": "emulator_id_configured_for_the_platform"
+        }
+        ```
+    -   The server uses Node.js `child_process` to execute the emulator.
+
 ## Development Notes
 
--   The frontend makes calls to these backend endpoints, which then proxy the requests to the external APIs. This is done to avoid CORS issues and securely manage API keys.
+-   **API Key Management**: All API keys for external services (TheGamesDB, RAWG, Gemini) are managed exclusively by the backend server. They are configured in the `server/.env` file and are never exposed to the frontend client. The frontend makes requests to the local proxy server, which then injects the necessary API keys before forwarding requests to external services.
+-   **Emulator Launching**: Game launching is handled by the backend `/api/games/launch` endpoint. The frontend sends the ROM path, platform ID, and emulator ID. The backend looks up the emulator configuration (executable path and command-line arguments) from `server/data/platforms.json` and uses Node.js `child_process.spawn` to run the emulator.
+    -   Emulator command-line arguments can use `{romPath}` as a placeholder for the game's ROM file path and `{emulatorPath}` for the emulator's executable path.
 -   Ensure your `.env` file in the `server/` directory is correctly configured with API keys before running the application.
--   The API server uses `server/thegamesdb_platforms.json` to map TheGamesDB platform IDs to their names and aliases. This file is based on data from TheGamesDB API and might need to be updated periodically if TheGamesDB adds or changes platforms. The mechanism for updating this file is currently manual.
--   When fetching game information from TheGamesDB, if a game's platform is not found in your local `data/platforms.json` (by matching ID, name, or alias), the application will attempt to add it automatically to `data/platforms.json` using the information (ID, name, alias) from `server/thegamesdb_platforms.json`. This helps keep your local platform list up-to-date with platforms encountered from TheGamesDB. Note: This automatic update currently modifies the in-memory state; actual persistence to `data/platforms.json` file depends on existing save mechanisms in `App.tsx`.
--   The application relies on local JSON files (`data/games.json`, `data/platforms.json`) for storing user game data and platform configurations. These are typically managed by the frontend.
+-   The API server uses `server/data/thegamesdb_platforms.json` to map TheGamesDB platform IDs to their names and aliases. This file is based on data from TheGamesDB API and might need to be updated periodically if TheGamesDB adds or changes platforms.
+-   When fetching game information from TheGamesDB, if a game's platform is not found in your local `data/platforms.json` (by matching ID, name, or alias), the application will attempt to add it automatically to `data/platforms.json` using the information (ID, name, alias) from `server/thegamesdb_platforms.json`.
+-   The application relies on local JSON files (`server/data/games.json`, `server/data/platforms.json`) for storing user game data and platform configurations. These are managed by the backend API and updated by the frontend through API calls.

@@ -3,10 +3,16 @@ import { ApiKeyEntry } from '../types';
 import { Button } from '../components/Button';
 import { KeyIcon, EditIcon, CheckIcon, XIcon } from '../components/Icons'; // Assuming XIcon and CheckIcon exist
 import { Input } from '../components/Input';
+import {
+  THEGAMESDB_API_KEY_ID,
+  GEMINI_API_KEY_ID,
+  RAWG_API_KEY_ID,
+  GITHUB_PAT_TOKEN_ID
+} from '../constants'; // Import constants for keys
 
 interface ApiKeysViewProps {
-  apiKeys: ApiKeyEntry[];
-  onUpdateApiKey: (apiKey: ApiKeyEntry) => void;
+  // apiKeys: ApiKeyEntry[]; // Props no longer passed, fetched internally
+  // onUpdateApiKey: (apiKey: ApiKeyEntry) => void; // Props no longer passed
 }
 
 const maskApiKey = (key: string) => {
@@ -75,20 +81,106 @@ const ApiKeyField: React.FC<{
   );
 };
 
-export const ApiKeysView: React.FC<ApiKeysViewProps> = ({
-  apiKeys,
-  onUpdateApiKey,
-}) => {
-  // This component no longer needs its own state for the keys.
-  // It will read directly from the apiKeys prop.
+export const ApiKeysView: React.FC<ApiKeysViewProps> = (
+  // { apiKeys: initialApiKeys, onUpdateApiKey: onUpdateApiKeyProp } // Props removed
+) => {
+  const [apiKeys, setApiKeys] = useState<ApiKeyEntry[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSave = (key: string, value: string) => {
-    onUpdateApiKey({ id: key, serviceName: key, apiKey: value });
+  useEffect(() => {
+    const fetchApiKeys = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch('/api/env/keys');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status} for /api/env/keys`);
+        }
+        const loadedKeys = await response.json();
+        const formattedApiKeys = Object.entries(loadedKeys).map(([key, value]) => ({
+          id: key,
+          serviceName: key, // Assuming serviceName is the same as the key for now
+          apiKey: value as string,
+        }));
+        setApiKeys(formattedApiKeys);
+      } catch (err) {
+        console.error("Could not load API keys from server:", err);
+        setError(err instanceof Error ? err.message : 'Failed to load API keys');
+        setApiKeys([]); // Set to empty array on error to prevent null issues later
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchApiKeys();
+  }, []);
+
+  const handleUpdateApiKey = (updatedApiKey: ApiKeyEntry) => {
+    setApiKeys(prevKeys => {
+      if (!prevKeys) return null; // Should not happen if initialized to [] on error
+      const newKeys = prevKeys.map(key => key.id === updatedApiKey.id ? updatedApiKey : key);
+
+      const keysToSave = newKeys.reduce((acc, key) => {
+        acc[key.id] = key.apiKey;
+        return acc;
+      }, {} as Record<string, string>);
+
+      fetch('/api/env/keys', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(keysToSave),
+      })
+      .then(async response => {
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: "Unknown error during save." }));
+          throw new Error(`Failed to save API keys: ${response.status} ${response.statusText}. ${errorData.message || errorData.error || ''}`);
+        }
+        return response.json();
+      })
+      .then(result => {
+        console.log(`API keys saved successfully:`, result.message);
+        // Optionally, you can show a notification to the user to restart the server.
+      })
+      .catch(err => {
+        console.error(`Error saving API keys:`, err);
+        setError(err instanceof Error ? err.message : 'Failed to save API keys');
+      });
+
+      return newKeys;
+    });
   };
 
-  const getKey = (id: string) => apiKeys.find(k => k.id === id)?.apiKey || '';
+  const handleSave = (key: string, value: string) => {
+    // Find the serviceName from the existing keys or use the key itself if not found (should always be found)
+    const serviceName = apiKeys?.find(k => k.id === key)?.serviceName || key;
+    handleUpdateApiKey({ id: key, serviceName: serviceName, apiKey: value });
+  };
 
-  if (!apiKeys) {
+  const getKey = (id: string) => apiKeys?.find(k => k.id === id)?.apiKey || '';
+
+  if (isLoading) {
+    return (
+      <div className="p-8 flex-grow h-full overflow-y-auto animate-fade-in text-center text-neutral-500">
+            <KeyIcon className="w-20 h-20 mx-auto mb-4 animate-pulse" />
+            <h3 className="text-xl font-semibold">Loading API Key Settings...</h3>
+        </div>
+    );
+  }
+
+  if (error) {
+    return (
+        <div className="p-8 flex-grow h-full overflow-y-auto animate-fade-in text-center text-red-400">
+            <KeyIcon className="w-20 h-20 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold">Error Loading API Keys</h3>
+            <p>{error}</p>
+        </div>
+    );
+  }
+
+  if (!apiKeys) { // Should ideally not be hit if initialized to [] on error and loading handles null
     return (
         <div className="p-8 flex-grow h-full overflow-y-auto animate-fade-in text-center text-neutral-500">
             <KeyIcon className="w-20 h-20 mx-auto mb-4" />
@@ -111,26 +203,26 @@ export const ApiKeysView: React.FC<ApiKeysViewProps> = ({
         <ApiKeyField
           label="GitHub Personal Access Token"
           description="Used for fetching data from GitHub repositories. Requires `public_repo` scope."
-          value={getKey('GITHUB_PAT_TOKEN')}
-          onSave={(value) => handleSave('GITHUB_PAT_TOKEN', value)}
+          value={getKey(GITHUB_PAT_TOKEN_ID)}
+          onSave={(value) => handleSave(GITHUB_PAT_TOKEN_ID, value)}
         />
         <ApiKeyField
           label="TheGamesDB API Key"
           description="Used for fetching game metadata and artwork from TheGamesDB.net."
-          value={getKey('THEGAMESDB_API_KEY')}
-          onSave={(value) => handleSave('THEGAMESDB_API_KEY', value)}
+          value={getKey(THEGAMESDB_API_KEY_ID)}
+          onSave={(value) => handleSave(THEGAMESDB_API_KEY_ID, value)}
         />
         <ApiKeyField
           label="Google Gemini API Key"
           description="Used for generating game descriptions and other AI-powered features."
-          value={getKey('GEMINI_API_KEY')}
-          onSave={(value) => handleSave('GEMINI_API_KEY', value)}
+          value={getKey(GEMINI_API_KEY_ID)}
+          onSave={(value) => handleSave(GEMINI_API_KEY_ID, value)}
         />
         <ApiKeyField
           label="RAWG.io API Key"
           description="Used as an alternative source for game information from RAWG.io."
-          value={getKey('RAWG_API_KEY')}
-          onSave={(value) => handleSave('RAWG_API_KEY', value)}
+          value={getKey(RAWG_API_KEY_ID)}
+          onSave={(value) => handleSave(RAWG_API_KEY_ID, value)}
         />
       </div>
       
