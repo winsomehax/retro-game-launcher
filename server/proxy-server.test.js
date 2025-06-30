@@ -229,6 +229,7 @@ describe('/api/enrich-roms endpoint', () => {
       axios.post.mockRestore(); // Restore if already spied/mocked by other tests
     }
     mockAxiosPost = jest.spyOn(axios, 'post');
+
   });
 
   beforeEach(() => {
@@ -328,7 +329,6 @@ Ensure the output is only the JSON array, with no surrounding text, comments, or
     return res;
   };
 
-
   it('should return enriched ROM names on successful AI call', async () => {
     const mockAiResponse = {
       data: {
@@ -424,7 +424,6 @@ Ensure the output is only the JSON array, with no surrounding text, comments, or
 
   it('should handle AI service timeout', async () => {
     mockAxiosPost.mockRejectedValue({ request: {}, message: 'Timeout' });
-
     const response = await callEnrichRomsHandler({ romNames: ['smb'] });
     expect(response.status).toHaveBeenCalledWith(504);
     expect(response.json).toHaveBeenCalledWith({ error: 'Gateway Timeout: No response from AI API (enrich ROMs).' });
