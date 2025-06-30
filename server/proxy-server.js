@@ -814,7 +814,6 @@ app.listen(PORT, () => {
     console.log(`External API timeout is set to ${EXTERNAL_API_TIMEOUT / 1000} seconds.`);
     console.log(`User ROMs base directory configured to: ${ROMS_BASE_DIRECTORY}`);
   });
-}
 
 // --- Game Launch Endpoint ---
 import { spawn } from 'child_process'; // Import spawn
