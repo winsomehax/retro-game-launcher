@@ -1,6 +1,6 @@
 
 import React, { useRef, useEffect, useCallback, createRef } from 'react';
-import { GameControllerIcon, CogIcon, SearchIcon, KeyIcon } from './Icons';
+import { GameControllerIcon, CogIcon, SearchIcon, KeyIcon, SlidersIcon } from './Icons';
 import { NavView } from '../types';
 
 interface NavbarProps {
@@ -43,7 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, gamesCo
   const navItemsData: { view: NavView; label: string; icon: React.ReactNode }[] = [
     { view: 'games', label: 'Games', icon: <GameControllerIcon /> },
     { view: 'platforms', label: 'Platforms', icon: <CogIcon /> },
-    { view: 'scan', label: 'Scan ROMs', icon: <SearchIcon /> },
+      { view: 'settings', label: 'Settings', icon: <SlidersIcon /> },
     { view: 'apikeys', label: 'API Keys', icon: <KeyIcon /> },
   ];
 
