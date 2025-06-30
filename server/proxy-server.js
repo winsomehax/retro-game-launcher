@@ -990,7 +990,10 @@ app.post('/api/scan-roms', async (req, res) => {
             if (dirent.isFile()) {
                 const ext = path.extname(dirent.name).toLowerCase();
                 if (!IGNORED_ROM_EXTENSIONS.includes(ext)) {
-                    potentialRomFiles.push(path.parse(dirent.name).name); // Add filename without extension
+                    potentialRomFiles.push({
+                        name: path.parse(dirent.name).name, // Filename without extension
+                        filename: dirent.name // Full filename with extension
+                    });
                 }
             }
         }
