@@ -163,6 +163,7 @@ export const ScanRomsView: React.FC<ScanRomsViewProps> = ({ platforms, onAddGame
       </header>
 
       {/* --- Scan Configuration Section --- */}
+
       <section className="space-y-4 md:space-y-6 max-w-3xl mx-auto bg-neutral-800 p-6 md:p-8 rounded-lg shadow-xl mb-8">
         {platforms.length === 0 ? (
           <p className="text-center text-yellow-400 bg-yellow-900/30 p-3 rounded-md">

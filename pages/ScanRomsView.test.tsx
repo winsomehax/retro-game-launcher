@@ -179,7 +179,6 @@ describe('ScanRomsView Component', () => {
     test('"Select All" checkbox works', () => {
       const selectAllCheckbox = screen.getByLabelText(/Select All/i) as HTMLInputElement;
       fireEvent.click(selectAllCheckbox);
-
       mockScanResults.forEach(rom => {
         expect(screen.getByLabelText(rom)).toBeChecked();
       });
