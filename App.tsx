@@ -6,6 +6,8 @@ import { GamesView } from './pages/GamesView';
 import { PlatformsView } from './pages/PlatformsView';
 import { ScanView } from './pages/ScanView';
 import { ApiKeysView } from './pages/ApiKeysView';
+// Add SettingsModal import
+import { SettingsModal } from './components/SettingsModal';
 // API Key related constants are no longer needed here
 // import {
 //   THEGAMESDB_API_KEY_ID,
@@ -24,6 +26,9 @@ const AppContent: React.FC = () => {
   const [games, setGames] = useState<Game[]>([]);
   // const [apiKeys, setApiKeys] = useState<ApiKeyEntry[] | null>(null); // REMOVED
   
+  // State for Settings Modal
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -112,8 +117,25 @@ const AppContent: React.FC = () => {
   }, [location.pathname]);
 
   const handleNavigation = (view: NavView) => {
-    setCurrentView(view);
-    navigate(`/${view}`);
+    if (view === 'settings') {
+      setIsSettingsModalOpen(true);
+      // setCurrentView(view); // Keep the current route active, modal is an overlay
+    } else {
+      setCurrentView(view);
+      navigate(`/${view}`);
+      setIsSettingsModalOpen(false); // Close settings modal if navigating elsewhere
+    }
+  };
+
+  const handleCloseSettingsModal = () => {
+    setIsSettingsModalOpen(false);
+    // No need to restore previousView as the underlying route remains the current one
+  };
+
+  const handleNavigateFromSettings = (path: string) => {
+    // path will be like '/apikeys'
+    navigate(path);
+    setIsSettingsModalOpen(false); // Close modal after navigation
   };
 
   const handleAddGame = useCallback((game: Game) => setGames(prev => [...prev, game]), []);
@@ -296,6 +318,11 @@ const AppContent: React.FC = () => {
           <Route path="*" element={<Navigate to="/games" replace />} />
         </Routes>
       </main>
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={handleCloseSettingsModal}
+        onNavigate={handleNavigateFromSettings}
+      />
     </div>
   );
 };
