@@ -13,6 +13,13 @@ dotenv.config(); // For loading .env file from the project root
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Default base directory for user ROMs, relative to the project root
+// __dirname is server/ so ../ goes to project root.
+const DEFAULT_ROMS_BASE_PATH = path.resolve(__dirname, '..', 'user_rom_files');
+const ROMS_BASE_DIRECTORY = process.env.ROMS_BASE_DIR
+  ? path.resolve(process.env.ROMS_BASE_DIR)
+  : DEFAULT_ROMS_BASE_PATH;
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -805,6 +812,7 @@ app.listen(PORT, () => {
     if (!process.env.RAWG_API_KEY) console.warn("Warning: RAWG_API_KEY is not set. /api/search/rawg/* endpoints will fail.");
     if (!process.env.GEMINI_API_KEY) console.warn("Warning: GEMINI_API_KEY is not set. /api/gemini/* endpoints will fail.");
     console.log(`External API timeout is set to ${EXTERNAL_API_TIMEOUT / 1000} seconds.`);
+    console.log(`User ROMs base directory configured to: ${ROMS_BASE_DIRECTORY}`);
 });
 
 // --- Game Launch Endpoint ---
@@ -946,56 +954,81 @@ ensureDataDirExists();
 const IGNORED_ROM_EXTENSIONS = ['.txt', '.doc', '.png', '.jpg', '.jpeg', '.gif', '.mkv', '.mpg', '.avi', '.nfo'];
 
 app.post('/api/scan-roms', async (req, res) => {
-    const { platformId, folderPath } = req.body;
+    const { platformId, folderPath: userProvidedPath } = req.body; // Renamed folderPath to userProvidedPath for clarity
 
-    if (!platformId || !folderPath) {
-        return res.status(400).json({ error: 'Missing required fields: platformId or folderPath.' });
+    if (!platformId || typeof userProvidedPath !== 'string') { // Ensure userProvidedPath is a string
+        return res.status(400).json({ error: 'Missing or invalid required fields: platformId or folderPath.' });
     }
 
-    // Security: Basic validation to prevent directory traversal.
-    // Resolve the path to normalize it (e.g., remove '..') and then check if it still tries to go "up".
-    // This is a simplified check; a more robust solution might involve checking against a list of allowed base paths.
-    const resolvedPath = path.resolve(folderPath);
-    if (resolvedPath.includes('..')) {
-        return res.status(400).json({ error: 'Invalid folder path: Directory traversal detected.' });
+    // 1. Prevent '..' and absolute paths in userProvidedPath input.
+    if (userProvidedPath.includes('..') || path.isAbsolute(userProvidedPath)) {
+        console.warn(`Invalid path segment: ${userProvidedPath}. Contains '..' or is absolute.`);
+        return res.status(400).json({ error: 'Invalid folder path. Must be a relative path without ".." segments.' });
     }
-    // Further check: ensure the resolved path does not navigate "above" a conceptual root if you have one.
-    // For example, if all ROMs must be under /mnt/roms:
-    // const SAFE_BASE = '/mnt/roms'; // This should be configurable or derived
-    // if (!resolvedPath.startsWith(SAFE_BASE)) {
-    //    return res.status(400).json({ error: 'Invalid folder path: Path is outside allowed directories.' });
+
+    // 2. Construct the intended absolute path by joining with ROMS_BASE_DIRECTORY.
+    const intendedPath = path.join(ROMS_BASE_DIRECTORY, userProvidedPath);
+
+    // 3. Normalize the path and perform the critical security check.
+    const finalResolvedPath = path.resolve(intendedPath);
+
+    if (!finalResolvedPath.startsWith(ROMS_BASE_DIRECTORY)) {
+        console.warn(`Directory traversal attempt denied. Path ${finalResolvedPath} is outside of base ${ROMS_BASE_DIRECTORY}`);
+        return res.status(403).json({ error: 'Access denied: Path is outside the allowed base directory.' });
+    }
+
+    // Note: The check `!finalResolvedPath.startsWith(ROMS_BASE_DIRECTORY + path.sep) && finalResolvedPath !== ROMS_BASE_DIRECTORY`
+    // was considered but simplified. If `finalResolvedPath === ROMS_BASE_DIRECTORY`, it means userProvidedPath was empty or ".",
+    // which is allowed by `startsWith(ROMS_BASE_DIRECTORY)`. If stricter sub-directory only scanning is needed (disallowing base scan),
+    // this logic would need to be:
+    // if (finalResolvedPath === ROMS_BASE_DIRECTORY && (userProvidedPath !== '' && userProvidedPath !== '.')) {
+    //   // This means they provided something like "/" or "///" which resolved to base.
+    //   // Or if scanning base is disallowed entirely:
+    //   // console.warn(`Attempt to scan ROMS_BASE_DIRECTORY itself denied: ${finalResolvedPath}`);
+    //   // return res.status(403).json({ error: 'Scanning the base ROMs directory directly is not permitted, specify a subfolder.' });
+    // } else if (!finalResolvedPath.startsWith(ROMS_BASE_DIRECTORY + path.sep)) {
+    //   // This ensures it's a subdirectory if not the base itself
+    //   // console.warn(`Directory traversal attempt denied...`);
+    //   // return res.status(403).json({ error: 'Access denied: Path is outside allowed base directory or not a direct subdirectory.' });
     // }
-
+    // For now, allowing scan of ROMS_BASE_DIRECTORY if userProvidedPath is empty or "." is implicitly handled by the simpler startsWith.
 
     try {
         // Check if the path exists and is a directory
-        const stats = await fs.promises.stat(resolvedPath);
+        const stats = await fs.promises.stat(finalResolvedPath); // Use finalResolvedPath
         if (!stats.isDirectory()) {
-            return res.status(400).json({ error: `Specified path is not a directory: ${resolvedPath}` });
+            console.warn(`Specified path is not a directory: User path "${userProvidedPath}" resolved to "${finalResolvedPath}"`);
+            return res.status(400).json({ error: `Specified path is not a directory: ${userProvidedPath}` }); // Return userProvidedPath for clarity
         }
 
-        const dirents = await fs.promises.readdir(resolvedPath, { withFileTypes: true });
-        const potentialRomFiles = [];
+        const dirents = await fs.promises.readdir(finalResolvedPath, { withFileTypes: true }); // Use finalResolvedPath
+        const scannedFileObjects = [];
 
         for (const dirent of dirents) {
             if (dirent.isFile()) {
-                const ext = path.extname(dirent.name).toLowerCase();
+                const fileNameWithExt = dirent.name;
+                const ext = path.extname(fileNameWithExt).toLowerCase();
                 if (!IGNORED_ROM_EXTENSIONS.includes(ext)) {
-                    potentialRomFiles.push(path.parse(dirent.name).name); // Add filename without extension
+                    const displayName = path.parse(fileNameWithExt).name;
+                    scannedFileObjects.push({ displayName: displayName, fileName: fileNameWithExt });
                 }
             }
         }
 
-        console.log(`Scan for platform ${platformId} in ${resolvedPath} found ${potentialRomFiles.length} potential ROMs.`);
-        res.status(200).json(potentialRomFiles);
+        console.log(`Scan for platform ${platformId} in ${finalResolvedPath} found ${scannedFileObjects.length} potential ROMs.`);
+        res.status(200).json(scannedFileObjects);
 
     } catch (error) {
-        console.error(`Error scanning ROMs folder ${resolvedPath} for platform ${platformId}:`, error);
+        // Log the actual error with context first
+        console.error(`Error processing scan for user path "${userProvidedPath}" (resolved to "${finalResolvedPath}") for platform ${platformId}:`, error);
+
         if (error.code === 'ENOENT') {
-            return res.status(404).json({ error: `Folder not found: ${resolvedPath}` });
+            // User-facing error should ideally reflect the path they provided, if it's safe to do so.
+            return res.status(404).json({ error: `Directory not found: ${userProvidedPath}` });
         } else if (error.code === 'EACCES') {
-            return res.status(403).json({ error: `Permission denied for folder: ${resolvedPath}` });
+            return res.status(403).json({ error: `Permission denied for directory: ${userProvidedPath}` });
         }
+        // Generic error for other cases
         res.status(500).json({ error: 'Failed to scan ROMs folder due to a server error.', details: error.message });
     }
 });
