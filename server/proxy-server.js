@@ -6,6 +6,7 @@ import { URL } from 'url'; // Import URL for parsing
 import { fileURLToPath } from 'url'; // Added for ES Module __dirname
 import fs from 'fs'; // Import File System module
 import path, { dirname } from 'path'; // Import Path module and dirname for ES Module __dirname
+import os from 'os'; // Import OS module for homedir
 
 dotenv.config(); // For loading .env file from the project root
 
@@ -813,8 +814,118 @@ app.listen(PORT, () => {
     if (!process.env.GEMINI_API_KEY) console.warn("Warning: GEMINI_API_KEY is not set. /api/gemini/* endpoints will fail.");
     console.log(`External API timeout is set to ${EXTERNAL_API_TIMEOUT / 1000} seconds.`);
     console.log(`User ROMs base directory configured to: ${ROMS_BASE_DIRECTORY}`);
+});
+
+// --- File System Listing Endpoint ---
+app.get('/api/fs/list', async (req, res) => {
+    try {
+        // 1. Determine baseBrowsePath
+        let baseBrowsePath;
+        try {
+            // Check if ROMS_BASE_DIRECTORY is a valid, accessible directory
+            // Ensure ROMS_BASE_DIRECTORY is treated as an absolute path or resolved correctly
+            const resolvedRomsDir = path.resolve(ROMS_BASE_DIRECTORY);
+            const stats = await fs.promises.stat(resolvedRomsDir);
+            if (stats.isDirectory()) {
+                baseBrowsePath = resolvedRomsDir;
+            } else {
+                // Not a directory, log warning and fallback
+                console.warn(`ROMS_BASE_DIRECTORY (${resolvedRomsDir}) is not a directory. Falling back to home directory.`);
+                baseBrowsePath = os.homedir();
+            }
+        } catch (error) {
+            // Error accessing ROMS_BASE_DIRECTORY (e.g., doesn't exist, permissions)
+            console.warn(`Error accessing ROMS_BASE_DIRECTORY (${ROMS_BASE_DIRECTORY}): ${error.message}. Falling back to home directory.`);
+            baseBrowsePath = os.homedir();
+        }
+        const resolvedBaseBrowsePath = path.resolve(baseBrowsePath);
+
+        // 2. Determine targetPath
+        const pathQueryParam = req.query.path;
+        let targetPath; // This will be resolved before use
+        if (pathQueryParam) {
+            // Resolve relative to *something* if it's not absolute.
+            // For security, we will resolve it and then check if it's within baseBrowsePath.
+            // A simple path.resolve might make it absolute to CWD of server, which might not be intended.
+            // So, we resolve it first, then check.
+            targetPath = path.resolve(pathQueryParam);
+        } else {
+            targetPath = resolvedBaseBrowsePath;
+        }
+        let resolvedTargetPath = path.resolve(targetPath); // Normalize after potential user input
+
+        // 3. Security Check: Ensure resolvedTargetPath is within or same as resolvedBaseBrowsePath
+        if (!resolvedTargetPath.startsWith(resolvedBaseBrowsePath)) {
+            // If targetPath resolves outside baseBrowsePath, deny access.
+            // This handles cases like ../../ going too far up if pathQueryParam was relative.
+            console.warn(`Access denied: User path "${pathQueryParam}" resolved to "${resolvedTargetPath}", which is outside base "${resolvedBaseBrowsePath}".`);
+            return res.status(403).json({ error: "Access denied: Path is outside the allowed browsing area." });
+        }
+
+        // 4. Read directory contents
+        const dirents = await fs.promises.readdir(resolvedTargetPath, { withFileTypes: true });
+
+        let items = [];
+        for (const dirent of dirents) {
+            items.push({
+                name: dirent.name,
+                isDirectory: dirent.isDirectory(),
+                // Provide full path for client to use for next request if it's a directory
+                path: path.join(resolvedTargetPath, dirent.name)
+            });
+        }
+
+        // Sort items: directories first, then files, both alphabetically
+        items.sort((a, b) => {
+            if (a.isDirectory && !b.isDirectory) return -1;
+            if (!a.isDirectory && b.isDirectory) return 1;
+            return a.name.localeCompare(b.name);
+        });
+
+        // 5. Calculate parentPath
+        let parentPathToShow = null;
+        // Only calculate a parent path if the current path is not already the base path
+        if (path.resolve(resolvedTargetPath) !== path.resolve(resolvedBaseBrowsePath)) {
+            const calculatedParentPath = path.resolve(resolvedTargetPath, '..');
+            // Ensure the calculated parent path is still within or equal to the base browse path
+            if (calculatedParentPath.startsWith(resolvedBaseBrowsePath)) {
+                parentPathToShow = calculatedParentPath;
+            } else {
+                // This case should ideally not be hit if the initial security check is robust,
+                // but as a fallback, if parent goes outside, it means current is one level below base.
+                // So parent should be base itself.
+                parentPathToShow = resolvedBaseBrowsePath;
+            }
+            // If, after all, the parent path resolves to the same as the current target path (e.g. at root C:\ -> C:\)
+            // and this target path is also the base path, then parent should be null.
+             if (path.resolve(parentPathToShow) === path.resolve(resolvedTargetPath) && path.resolve(resolvedTargetPath) === path.resolve(resolvedBaseBrowsePath)) {
+                parentPathToShow = null;
+            } else if (path.resolve(parentPathToShow) === path.resolve(resolvedTargetPath) && path.resolve(resolvedTargetPath) !== path.resolve(resolvedBaseBrowsePath)) {
+                // If parent is same as current, but current is NOT base, set parent to base (e.g. current is /mnt/roms/nes, parent becomes /mnt/roms)
+                 parentPathToShow = resolvedBaseBrowsePath;
+            }
+
+
+        }
+
+
+        res.status(200).json({
+            currentPath: resolvedTargetPath,
+            parentPath: parentPathToShow,
+            items
+        });
+
+    } catch (error) {
+        console.error(`Error in /api/fs/list for path "${req.query.path || ''}":`, error);
+        if (error.code === 'ENOENT' || error.code === 'ENOTDIR') {
+            res.status(404).json({ error: "Path not found or is not a directory." });
+        } else if (error.code === 'EACCES') {
+            res.status(403).json({ error: "Permission denied to access the path." });
+        } else {
+            res.status(500).json({ error: "Server error listing directory contents.", details: error.message });
+        }
+    }
   });
-}
 
 // --- Game Launch Endpoint ---
 import { spawn } from 'child_process'; // Import spawn
