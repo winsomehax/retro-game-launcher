@@ -19,7 +19,7 @@ const AI_OPTIONS = [
 const AI_STORAGE_KEY = 'selectedAiService';
 // Placeholder for where DEFAULT_ROM_BASE might come from.
 // In a real app, this might be fetched from a server or an env variable.
-const DEFAULT_ROM_BASE_PATH = process.env.DEFAULT_ROM_BASE || 'Not Set / Managed by Server';
+const DEFAULT_ROM_BASE_PATH = "Typically configured via a server-side .env file (e.g., DEFAULT_ROM_BASE=/mnt/roms)";
 
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onNavigate }) => {
