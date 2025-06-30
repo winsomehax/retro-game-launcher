@@ -1,0 +1,129 @@
+# Retro Game Launcher - Design and Functionality Documentation
+
+This document outlines the design, architecture, and functionality of the Retro Game Launcher application.
+
+## 1. Core Functionality
+
+The application serves as a graphical interface for managing and launching retro video games. Its key functions are:
+
+*   **Game Library Management:** Users can view, add, edit, and delete games in their collection.
+*   **Platform Management:** Users can add, edit, and delete game platforms (e.g., "Super Nintendo," "Commodore 64").
+*   **Emulator Configuration:** For each platform, users can configure one or more emulators, specifying the executable path and command-line arguments.
+*   **Game Launching:** Users can launch a game, which (in a real implementation) would execute the configured emulator with the game's ROM path.
+*   **Metadata Fetching:** The application can fetch game metadata (description, genre, release date, cover art) from TheGamesDB.
+*   **AI-Powered Description Generation:** It can use Google's Gemini AI to generate game descriptions.
+*   **ROM Scanning:** Users can scan a directory for ROM files, which can then be added to the library.
+
+## 2. Application Architecture
+
+The project is a single-page application (SPA) built with **React** and **Vite**. It communicates with a lightweight **Node.js/Express** backend server that acts as a proxy for external APIs and handles data persistence.
+
+### 2.1. Frontend (Client)
+
+*   **Framework:** React with TypeScript.
+*   **Build Tool:** Vite.
+*   **Routing:** `react-router-dom` is used for client-side routing between different views.
+*   **State Management:** Component-level state (`useState`, `useEffect`) is used extensively. Global state (games, platforms) is managed in the top-level `App.tsx` component and passed down as props.
+*   **Styling:** The UI is styled with a custom, modern, dark-themed design. Component class names suggest a utility-first CSS approach, likely intended for a framework like Tailwind CSS, although it's not explicitly listed as a dependency.
+
+### 2.2. Backend (Server)
+
+*   **Framework:** Node.js with Express.
+*   **Purpose:**
+    1.  **Proxy:** It proxies requests to external services (TheGamesDB, Gemini) to hide API keys from the client and bypass CORS issues.
+    2.  **Data Persistence:** It reads from and writes to local JSON files (`games.json`, `platforms.json`) to persist the user's library.
+    3.  **Environment Variables:** It manages API keys stored in a `.env` file.
+
+## 3. Data Model and Persistence
+
+The application's data is structured into three main entities: `Games`, `Platforms`, and `API Keys`.
+
+### 3.1. Data Models (`types.ts`)
+
+*   **`Game`**:
+    *   `id`: Unique string identifier.
+    *   `title`: String.
+    *   `platformId`: String, foreign key to a `Platform`.
+    *   `romPath`: String, path to the game's ROM file.
+    *   `coverImageUrl`: String, URL for the game's cover art.
+    *   `description`: String.
+    *   `genre`: String.
+    *   `releaseDate`: String.
+
+*   **`Platform`**:
+    *   `id`: Numeric ID, typically from TheGamesDB.
+    *   `name`: String.
+    *   `alias`: String (e.g., "snes").
+    *   `emulators`: An array of `EmulatorConfig` objects.
+    *   Other optional fields from TheGamesDB (e.g., `manufacturer`, `cpu`, `overview`).
+
+*   **`EmulatorConfig`**:
+    *   `id`: Unique string identifier.
+    *   `name`: String.
+    *   `executablePath`: String, path to the emulator executable.
+    *   `args`: String, command-line arguments for the emulator.
+
+*   **`ApiKeyEntry`**:
+    *   `id`: Unique string identifier.
+    *   `serviceName`: String.
+    *   `apiKey`: String.
+
+### 3.2. Data Persistence
+
+*   The application state (games and platforms) is stored in `server/data/games.json` and `server/data/platforms.json`.
+*   The Express server provides simple RESTful endpoints (`/api/data/games`, `/api/data/platforms`) for the client to fetch and update this data.
+*   API keys are stored in a `.env` file in the project root. The server provides endpoints to read and update these keys.
+
+## 4. User Interface and Components
+
+The UI is divided into four main views, navigated by a persistent sidebar.
+
+### 4.1. Views (`pages/`)
+
+*   **`GamesView`**: The main view, displaying a grid of `GameCard` components. It includes search and filtering functionality. Users can add, edit, or delete games from this view.
+*   **`PlatformsView`**: A two-column layout. The left column lists all configured platforms. The right column displays the details and configured emulators for the selected platform. Users can manage platforms and their emulators here.
+*   **`ScanView`**: Allows users to select a local directory. It lists the files and folders within that directory. Users can then use the Gemini AI to fetch details for the scanned files and import them as new games for a specific platform.
+*   **`ApiKeysView`**: A settings page where users can view and update the API keys for TheGamesDB and Gemini.
+
+### 4.2. Reusable Components (`components/`)
+
+The application uses a set of well-defined, reusable components:
+
+*   **`Navbar`**: The main navigation sidebar.
+*   **`Button`**: A versatile button component with different variants (`primary`, `secondary`, `danger`, `ghost`) and sizes.
+*   **`Input`, `Textarea`, `Select`**: Standard form input components with consistent styling.
+*   **`Modal`**: A generic modal dialog component used for forms (e.g., `GameForm`, `PlatformForm`).
+*   **`GameCard`**: Displays a single game with its cover art, title, and action buttons.
+*   **`GameForm`**: A form within a modal for adding or editing game details. It includes logic to fetch data from TheGamesDB.
+*   **`PlatformForm`**: A form for adding or editing platform details.
+*   **`EmulatorConfigForm`**: A form for adding or editing emulator configurations for a platform.
+*   **`Icons`**: A collection of SVG icon components.
+
+## 5. Data Flow and State Management
+
+1.  **Initial Load:**
+    *   The `App` component fetches the initial lists of games and platforms from the backend's `/api/data/*` endpoints.
+    *   It also loads API keys from the `/api/env/keys` endpoint.
+    *   This data is stored in the state of the `App` component.
+
+2.  **CRUD Operations:**
+    *   User actions (e.g., adding a game) trigger callback functions (`handleAddGame`, `onUpdatePlatform`, etc.) passed down from `App`.
+    *   These callbacks update the state in the `App` component.
+    *   An `useEffect` hook in `App` observes changes to the `games` and `platforms` state. When a change occurs, it sends the entire updated array to the backend via a `POST` request to `/api/data/*`, overwriting the corresponding JSON file.
+
+3.  **External API Interaction:**
+    *   When a user wants to fetch game details, the `GameForm` component makes a request to the proxy server's `/api/search/thegamesdb/bygamename` endpoint.
+    *   The proxy server then calls the actual TheGamesDB API, adding the necessary API key.
+    *   The response is returned to the client, which then populates the form fields.
+    *   A similar flow is used for generating descriptions with Gemini via the `/api/gemini/enrich-gamelist` endpoint.
+
+## 6. Design and Styling
+
+*   **Theme:** Dark, modern, and clean, with a focus on typography and spacing.
+*   **Color Palette:** Primary actions use a vibrant color (referred to as `primary`, likely a shade of blue or purple), with secondary actions using another distinct color. The background is a dark neutral shade.
+*   **Layout:** The main layout is a fixed sidebar with a scrollable content area. Content within views is organized using grids and flexbox.
+*   **Interactivity:** Hover effects, transitions, and subtle animations are used to provide feedback to the user (e.g., `GameCard` hover effect, modal animations).
+*   **Icons:** A consistent set of SVG icons is used throughout the application to enhance usability.
+*   **Typography:** A "display" font is used for headings, and a "sans" font for body text, creating a clear visual hierarchy.
+
+This documentation provides a comprehensive overview for recreating the application's functionality and design in a different framework like Next.js. The key is to replicate the component structure, data models, and the proxy server's functionality.
