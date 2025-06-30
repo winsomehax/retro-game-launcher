@@ -4,6 +4,7 @@ import '@testing-library/jest-dom';
 import { ScanRomsView } from './ScanRomsView';
 import { Platform, Game } from '../types'; // Added Game for type usage
 import { DEFAULT_ROM_FOLDER } from '../constants';
+import { joinPathSegments } from '../utils'; // Import the utility function
 
 // Mocking fetch API
 global.fetch = jest.fn();
@@ -218,7 +219,7 @@ describe('ScanRomsView Component', () => {
             id: expect.any(String), // Check for any string for ID
             title: romObjectToSelect.displayName, // title is displayName
             platformId: mockPlatforms[1].id.toString(), // SNES was selected
-            romPath: `${currentRomsPath}/${romObjectToSelect.fileName}`, // romPath uses fileName
+            romPath: joinPathSegments(currentRomsPath, romObjectToSelect.fileName), // Use joinPathSegments
             coverImageUrl: '',
             description: '',
             genre: '',
