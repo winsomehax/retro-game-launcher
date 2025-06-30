@@ -21,13 +21,13 @@ interface ScannedFile {
 }
 
 interface ScanViewProps {
-  // This will be passed from App.tsx eventually
-  geminiApiKeyConfigured?: boolean;
+  // This will be passed from App.tsx eventually - Now handled by server
+  // geminiApiKeyConfigured?: boolean;
   // Function to add games to the main list
   onAddGames?: (games: Game[], platformId: string) => void;
 }
 
-export const ScanView: React.FC<ScanViewProps> = ({ geminiApiKeyConfigured = false, onAddGames }) => {
+export const ScanView: React.FC<ScanViewProps> = ({ /* geminiApiKeyConfigured = false, */ onAddGames }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
