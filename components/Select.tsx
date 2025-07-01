@@ -17,7 +17,9 @@ export const Select: React.FC<SelectProps> = ({
   containerClassName = '',
   className = '',
   placeholder, // Destructure placeholder
-  ...restProps // Gather remaining props (valid HTMLSelectAttributes)
+  labelClassName,
+  selectClassName,
+  ...restProps // Gather remaining props (valid HTMLSelectElementAttributes)
 }) => {
   const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
   return (

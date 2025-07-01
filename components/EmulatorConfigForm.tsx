@@ -10,7 +10,6 @@ interface EmulatorConfigFormProps {
   onClose: () => void;
   onSubmit: (emulatorConfig: EmulatorConfig) => void;
   initialConfig?: EmulatorConfig | null;
-  platformName: string;
 }
 
 const defaultConfig: Omit<EmulatorConfig, 'id'> = {
@@ -19,7 +18,7 @@ const defaultConfig: Omit<EmulatorConfig, 'id'> = {
   args: '',
 };
 
-export const EmulatorConfigForm: React.FC<EmulatorConfigFormProps> = ({ isOpen, onClose, onSubmit, initialConfig, platformName }) => {
+export const EmulatorConfigForm: React.FC<EmulatorConfigFormProps> = ({ isOpen, onClose, onSubmit, initialConfig }) => {
   const [configData, setConfigData] = useState<Omit<EmulatorConfig, 'id'>>(initialConfig || defaultConfig);
 
   useEffect(() => {
@@ -48,7 +47,7 @@ export const EmulatorConfigForm: React.FC<EmulatorConfigFormProps> = ({ isOpen, 
     <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title={`${initialConfig ? 'Edit' : 'Add'} Emulator for ${platformName}`}
+        title={`${initialConfig ? 'Edit' : 'Add'} Emulator`}
         footer={
             <>
                 <Button variant="ghost" onClick={onClose}>Cancel</Button>
@@ -60,7 +59,7 @@ export const EmulatorConfigForm: React.FC<EmulatorConfigFormProps> = ({ isOpen, 
     >
       <form id="emulator-config-form" onSubmit={handleSubmit} className="space-y-4">
         <Input label="Emulator Name" name="name" value={configData.name} onChange={handleChange} required placeholder="e.g., VICE x64, Snes9x" />
-        <Input label="Executable Path" name="executablePath" value={configData.executablePath} onChange={handleChange} required placeholder="e.g., /usr/bin/vice or C:\\Emulators\\snes9x.exe" />
+        <Input label="Executable Path" name="executablePath" value={configData.executablePath} onChange={handleChange} required placeholder="e.g., /usr/bin/vice or C:\Emulators\snes9x.exe" />
         <Input label="Command-line Arguments" name="args" value={configData.args} onChange={handleChange} placeholder="e.g., -fullscreen {romPath}" />
         <p className="text-xs text-neutral-400">
           Use <code className="bg-neutral-700 px-1 rounded">{`{romPath}`}</code> as a placeholder for the full ROM file path. <br />

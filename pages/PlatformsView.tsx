@@ -5,34 +5,35 @@ import { Button } from '../components/Button';
 import { PlusIcon, EditIcon, TrashIcon, ChevronRightIcon, CogIcon, SearchIcon as ScanIcon } from '../components/Icons'; // Added ScanIcon (using SearchIcon as placeholder)
 import { PlatformForm } from '../components/PlatformForm';
 import { EmulatorConfigForm } from '../components/EmulatorConfigForm';
+import { AssociateEmulatorModal } from '../components/AssociateEmulatorModal';
 
 interface PlatformsViewProps {
-  platforms: Platform[]; // Platform type already updated in types.ts
-  games: Game[]; // Added games prop
-  onAddPlatform: (platformData: Platform) => void; // Expect full Platform object
-  onUpdatePlatform: (platformData: Platform) => void; // Expect full Platform object
-  onDeletePlatform: (platformId: number) => void; // ID is now number
-  onAddEmulator: (platformId: number, emulatorConfig: EmulatorConfig) => void; // ID is now number
-  onUpdateEmulator: (platformId: number, emulatorConfig: EmulatorConfig) => void; // ID is now number
-  onDeleteEmulator: (platformId: number, emulatorId: string) => void; // ID is now number
+  platforms: Platform[];
+  games: Game[];
+  onAddPlatform: (platformData: Platform) => void;
+  onUpdatePlatform: (platformData: Platform) => void;
+  onDeletePlatform: (platformId: number) => void;
 }
 
 export const PlatformsView: React.FC<PlatformsViewProps> = ({
   platforms,
-  games, // Added games prop
+  games,
   onAddPlatform,
   onUpdatePlatform,
   onDeletePlatform,
-  onAddEmulator,
-  onUpdateEmulator,
-  onDeleteEmulator,
 }) => {
   const [isPlatformFormOpen, setIsPlatformFormOpen] = useState(false);
-  const [editingPlatform, setEditingPlatform] = useState<Platform | null>(null); // Use full Platform type
-  
-  const [isEmulatorFormOpen, setIsEmulatorFormOpen] = useState(false);
-  const [editingEmulator, setEditingEmulator] = useState<EmulatorConfig | null>(null);
-  const [selectedPlatformForEmulator, setSelectedPlatformForEmulator] = useState<Platform | null>(null);
+  const [editingPlatform, setEditingPlatform] = useState<Platform | null>(null);
+  const [isAssociateModalOpen, setIsAssociateModalOpen] = useState(false);
+  const [allEmulators, setAllEmulators] = useState<EmulatorConfig[]>([]);
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
+
+  useEffect(() => {
+    fetch('/api/data/emulators')
+      .then(res => res.json())
+      .then(data => setAllEmulators(data))
+      .catch(error => console.error('Could not load emulators:', error));
+  }, []);
 
   const [activePlatformId, setActivePlatformId] = useState<number | null>(platforms.length > 0 ? platforms[0].id : null); // ID is now number
   const navigate = useNavigate();
@@ -91,27 +92,32 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
     setEditingPlatform(null); // Clear editing state
   };
 
-  const handleAddEmulator = (platform: Platform) => {
-    setSelectedPlatformForEmulator(platform);
-    setEditingEmulator(null);
-    setIsEmulatorFormOpen(true);
+  const handleAssociateEmulator = (platform: Platform) => {
+    setSelectedPlatform(platform);
+    setIsAssociateModalOpen(true);
   };
 
-  const handleEditEmulator = (platform: Platform, emulator: EmulatorConfig) => {
-    setSelectedPlatformForEmulator(platform);
-    setEditingEmulator(emulator);
-    setIsEmulatorFormOpen(true);
-  };
-
-  const handleEmulatorSubmit = (emulatorConfig: EmulatorConfig) => {
-    if (selectedPlatformForEmulator) {
-      if (editingEmulator) {
-        onUpdateEmulator(selectedPlatformForEmulator.id, emulatorConfig);
-      } else {
-        onAddEmulator(selectedPlatformForEmulator.id, emulatorConfig);
-      }
+  const handleUnlinkEmulator = (platformId: number, emulatorId: string) => {
+    const platform = platforms.find(p => p.id === platformId);
+    if (platform) {
+      const updatedPlatform = {
+        ...platform,
+        emulators: platform.emulators.filter(id => id !== emulatorId),
+      };
+      onUpdatePlatform(updatedPlatform);
     }
-    setIsEmulatorFormOpen(false);
+  };
+
+  const handleAssociationSubmit = (platformId: number, selectedEmulatorIds: string[]) => {
+    const platform = platforms.find(p => p.id === platformId);
+    if (platform) {
+      const updatedPlatform = {
+        ...platform,
+        emulators: selectedEmulatorIds,
+      };
+      onUpdatePlatform(updatedPlatform);
+    }
+    setIsAssociateModalOpen(false);
   };
   
   const currentSelectedPlatform = platforms.find(p => p.id === activePlatformId);
@@ -303,7 +309,7 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
               </div>
 
               <div className="flex justify-between items-center mb-4 pt-4 border-t border-neutral-700">
-                <h4 className="text-lg font-semibold text-neutral-200">Configured Emulators</h4>
+                <h4 className="text-lg font-semibold text-neutral-200">Associated Emulators</h4>
                 <div className="flex space-x-2">
                   <Button
                     onClick={() => navigate('/scan', { state: { platformId: currentSelectedPlatform.id, platformName: currentSelectedPlatform.name } })}
@@ -314,37 +320,34 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
                   >
                     Scan ROMs
                   </Button>
-                  <Button onClick={() => handleAddEmulator(currentSelectedPlatform)} leftIcon={<PlusIcon />} size="sm" variant="secondary">
-                    Add Emulator
+                  <Button onClick={() => handleAssociateEmulator(currentSelectedPlatform)} leftIcon={<PlusIcon />} size="sm" variant="secondary">
+                    Associate Emulator
                   </Button>
                 </div>
               </div>
               {currentSelectedPlatform.emulators.length > 0 ? (
                 <ul className="space-y-3">
-                  {currentSelectedPlatform.emulators.map(emulator => (
-                    <li key={emulator.id} className="bg-neutral-700 p-4 rounded-md shadow flex justify-between items-center hover:bg-neutral-600/70 transition-colors">
-                      <div>
-                        <p className="font-medium text-neutral-100">{emulator.name}</p>
-                        <p className="text-xs text-neutral-400 truncate max-w-xs" title={emulator.executablePath}>Path: {emulator.executablePath}</p>
-                        <p className="text-xs text-neutral-400 truncate max-w-xs" title={emulator.args}>Args: {emulator.args || 'None'}</p>
-                      </div>
-                      <div className="flex space-x-2 flex-shrink-0">
-                        <Button variant="ghost" size="sm" onClick={() => handleEditEmulator(currentSelectedPlatform, emulator)} aria-label={`Edit ${emulator.name}`}>
-                          <EditIcon className="text-neutral-400 hover:text-primary-light"/>
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => {
-                            if(confirm(`Are you sure you want to delete the emulator "${emulator.name}"?`)) {
-                                onDeleteEmulator(currentSelectedPlatform.id, emulator.id);
-                            }
-                        }} aria-label={`Delete ${emulator.name}`}>
-                          <TrashIcon className="text-neutral-400 hover:text-red-500"/>
-                        </Button>
-                      </div>
-                    </li>
-                  ))}
+                  {currentSelectedPlatform.emulators.map(emulatorId => {
+                    const emulator = allEmulators.find(e => e.id === emulatorId);
+                    if (!emulator) return null; // Skip if emulator not found in central list
+                    return (
+                      <li key={emulator.id} className="bg-neutral-700 p-4 rounded-md shadow flex justify-between items-center hover:bg-neutral-600/70 transition-colors">
+                        <div>
+                          <p className="font-medium text-neutral-100">{emulator.name}</p>
+                          <p className="text-xs text-neutral-400 truncate max-w-xs" title={emulator.executablePath}>Path: {emulator.executablePath}</p>
+                          <p className="text-xs text-neutral-400 truncate max-w-xs" title={emulator.args}>Args: {emulator.args || 'None'}</p>
+                        </div>
+                        <div className="flex space-x-2 flex-shrink-0">
+                          <Button variant="ghost" size="sm" onClick={() => handleUnlinkEmulator(currentSelectedPlatform.id, emulator.id)} aria-label={`Unlink ${emulator.name}`}>
+                            <TrashIcon className="text-neutral-400 hover:text-red-500"/> Unlink
+                          </Button>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : (
-                <p className="text-neutral-500 text-center py-4">No emulators configured for this platform yet.</p>
+                <p className="text-neutral-500 text-center py-4">No emulators associated with this platform yet.</p>
               )}
             </>
           ) : (
@@ -366,13 +369,14 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
         />
       )}
 
-      {isEmulatorFormOpen && selectedPlatformForEmulator && (
-        <EmulatorConfigForm
-          isOpen={isEmulatorFormOpen}
-          onClose={() => setIsEmulatorFormOpen(false)}
-          onSubmit={handleEmulatorSubmit}
-          initialConfig={editingEmulator}
-          platformName={selectedPlatformForEmulator.name}
+      {isAssociateModalOpen && selectedPlatform && (
+        <AssociateEmulatorModal
+          isOpen={isAssociateModalOpen}
+          onClose={() => setIsAssociateModalOpen(false)}
+          platformId={selectedPlatform.id}
+          associatedEmulatorIds={selectedPlatform.emulators}
+          allEmulators={allEmulators}
+          onSubmit={handleAssociationSubmit}
         />
       )}
     </div>

@@ -4,6 +4,7 @@ import { Platform, Game, EmulatorConfig, NavView, ApiKeyEntry } from './types';
 import { Navbar } from './components/Navbar';
 import { GamesView } from './pages/GamesView';
 import { PlatformsView } from './pages/PlatformsView';
+import { EmulatorsView } from './pages/EmulatorsView';
 import { ScanView } from './pages/ScanView';
 import { ScanRomsView } from './pages/ScanRomsView'; // Import ScanRomsView
 import { ApiKeysView } from './pages/ApiKeysView';
@@ -25,6 +26,7 @@ import { SettingsModal } from './components/SettingsModal';
 const AppContent: React.FC = () => {
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [games, setGames] = useState<Game[]>([]);
+  const [allEmulators, setAllEmulators] = useState<EmulatorConfig[]>([]);
   // const [apiKeys, setApiKeys] = useState<ApiKeyEntry[] | null>(null); // REMOVED
   
   // State for Settings Modal
@@ -74,6 +76,21 @@ const AppContent: React.FC = () => {
     // loadInitialApiKeys().then(keys => { // REMOVED
     //   setApiKeys(keys);
     // });
+
+    // Load emulators from the backend API
+    fetch('/api/data/emulators')
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for /api/data/emulators`);
+        return response.json();
+      })
+      .then((data: EmulatorConfig[]) => {
+        setAllEmulators(data);
+      })
+      .catch(error => {
+        console.error("Could not load emulators from API:", error);
+        setAllEmulators([]); // Initialize with empty array on error
+      });
+
   }, []);
 
 
@@ -105,6 +122,7 @@ const AppContent: React.FC = () => {
   const getCurrentView = (): NavView => {
     const path = location.pathname;
     if (path.startsWith('/platforms')) return 'platforms';
+    if (path.startsWith('/emulators')) return 'emulators';
     if (path.startsWith('/games')) return 'games';
     if (path.startsWith('/scan-roms')) return 'scan-roms'; // Added for scan-roms
     // Settings is modal, doesn't change main view highlight directly based on path
@@ -277,7 +295,7 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const emulatorsCount = platforms.reduce((acc, p) => acc + p.emulators.length, 0);
+  const emulatorsCount = allEmulators.length;
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-neutral-900">
@@ -309,11 +327,9 @@ const AppContent: React.FC = () => {
               onAddPlatform={handleAddPlatform}
               onUpdatePlatform={handleUpdatePlatform}
               onDeletePlatform={handleDeletePlatform}
-              onAddEmulator={handleAddEmulator}
-              onUpdateEmulator={handleUpdateEmulator}
-              onDeleteEmulator={handleDeleteEmulator}
             />
           } />
+          <Route path="/emulators" element={<EmulatorsView />} />
           <Route path="/scan" element={
             <ScanView
               // geminiApiKeyConfigured={!!geminiApiKey} // REMOVED
