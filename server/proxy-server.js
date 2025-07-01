@@ -76,6 +76,88 @@ app.post('/api/scan-roms', async (req, res) => {
   }
 });
 
+// Route to fetch platform images from TheGamesDB API
+app.get('/api/thegamesdb/platform_images', async (req, res) => {
+  const { id: platformId } = req.query;
+  const apiKey = process.env.THEGAMESDB_API_KEY;
+
+  // Validate platformId
+  if (!platformId) {
+    return res.status(400).json({ error: 'Missing required query parameter: id' });
+  }
+
+  // Validate API key
+  if (!apiKey) {
+    console.error('TheGamesDB API key is not configured on the server.');
+    return res.status(500).json({ error: 'Application error: TheGamesDB API key is not configured.' });
+  }
+
+  try {
+    const response = await axios.get('https://api.thegamesdb.net/v1/Platforms/Images', {
+      params: {
+        apikey: apiKey,
+        platforms_id: platformId,
+      },
+      timeout: parseInt(process.env.EXTERNAL_API_TIMEOUT || '10000', 10), // Default 10 seconds
+    });
+
+    // Handle non-200 responses from TheGamesDB
+    if (response.status !== 200) {
+      return res.status(response.status).json({
+        error: `TheGamesDB API responded with status: ${response.status}`,
+        details: response.data
+      });
+    }
+
+    const responseData = response.data;
+
+    // Ensure the response structure is as expected
+    if (!responseData || !responseData.data || !responseData.data.base_url || !responseData.data.images) {
+      console.error('Unexpected response structure from TheGamesDB:', responseData);
+      return res.status(502).json({ error: 'Unexpected response structure from TheGamesDB API.' });
+    }
+
+    const baseUrl = responseData.data.base_url.original;
+    const platformImages = responseData.data.images[platformId];
+
+    // Handle cases where no images are found for the platform
+    if (!platformImages || platformImages.length === 0) {
+      return res.status(404).json({
+        message: `No images found for platform ID: ${platformId}`,
+        base_url: baseUrl, // Still return base_url as per schema
+        images: []
+      });
+    }
+
+    // Return the extracted base URL and images
+    res.status(200).json({
+      base_url: baseUrl,
+      images: platformImages,
+    });
+
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        // TheGamesDB API responded with an error status (4xx or 5xx)
+        return res.status(error.response.status).json({
+          error: `Error from TheGamesDB API: ${error.response.data.message || error.message}`,
+          details: error.response.data,
+        });
+      } else if (error.code === 'ECONNABORTED') {
+        // Timeout error
+        return res.status(504).json({ error: 'Gateway Timeout: No response from TheGamesDB API.' });
+      } else {
+        // Network error or other Axios error
+        console.error('Axios error calling TheGamesDB:', error.message);
+        return res.status(502).json({ error: `Bad Gateway: Could not connect to TheGamesDB API. ${error.message}` });
+      }
+    }
+    // Other unexpected errors
+    console.error('Error fetching platform images:', error);
+    res.status(500).json({ error: 'Internal server error while fetching platform images.' });
+  }
+});
+
 // Endpoint to enrich ROM names using AI
 app.post('/api/enrich-roms', async (req, res) => {
   const { romNames, platformName } = req.body;
