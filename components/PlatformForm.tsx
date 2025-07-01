@@ -41,7 +41,7 @@ export const PlatformForm: React.FC<PlatformFormProps> = ({ isOpen, onClose, onS
     if (isOpen && !initialPlatform) { // Only fetch for new platforms (the list of all platforms)
       setIsLoadingTgdbPlatforms(true);
       setErrorTgdbPlatforms(null);
-      fetch('/api/thegamesdb/platforms')
+      fetch('/api/data/thegamesdb_platforms')
         .then(res => {
           if (!res.ok) {
             throw new Error(`Failed to fetch TheGamesDB platforms: ${res.statusText}`);
