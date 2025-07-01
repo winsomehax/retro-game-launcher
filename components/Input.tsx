@@ -7,7 +7,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   containerClassName?: string;
 }
 
-export const Input: React.FC<InputProps> = ({ label, id, error, containerClassName = '', className = '', ...props }) => {
+export const Input: React.FC<InputProps> = ({ label, id, error, containerClassName = '', className = '', inputClassName, ...props }) => {
   const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
   return (
     <div className={`mb-4 ${containerClassName}`}>

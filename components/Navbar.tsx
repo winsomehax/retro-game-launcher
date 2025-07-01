@@ -43,6 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, gamesCo
   const navItemsData: { view: NavView; label: string; icon: React.ReactNode }[] = [
     { view: 'games', label: 'Games', icon: <GameControllerIcon /> },
     { view: 'platforms', label: 'Platforms', icon: <CogIcon /> },
+    { view: 'emulators', label: 'Emulators', icon: <SlidersIcon /> },
     { view: 'scan-roms', label: 'Scan ROMs', icon: <SearchIcon /> },
     { view: 'settings', label: 'Settings', icon: <SlidersIcon /> },
     // { view: 'apikeys', label: 'API Keys', icon: <KeyIcon /> }, // Removed

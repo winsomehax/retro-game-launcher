@@ -382,14 +382,26 @@ export const GameForm: React.FC<GameFormProps> = ({
             placeholder="e.g., /roms/platform/game.zip" 
             disabled={isFetchingDB || isGeneratingDesc}
         />
-        <Input 
-            label="Cover Image URL" 
-            name="coverImageUrl" 
-            value={gameData.coverImageUrl} 
-            onChange={handleChange} 
-            placeholder="e.g., https://example.com/cover.jpg" 
-            disabled={isFetchingDB || isGeneratingDesc}
-        />
+        <div className="flex items-start space-x-4">
+          <Input 
+              label="Cover Image URL" 
+              name="coverImageUrl" 
+              value={gameData.coverImageUrl} 
+              onChange={handleChange} 
+              placeholder="e.g., https://example.com/cover.jpg" 
+              containerClassName="flex-grow"
+              disabled={isFetchingDB || isGeneratingDesc}
+          />
+          {gameData.coverImageUrl && (
+            <div className="flex-shrink-0 w-24 h-32 mt-2">
+              <img 
+                src={gameData.coverImageUrl} 
+                alt="Cover Preview" 
+                className="w-full h-full object-cover rounded-md border border-neutral-600" 
+              />
+            </div>
+          )}
+        </div>
         
         <div className="flex items-end space-x-2">
             <Textarea 
@@ -457,15 +469,19 @@ const GameSearchResultsModal: React.FC<GameSearchResultsModalProps> = ({
   isOpen,
   onClose,
   games,
-  onSelectGame // Kept for now
+  onSelectGame,
+  platforms
 }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Select Game from TheGamesDB" size="xl">
       <div className="space-y-3 max-h-[60vh] overflow-y-auto p-1">
         {games.map(game => {
           console.log(`Modal item - Game: "${game.title}", Platform ID: ${game.platform_id}, SourceDetails:`, game.source_platform_details);
-          // Correctly use source_platform_details.name for display
-          const displayPlatformName = game.source_platform_details?.name || `ID: ${game.platform_id}`;
+          
+          // Look up the platform name from the platforms prop using the platform_id from the game.
+          const platform = platforms.find(p => p.id.toString() === game.platform_id.toString());
+          // Use the found platform name, fallback to the name from the source details, or finally show the ID.
+          const displayPlatformName = platform?.name || game.source_platform_details?.name || `ID: ${game.platform_id}`;
           const coverImageUrl = game.boxart_url || '';
 
           const gameForSelection: TheGamesDbGame = {

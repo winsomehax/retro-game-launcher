@@ -24,6 +24,7 @@ dist-ssr
 *.sw?
 
 data/keys.json
+server/data/*
 
 node_modules/*
 dist
@@ -31,7 +32,4 @@ dist
 # Environment variables file
 .env
 reqexample.txt
-!server/data/*
-server/data/games.json
-server/data/platforms.json
-server/data/thegamesdb_platforms.json
+recommendations.txt
