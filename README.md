@@ -1,4 +1,4 @@
-# Retro Game Launcher
+# XYZZY
 
 This is a React-based retro game launcher intended for local desktop use. It features a frontend for managing your game library and a backend API server to fetch game information from external services like TheGamesDB, RAWG, and generate descriptions using Google's Gemini.
 
