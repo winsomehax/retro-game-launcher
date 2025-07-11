@@ -86,7 +86,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, gamesCo
       aria-label="Main navigation"
     >
       <div className="mb-6 text-center">
-        <h1 className="text-3xl font-display font-bold text-primary">LAUNCHER</h1>
+        <h1 className="text-3xl font-display font-bold text-primary">Launcher</h1>
         <p className="text-xs text-neutral-500 font-sans">HyperModern Edition</p>
       </div>
       <div className="space-y-3">
