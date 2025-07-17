@@ -498,15 +498,52 @@ class RetroGameLauncher {
         const scanResultsDiv = document.getElementById('scan-results');
         let html = `<h3 class="text-2xl font-bold mt-6 mb-4">Potential ROMs Found:</h3>`;
         if (roms.length > 0) {
-            html += `<ul class="list-disc pl-5">`;
+            html += `
+                <div class="flex space-x-2 mb-4">
+                    <button id="select-all-roms" class="bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">Select All</button>
+                    <button id="deselect-all-roms" class="bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">Deselect All</button>
+                </div>
+                <ul id="rom-list" class="space-y-2">`;
             roms.forEach(rom => {
-                html += `<li>${rom}</li>`;
+                html += `
+                    <li>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="rom-checkbox form-checkbox h-5 w-5 bg-neutral-700 border-neutral-600 text-primary focus:ring-primary" value="${rom}" checked>
+                            <span class="ml-2">${rom}</span>
+                        </label>
+                    </li>`;
             });
             html += `</ul>`;
+            html += `
+                <div class="mt-6">
+                    <button id="import-roms-btn" class="bg-primary hover:bg-primary-dark px-4 py-2 rounded font-semibold transition-colors">
+                        Import Selected ROMs
+                    </button>
+                </div>`;
         } else {
             html += `<p>No potential ROMs found.</p>`;
         }
         scanResultsDiv.innerHTML += html;
+
+        if (roms.length > 0) {
+            document.getElementById('select-all-roms').addEventListener('click', () => {
+                document.querySelectorAll('.rom-checkbox').forEach(cb => cb.checked = true);
+            });
+
+            document.getElementById('deselect-all-roms').addEventListener('click', () => {
+                document.querySelectorAll('.rom-checkbox').forEach(cb => cb.checked = false);
+            });
+
+            document.getElementById('import-roms-btn').addEventListener('click', () => {
+                const selectedRoms = Array.from(document.querySelectorAll('.rom-checkbox:checked')).map(cb => cb.value);
+                this.importRoms(selectedRoms);
+            });
+        }
+    }
+
+    importRoms(roms) {
+        console.log('Importing roms:', roms);
+        // Further implementation needed
     }
 
     async saveSettings() {
