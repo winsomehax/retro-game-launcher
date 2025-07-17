@@ -1,41 +1,32 @@
 {
   "name": "retro-game-launcher",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "version": "1.0.0",
+  "description": "Simple retro game launcher",
+  "main": "main.js",
   "scripts": {
-    "dev:client": "vite",
-    "dev:server": "node server/proxy-server.js",
-    "dev": "npm-run-all --parallel dev:server dev:client",
-    "build": "vite build",
-    "preview": "vite preview"
+    "start": "electron . --no-sandbox"
   },
   "dependencies": {
-    "@google/genai": "latest",
-    "@vitejs/plugin-react": "^4.5.2",
-    "axios": "^1.6.0",
-    "cors": "^2.8.5",
+    "@google/generative-ai": "^0.24.1",
     "dotenv": "^16.5.0",
-    "express": "^4.21.2",
-    "node-fetch": "^3.3.2",
-    "npm-run-all": "^4.1.5",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-router-dom": "^7.6.2"
+    "mime": "^4.0.7",
+    "tailwindcss": "^3.4.0",
+    "tw-elements": "^2.0.0"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@types/supertest": "^6.0.3",
-    "nodemon": "^3.1.10",
-    "supertest": "^7.1.1",
-    "typescript": "~5.7.2",
-    "vite": "^6.2.0"
+    "electron": "^28.0.0",
+    "tailwindcss": "^3.4.0",
+    "tw-elements": "^2.0.0"
   },
-  "description": "This contains everything you need to run your app locally.",
-  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/winsomehax/retro-game-launcher.git"
+  },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/winsomehax/retro-game-launcher/issues"
+  },
+  "homepage": "https://github.com/winsomehax/retro-game-launcher#readme"
 }
