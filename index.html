@@ -35,6 +35,7 @@
                 <li><a href="#emulators" class="nav-link block p-3 rounded hover:bg-neutral-700 transition-colors">Emulators</a></li>
                 <li><a href="#scan" class="nav-link block p-3 rounded hover:bg-neutral-700 transition-colors">Scan ROMs</a></li>
                 <li><a href="#settings" class="nav-link block p-3 rounded hover:bg-neutral-700 transition-colors">Settings</a></li>
+                <li><a href="#tags" class="nav-link block p-3 rounded hover:bg-neutral-700 transition-colors">Tags</a></li>
             </ul>
         </nav>
 
@@ -121,6 +122,20 @@
                     <button id="save-settings-btn" class="bg-primary hover:bg-primary-dark px-4 py-2 rounded font-semibold transition-colors">
                         Save Settings
                     </button>
+                </div>
+            </div>
+
+            <!-- Tags View -->
+            <div id="tags-view" class="view hidden">
+                <h2 class="text-4xl font-display font-bold mb-6">Tags</h2>
+                <div class="mb-6">
+                    <input type="text" id="new-tag-input" class="p-3 bg-neutral-800 border border-neutral-700 rounded" placeholder="New tag...">
+                    <button id="add-tag-btn" class="bg-primary hover:bg-primary-dark px-4 py-2 rounded font-semibold transition-colors">
+                        + Add Tag
+                    </button>
+                </div>
+                <div id="tags-list" class="space-y-4">
+                    <!-- Tags will be loaded here -->
                 </div>
             </div>
         </main>

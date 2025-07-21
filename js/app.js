@@ -1,9 +1,17 @@
+class Tag {
+    constructor(name) {
+        this.id = app.generateUUID();
+        this.name = name;
+    }
+}
+
 // Simple retro game launcher app
 class RetroGameLauncher {
     constructor() {
         this.games = [];
         this.platforms = [];
         this.emulators = [];
+        this.tags = [];
         this.selectedScanFolder = null;
         this.currentView = 'games';
         this.init();
@@ -20,9 +28,10 @@ class RetroGameLauncher {
 
     init() {
         this.setupNavigation();
-        this.loadData();
         this.setupEventListeners();
-        this.showView('games');
+        this.loadData().then(() => {
+            this.showView('games');
+        });
     }
 
     setupNavigation() {
@@ -53,6 +62,10 @@ class RetroGameLauncher {
             this.populateScanPlatformSelect();
         }
 
+        if (viewName === 'tags') {
+            this.loadTags();
+        }
+
         // Update nav active state
         document.querySelectorAll('.nav-link').forEach(link => {
             link.classList.remove('bg-primary', 'text-white');
@@ -67,6 +80,7 @@ class RetroGameLauncher {
             this.games = await window.electronAPI.loadData('games') || [];
             this.platforms = await window.electronAPI.loadData('platforms') || [];
             this.emulators = await window.electronAPI.loadData('emulators') || [];
+            this.tags = await window.electronAPI.loadData('tags') || [];
 
             // Normalize platform data to ensure 'id' property exists
             if (this.platforms) {
@@ -103,6 +117,12 @@ class RetroGameLauncher {
                 <h3 class="font-semibold mb-1">${game.title}</h3>
                 <p class="text-sm text-neutral-400 mb-2">${this.getPlatformName(game.platformId)}</p>
                 <p class="text-sm text-neutral-400 mb-2">${game.description || 'No description'}</p>
+                <div class="flex flex-wrap gap-1 mb-2">
+                    ${(game.tags || []).map(tagId => {
+                        const tag = this.tags.find(t => t.id === tagId);
+                        return tag ? `<span class="bg-secondary text-xs px-2 py-1 rounded-full">${tag.name}</span>` : '';
+                    }).join('')}
+                </div>
                 <div class="flex space-x-2 mt-2">
                     <button onclick='app.showEditGameModal(${JSON.stringify(game)})' class="bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">
                         Edit
@@ -134,7 +154,13 @@ class RetroGameLauncher {
                     <h3 class="font-semibold text-lg mb-2">${platform.name}</h3>
                     <p class="text-neutral-400 text-sm mb-3">${platform.manufacturer || 'No manufacturer'}</p>
                     <p class="text-neutral-400 text-sm mb-3">${platform.release_year || 'No release year'}</p>
-                    <p class="text-neutral-400 text-sm mb-3 truncate">${platform.description || 'No description available.'}</p>
+                    <p class="text-neutral-400 text-sm mb-3">${platform.description || 'No description available.'}</p>
+                    <div class="flex flex-wrap gap-1 mb-2">
+                        ${(platform.tags || []).map(tagId => {
+                            const tag = this.tags.find(t => t.id === tagId);
+                            return tag ? `<span class="bg-secondary text-xs px-2 py-1 rounded-full">${tag.name}</span>` : '';
+                        }).join('')}
+                    </div>
                     <div class="flex space-x-2">
                         <button onclick="app.editPlatform('${platform.id}')" class="bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">
                             Edit
@@ -223,6 +249,12 @@ class RetroGameLauncher {
                 <h3 class="font-semibold text-lg mb-2">${emulator.name}</h3>
                 <p class="text-neutral-400 text-sm mb-1">Path: ${emulator.executablePath}</p>
                 <p class="text-neutral-400 text-sm mb-3">Args: ${emulator.args}</p>
+                <div class="flex flex-wrap gap-1 mb-2">
+                    ${(emulator.tags || []).map(tagId => {
+                        const tag = this.tags.find(t => t.id === tagId);
+                        return tag ? `<span class="bg-secondary text-xs px-2 py-1 rounded-full">${tag.name}</span>` : '';
+                    }).join('')}
+                </div>
                 <div class="flex space-x-2">
                     <button onclick="app.editEmulator('${emulator.emulator_id}')" class="bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">
                         Edit
@@ -266,6 +298,12 @@ class RetroGameLauncher {
         document.getElementById('save-settings-btn').addEventListener('click', () => {
             this.saveSettings();
         });
+
+        document.getElementById('add-tag-btn').addEventListener('click', () => {
+            const newTagInput = document.getElementById('new-tag-input');
+            this.addTag(newTagInput.value.trim());
+            newTagInput.value = '';
+        });
     }
         showModal(title, fields, onSubmit) {
         const modal = document.getElementById('modal');
@@ -277,7 +315,19 @@ class RetroGameLauncher {
         modalTitle.textContent = title;
         modalFields.innerHTML = fields.map(field => {
             let inputHtml = '';
-            if (field.type === 'select') {
+            if (field.type === 'tags') {
+                const itemTags = field.value || [];
+                const tagOptions = this.tags.map(tag => {
+                    const isSelected = itemTags.includes(tag.id);
+                    return `<option value="${tag.id}" ${isSelected ? 'selected' : ''}>${tag.name}</option>`;
+                }).join('');
+                inputHtml = `
+                    <select id="${field.id}" name="${field.id}" multiple class="w-full p-3 bg-neutral-800 border border-neutral-700 rounded h-32">
+                        ${tagOptions}
+                    </select>
+                `;
+            }
+            else if (field.type === 'select') {
                 inputHtml = `
                     <select id="${field.id}" name="${field.id}" class="w-full p-3 bg-neutral-800 border border-neutral-700 rounded">
                         ${field.options}
@@ -309,6 +359,12 @@ class RetroGameLauncher {
             for (const [key, value] of formData.entries()) {
                 data[key] = value;
             }
+
+            // Handle multi-select for tags
+            const tagsSelect = modalForm.querySelector('select[name="tags"]');
+            if (tagsSelect) {
+                data.tags = Array.from(tagsSelect.selectedOptions).map(option => option.value);
+            }
             onSubmit(data);
             closeModal();
         };
@@ -333,6 +389,7 @@ class RetroGameLauncher {
             { id: 'title', label: 'Game Title' },
             { id: 'platformId', label: 'Platform', type: 'select', options: platformOptions },
             { id: 'romPath', label: 'ROM Path' },
+            { id: 'tags', label: 'Tags', type: 'tags', value: [] }
         ];
         this.showModal('Add Game', fields, (data) => {
             if (data.title && data.platformId && data.romPath) {
@@ -352,6 +409,7 @@ class RetroGameLauncher {
             { id: 'manufacturer', label: 'Manufacturer', value: '' },
             { id: 'release_year', label: 'Release Year', type: 'number', value: '' },
             { id: 'description', label: 'Description', type: 'textarea', value: '' },
+            { id: 'tags', label: 'Tags', type: 'tags', value: [] }
         ];
 
         this.showModal('Add Platform', fields, (data) => {
@@ -362,6 +420,7 @@ class RetroGameLauncher {
                     manufacturer: data.manufacturer,
                     release_year: data.release_year,
                     description: data.description,
+                    tags: data.tags
                 });
             }
         });
@@ -386,6 +445,7 @@ class RetroGameLauncher {
             { id: 'name', label: 'Emulator Name' },
             { id: 'executablePath', label: 'Executable Path' },
             { id: 'args', label: 'Arguments' },
+            { id: 'tags', label: 'Tags', type: 'tags', value: [] }
         ];
         this.showModal('Add Emulator', fields, (data) => {
             if (data.name && data.executablePath) {
@@ -409,7 +469,8 @@ class RetroGameLauncher {
             coverImageUrl: '',
             description: '',
             genre: '',
-            releaseDate: ''
+            releaseDate: '',
+            tags: gameData.tags || []
         };
         
         this.games.push(newGame);
@@ -431,6 +492,7 @@ class RetroGameLauncher {
             manufacturer: platformData.manufacturer || platformData.company || '',
             release_year: platformData.release_year || null,
             description: platformData.description || '',
+            tags: platformData.tags || []
         };
         
         this.platforms.push(newPlatform);
@@ -450,6 +512,7 @@ class RetroGameLauncher {
             name: emulatorData.name,
             executablePath: emulatorData.executablePath || '',
             args: emulatorData.args || '',
+            tags: emulatorData.tags || []
         };
         
         this.emulators.push(newEmulator);
@@ -572,6 +635,7 @@ class RetroGameLauncher {
             { id: 'title', label: 'Game Title', value: game.title },
             { id: 'platformId', label: 'Platform', type: 'select', options: platformOptions },
             { id: 'romPath', label: 'ROM Path', value: game.romPath },
+            { id: 'tags', label: 'Tags', type: 'tags', value: game.tags || [] }
         ];
         this.showModal('Edit Game', fields, (data) => {
             if (data.title && data.platformId && data.romPath) {
@@ -586,6 +650,7 @@ class RetroGameLauncher {
                     gameToUpdate.title = data.title;
                     gameToUpdate.platformId = data.platformId;
                     gameToUpdate.romPath = data.romPath;
+                    gameToUpdate.tags = data.tags;
                     this.saveData('games', this.games);
                     this.renderGames();
                 }
@@ -603,6 +668,7 @@ class RetroGameLauncher {
             { id: 'release_year', label: 'Release Year', type: 'number', value: platform.release_year },
             { id: 'description', label: 'Description', type: 'textarea', value: platform.description },
             { id: 'cover_image_path', label: 'Cover Image URL', value: platform.cover_image_path || '' },
+            { id: 'tags', label: 'Tags', type: 'tags', value: platform.tags || [] }
         ];
 
         this.showModal('Edit Platform', fields, (data) => {
@@ -610,6 +676,7 @@ class RetroGameLauncher {
             platform.release_year = data.release_year;
             platform.description = data.description;
             platform.cover_image_path = data.cover_image_path;
+            platform.tags = data.tags;
             this.saveData('platforms', this.platforms);
             this.renderPlatforms();
         });
@@ -650,6 +717,7 @@ class RetroGameLauncher {
             { id: 'name', label: 'Emulator Name', value: emulator.name || '' },
             { id: 'executablePath', label: 'Executable Path', value: emulator.executablePath || '' },
             { id: 'args', label: 'Arguments', value: emulator.args || '' },
+            { id: 'tags', label: 'Tags', type: 'tags', value: emulator.tags || [] }
         ];
 
         this.showModal('Edit Emulator', fields, (data) => {
@@ -663,6 +731,7 @@ class RetroGameLauncher {
                 emulator.name = data.name;
                 emulator.executablePath = data.executablePath;
                 emulator.args = data.args;
+                emulator.tags = data.tags;
                 this.saveData('emulators', this.emulators);
                 this.renderEmulators();
             }
@@ -723,6 +792,88 @@ class RetroGameLauncher {
         });
 
         this.updateScanButtonStates();
+    }
+
+    loadTags() {
+        this.renderTags(this.tags.sort((a, b) => a.name.localeCompare(b.name)));
+    }
+
+    renderTags(tags) {
+        const tagsList = document.getElementById('tags-list');
+        tagsList.innerHTML = tags.map(tag => `
+            <div class="bg-neutral-800 rounded-lg p-4 flex items-center justify-between">
+                <span>${tag.name}</span>
+                <div>
+                    <button onclick="app.editTag('${tag.id}')" class="bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">
+                        Edit
+                    </button>
+                    <button onclick="app.deleteTag('${tag.id}')" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async addTag(tagName) {
+        if (!tagName) return;
+        tagName = tagName.toLowerCase();
+        if (this.tags.some(t => t.name === tagName)) {
+            alert('Tag already exists.');
+            return;
+        }
+        const newTag = new Tag(tagName);
+        this.tags.push(newTag);
+        await this.saveData('tags', this.tags);
+        this.loadTags();
+    }
+
+    editTag(tagId) {
+        const tag = this.tags.find(t => t.id === tagId);
+        if (!tag) return;
+
+        const fields = [
+            { id: 'name', label: 'Tag Name', value: tag.name }
+        ];
+
+        this.showModal('Edit Tag', fields, (data) => {
+            const newTagName = data.name.trim().toLowerCase();
+            if (newTagName && newTagName !== tag.name) {
+                if (this.tags.some(t => t.name === newTagName && t.id !== tagId)) {
+                    alert('Tag already exists.');
+                    return;
+                }
+                tag.name = newTagName;
+                this.saveData('tags', this.tags);
+                this.loadTags();
+            }
+        });
+    }
+
+    async deleteTag(tagId) {
+        if (confirm(`Are you sure you want to delete this tag? This will remove it from all associated items.`)) {
+            const tagToDelete = this.tags.find(t => t.id === tagId);
+            if (!tagToDelete) return;
+
+            this.tags = this.tags.filter(t => t.id !== tagId);
+
+            this.platforms.forEach(p => {
+                if (p.tags) p.tags = p.tags.filter(t => t !== tagId);
+            });
+            this.games.forEach(g => {
+                if (g.tags) g.tags = g.tags.filter(t => t !== tagId);
+            });
+            this.emulators.forEach(e => {
+                if (e.tags) e.tags = e.tags.filter(t => t !== tagId);
+            });
+
+            await this.saveData('tags', this.tags);
+            await this.saveData('platforms', this.platforms);
+            await this.saveData('games', this.games);
+            await this.saveData('emulators', this.emulators);
+
+            this.loadTags();
+        }
     }
 }
 

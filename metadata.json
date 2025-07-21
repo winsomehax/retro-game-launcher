@@ -3,53 +3,86 @@
   "description": "A web application to browse, manage, and launch your retro game collection. It allows configuring platforms, emulators, and game details. (ROM scanning and launching are simulated).",
   "requestFramePermissions": [],
   "prompt": "",
-  "games": [],
+  "games": [
+    {
+      "id": "1752996706128",
+      "title": "paradroid",
+      "platformId": "e0029bf7-fe89-4519-9e27-813596180e76",
+      "romPath": "fsdf",
+      "coverImageUrl": "",
+      "description": "",
+      "genre": "",
+      "releaseDate": "",
+      "tags": []
+    }
+  ],
   "platforms": [
     {
-      "platform_id": 9,
       "name": "Nintendo Game Boy",
       "manufacturer": "",
       "release_year": null,
       "description": "The Nintendo Game Boy, released in 1989, was a revolutionary handheld video game console that redefined portable gaming. Its simple design, affordability, and impressive game library quickly captivated a generation. The Game Boy's iconic design featured a rectangular, grey-green plastic body with a directional pad, action buttons (A and B), Start and Select buttons, a screen, and a headphone jack. Though its 8-bit processor and monochrome (green-tinted) LCD screen were modest compared to home consoles, the Game Boy’s battery efficiency allowed for hours of gameplay on a set of AA batteries.\n\nOne of the key factors in the Game Boy's success was its robust library of games. Blockbuster titles like Tetris, bundled with the system, instantly hooked players. The console also saw the release of iconic franchises such as Pokémon, Super Mario Land, The Legend of Zelda: Link's Awakening, and Metroid II: Return of Samus. These titles, with their addictive gameplay and charming aesthetics, established the Game Boy as a must-have device for gamers of all ages.\n\nThe Game Boy’s cartridge-based system made swapping games a simple process, allowing for a diverse range of experiences. The system also fostered social interaction with the Game Link Cable, which allowed players to connect with each other for competitive and cooperative gameplay, particularly crucial for Pokémon. While not perfect, the Game Boy’s durability, long battery life, and easy-to-use interface contributed to its widespread appeal.\n\nOver its lifespan, the Game Boy saw several iterations, including the Game Boy Pocket (smaller and lighter) and the Game Boy Color (with a color screen). However, the original grey brick remains the most iconic, representing a pivotal moment in gaming history and paving the way for the handheld market we know today. The Game Boy’s impact is undeniable, remembered for its accessibility, engaging games, and the joy it brought to millions.",
-      "id": "9",
-      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=9&media=minicon"
+      "id": "9f0e876f-9752-4440-9039-b14ca42bde71",
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=9&media=minicon",
+      "screenscraper_id": 9,
+      "tags": []
     },
     {
-      "platform_id": 1,
       "name": "Sega Megadrive",
       "manufacturer": "",
       "release_year": null,
       "description": "The Sega Mega Drive (Genesis in North America) was a 16-bit home video game console released by Sega in 1988. Known for its fast processing speed, arcade-quality games, and rivalry with the Super Nintendo, it popularized genres like fast-paced platformers and beat 'em ups. Its library includes iconic titles such as Sonic the Hedgehog, Streets of Rage, and Mortal Kombat.",
-      "id": "1",
-      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=1&media=minicon"
+      "id": "ab8bce1f-3064-4cce-82de-6305d9da4574",
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=1&media=minicon",
+      "screenscraper_id": 1,
+      "tags": []
     },
     {
-      "platform_id": 66,
       "name": "Commodore 64",
       "manufacturer": "",
       "release_year": null,
       "description": "The Commodore 64, affectionately known as the C64, was a home computer released in 1982 by Commodore International. It quickly became the best-selling single personal computer model of all time, a testament to its affordability and accessibility. The C64’s impact on gaming was monumental, shaping the landscape of the industry and influencing countless developers and players.\n\nAt its heart was the MOS Technology 6510 8-bit microprocessor, clocking in at a modest 1 MHz. While not the most powerful CPU of its era, the C64 compensated with its impressive capabilities. A key feature was its advanced graphics and sound chipset: the VIC-II (Video Interface Chip), enabling sprites, scrolling, and a variety of colours, and the SID (Sound Interface Device), which delivered rich and complex audio previously unheard of in a home computer at that price point.\n\nThe C64’s graphical capabilities, although limited by today's standards (320x200 resolution, 16 colours), allowed for vibrant and engaging visuals. The SID chip, however, was a true innovation, capable of creating complex melodies, sound effects, and even digitized speech. This, combined with the C64's relatively low price, made it a favourite amongst indie developers, resulting in a vast library of games.\n\nGames were primarily loaded from cassette tapes, although floppy disk drives (the Commodore 1541 being the most popular) offered a quicker and more reliable alternative. Cartridges provided instant access to games and utilities. The joystick was the dominant input device, alongside the keyboard for some games.\n\nThe C64 boasted a wide range of genres. From platformers like 'Impossible Mission' and 'Giana Sisters', to shoot 'em ups such as 'Raid Over Moscow' and 'Uridium', to adventure games and simulations, the C64 offered something for everyone. The user-friendly BASIC programming language further fueled its appeal, allowing users to learn to code and create their own games. The C64's legacy continues to resonate today, with active communities, emulators, and new games still being developed, proving that its impact on gaming was not just historical, but enduring.",
-      "id": "66",
-      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=66&media=minicon"
+      "id": "e0029bf7-fe89-4519-9e27-813596180e76",
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=66&media=wheel(wor)",
+      "screenscraper_id": 66,
+      "tags": []
     },
     {
-      "platform_id": 64,
       "name": "Commodore Amiga",
       "manufacturer": "",
       "release_year": null,
-      "description": "The Commodore Amiga, a revolutionary home computer line introduced in 1985, carved its niche in gaming and multimedia through its advanced hardware and user-friendly operating system. Unlike its contemporaries, the Amiga packed a punch with its custom chips designed for superior graphics, audio, and multitasking capabilities. This was a key selling point, making it a gamer's dream. \n\nAt the heart of the Amiga was the Motorola 68000 series processor, a powerhouse for its time. However, the true magic lay in the custom chips: the blitter for quickly manipulating graphics, and the Paula chip, handling audio and input/output. This allowed for stunning visuals, often pushing the limits of what was considered possible, with vibrant colors, smooth scrolling, and complex soundscapes that surpassed other systems.\n\nThe Amiga's operating system, AmigaOS, was a multitasking marvel. While other computers were largely limited to one task at a time, users could simultaneously play a game, listen to music, and even work on a document. This made it a versatile system, popular not only for gaming but also for creative applications.\n\nIconic titles defined the Amiga's library. Games like 'Shadow of the Beast', 'Sensible Soccer', 'Another World', 'Turrican', and 'Worms' showcased its graphical prowess and innovative gameplay. Its audio capabilities were also utilized to great effect. The Amiga became a favorite for music creation and editing, inspiring many musicians and composers.\n\nSeveral models were released, including the Amiga 1000, 500, 1200, and CDTV. Each iteration brought further enhancements and refinements. The Amiga, though eventually overshadowed by later technologies and the rise of the PC, left an indelible mark on gaming history. Its impact is felt even today, with its legacy inspiring retro gaming enthusiasts and its unique features influencing modern software development. The Amiga was a glimpse into the future, a testament to innovation, and a beloved platform for a generation of gamers and creators.",
-      "id": "64",
-      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=64&media=minicon"
+      "description": "The Commodore Amiga, a revolutionary home computer line introduced in 1985, carved its niche in gaming and multimedia through its advanced hardware and user-friendly operating system. Unlike its contemporaries, the Amiga packed a punch with its custom chips designed for superior graphics, audio, and multitasking capabilities. This was a key selling point, making it a gamer's dream. \n\nAt the heart of the Amiga was the Motorola 68000 series processor, a powerhouse for its time. However, the true magic lay in the custom chips: the blitter for quickly manipulating graphics, and the Paula chip, handling audio and input/output. This allowed for stunning visuals, often pushing the limits of what was considered possible, with vibrant colors, smooth scrolling, and complex soundscapes that surpassed other systems.\n\nThe Amiga’s operating system, AmigaOS, was a multitasking marvel. While other computers were largely limited to one task at a time, users could simultaneously play a game, listen to music, and even work on a document. This made it a versatile system, popular not only for gaming but also for creative applications.\n\nIconic titles defined the Amiga's library. Games like 'Shadow of the Beast', 'Sensible Soccer', 'Another World', 'Turrican', and 'Worms' showcased its graphical prowess and innovative gameplay. Its audio capabilities were also utilized to great effect. The Amiga became a favorite for music creation and editing, inspiring many musicians and composers.\n\nSeveral models were released, including the Amiga 1000, 500, 1200, and CDTV. Each iteration brought further enhancements and refinements. The Amiga, though eventually overshadowed by later technologies and the rise of the PC, left an indelible mark on gaming history. Its impact is felt even today, with its legacy inspiring retro gaming enthusiasts and its unique features influencing modern software development. The Amiga was a glimpse into the future, a testament to innovation, and a beloved platform for a generation of gamers and creators.",
+      "id": "3451f56c-0a44-44fd-a82b-f42b514911ec",
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=64&media=minicon",
+      "screenscraper_id": 64,
+      "tags": []
     },
     {
-      "id": "76",
-      "platform_id": 76,
+      "id": "22b197e0-9d25-47e8-80cd-5147d0bbe161",
       "name": "Sinclair ZX-Spectrum",
       "manufacturer": "",
       "release_year": null,
       "description": "The Sinclair ZX Spectrum, released in 1982, was a revolutionary 8-bit home computer that brought affordable computing and, crucially, gaming to the masses. Designed by Sir Clive Sinclair, the Spectrum aimed for simplicity and accessibility, and it certainly delivered. Its iconic rubber keyboard, the bane of many a joystick-wielding gamer, and its distinctive rainbow stripes became instantly recognizable. \n\nPowered by a Z80 processor, the Spectrum offered a relatively modest 48KB of RAM (though later models expanded this). Despite its technical limitations by today's standards, it fostered a vibrant gaming scene. The Spectrum's low cost made it extremely popular, leading to a massive library of games developed by both established companies and bedroom coders. These games, often distributed on cassette tapes, became legendary. Loading times were notoriously long, testing the patience of many eager players, but the anticipation built the excitement.\n\nThe graphics, while simple with a palette of only 15 colors, were surprisingly vibrant, and the sound generated by the single-channel beeper speaker was iconic. Classic games such as 'Manic Miner', 'Jet Set Willy', 'Atic Atac', and 'Elite' showcased the Spectrum's capabilities and became cultural touchstones. These games, and many others, pioneered game genres and established game design principles that are still relevant today.\n\nBeyond gaming, the Spectrum was also used for basic programming, introducing many to the world of coding. Its BASIC programming language was relatively easy to learn, making it an excellent educational tool for budding programmers. The Spectrum's legacy extends far beyond its time, influencing the development of future gaming platforms and game design itself. It was a truly influential machine, a symbol of a generation, and a nostalgic reminder of a simpler time in gaming.",
-      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=76&media=wheel-carbon(wor)"
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=76&media=wheel-carbon(wor)",
+      "screenscraper_id": 76,
+      "tags": []
     }
   ],
-  "emulators": []
+  "emulators": [
+    {
+      "platform_id": "3451f56c-0a44-44fd-a82b-f42b514911ec",
+      "name": "Emulator Name",
+      "command": "emulator %ROM%",
+      "description": "Emulator description",
+      "website": "https://emulator-website.com",
+      "id": "b356685f-9de0-43af-88ba-68904c1927ac",
+      "tags": []
+    }
+  ],
+  "tags": [
+    {
+      "id": "75e51f6c-8845-47b9-b410-5dba5ab4e509",
+      "name": "commodore"
+    }
+  ]
 }

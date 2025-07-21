@@ -1,0 +1,69 @@
+/* Custom scrollbar styles */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f1f1f;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4a4a4a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6a6a6a;
+}
+
+/* Modal styles */
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #3a3a3a;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  width: 90%;
+  max-width: 60rem;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #555;
+}
+
+#modal-fields {
+  overflow-y: auto;
+  flex-grow: 1;
+  padding-right: 1rem;
+  /* Add some padding for the scrollbar */
+}
+
+/* Image modal specific styles */
+
+.image-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.image-modal-grid img {
+  width: 100%;
+  height: 150px;
+  -o-object-fit: contain;
+     object-fit: contain;
+  border-radius: 0.25rem;
+  background-color: #1f1f1f;
+}
