@@ -7,5 +7,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPlatformMedia: (platformId) => ipcRenderer.invoke('get-platform-media', platformId),
   queryDataSources: (platformName) => ipcRenderer.invoke('query-data-sources', platformName),
   scanFolder: () => ipcRenderer.invoke('scan-folder'),
-  readDirectory: (path) => ipcRenderer.invoke('read-directory', path)
+  readDirectory: (path) => ipcRenderer.invoke('read-directory', path),
+  queryGeminiTitle: (romName) => ipcRenderer.invoke('queryGeminiTitle', romName),
+  queryGeminiTitlesBatch: (romNames, platformName) => ipcRenderer.invoke('queryGeminiTitlesBatch', romNames, platformName),
+  searchGameOnScreenScraper: (platformId, gameName) => ipcRenderer.invoke('search-game-on-screenscraper', platformId, gameName)
 });

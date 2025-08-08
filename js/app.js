@@ -59,7 +59,7 @@ class RetroGameLauncher {
         }
 
         if (viewName === 'scan') {
-            this.populateScanPlatformSelect();
+            this.initializeScanView();
         }
 
         if (viewName === 'tags') {
@@ -249,6 +249,8 @@ class RetroGameLauncher {
                 <h3 class="font-semibold text-lg mb-2">${emulator.name}</h3>
                 <p class="text-neutral-400 text-sm mb-1">Path: ${emulator.executablePath}</p>
                 <p class="text-neutral-400 text-sm mb-3">Args: ${emulator.args}</p>
+                <p class="text-neutral-400 text-sm mb-3">${emulator.description || 'No description'}</p>
+                <p class="text-neutral-400 text-sm mb-3"><a href="${emulator.website}" target="_blank">${emulator.website || ''}</a></p>
                 <div class="flex flex-wrap gap-1 mb-2">
                     ${(emulator.tags || []).map(tagId => {
                         const tag = this.tags.find(t => t.id === tagId);
@@ -289,9 +291,34 @@ class RetroGameLauncher {
             this.scanFolder();
         });
 
-        // Start scan button
-        document.getElementById('start-scan-btn').addEventListener('click', () => {
-            this.startScan();
+        // Get suggestions button
+        document.getElementById('get-suggestions-btn').addEventListener('click', () => {
+            this.getSuggestions();
+        });
+
+        // Enrich selected button
+        document.getElementById('enrich-selected-btn').addEventListener('click', () => {
+            this.enrichSelected();
+        });
+
+        // Import selected button
+        document.getElementById('import-selected-btn').addEventListener('click', () => {
+            this.importSelected();
+        });
+
+        // Select all ROMs checkbox
+        document.getElementById('select-all-roms').addEventListener('change', (e) => {
+            const checkboxes = document.querySelectorAll('.rom-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = e.target.checked;
+            });
+        });
+
+        // Event delegation for details buttons
+        document.getElementById('roms-table-body').addEventListener('click', (e) => {
+            if (e.target.classList.contains('details-btn')) {
+                this.showEnrichedDetails(e.target.closest('tr'));
+            }
         });
 
         // Save settings button
@@ -329,7 +356,7 @@ class RetroGameLauncher {
             }
             else if (field.type === 'select') {
                 inputHtml = `
-                    <select id="${field.id}" name="${field.id}" class="w-full p-3 bg-neutral-800 border border-neutral-700 rounded">
+                    <select id="${field.id}" name="${field.id}" class="p-3 bg-neutral-800 border border-neutral-700 rounded w-full" multiple>
                         ${field.options}
                     </select>
                 `;
@@ -445,6 +472,8 @@ class RetroGameLauncher {
             { id: 'name', label: 'Emulator Name' },
             { id: 'executablePath', label: 'Executable Path' },
             { id: 'args', label: 'Arguments' },
+            { id: 'description', label: 'Description', type: 'textarea' },
+            { id: 'website', label: 'Website' },
             { id: 'tags', label: 'Tags', type: 'tags', value: [] }
         ];
         this.showModal('Add Emulator', fields, (data) => {
@@ -462,14 +491,14 @@ class RetroGameLauncher {
         }
 
         const newGame = {
-            id: Date.now().toString(),
+            id: gameData.id || Date.now().toString(),
             title: gameData.title,
             platformId: gameData.platformId,
             romPath: gameData.romPath,
-            coverImageUrl: '',
-            description: '',
-            genre: '',
-            releaseDate: '',
+            cover_image_path: gameData.cover_image_path || '',
+            description: gameData.description || '',
+            genre: gameData.genre || '',
+            releaseDate: gameData.releaseDate || '',
             tags: gameData.tags || []
         };
         
@@ -512,6 +541,8 @@ class RetroGameLauncher {
             name: emulatorData.name,
             executablePath: emulatorData.executablePath || '',
             args: emulatorData.args || '',
+            description: emulatorData.description || '',
+            website: emulatorData.website || '',
             tags: emulatorData.tags || []
         };
         
@@ -532,10 +563,8 @@ class RetroGameLauncher {
         const folderPath = await window.electronAPI.scanFolder();
         if (folderPath) {
             this.selectedScanFolder = folderPath;
-            const scanResultsDiv = document.getElementById('scan-results');
-            scanResultsDiv.classList.remove('hidden');
-            scanResultsDiv.innerHTML = `<p class="text-green-400">Selected folder: ${folderPath}</p>`;
-            this.updateScanButtonStates();
+            document.getElementById('scan-folder-btn').textContent = this.selectedScanFolder;
+            this.startScan();
         }
     }
 
@@ -558,55 +587,189 @@ class RetroGameLauncher {
             return !ignoredExtensions.includes(extension);
         });
 
-        const scanResultsDiv = document.getElementById('scan-results');
-        let html = `<h3 class="text-2xl font-bold mt-6 mb-4">Potential ROMs Found:</h3>`;
-        if (roms.length > 0) {
-            html += `
-                <div class="flex space-x-2 mb-4">
-                    <button id="select-all-roms" class="bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">Select All</button>
-                    <button id="deselect-all-roms" class="bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">Deselect All</button>
-                </div>
-                <ul id="rom-list" class="space-y-2">`;
-            roms.forEach(rom => {
-                html += `
-                    <li>
-                        <label class="flex items-center">
-                            <input type="checkbox" class="rom-checkbox form-checkbox h-5 w-5 bg-neutral-700 border-neutral-600 text-primary focus:ring-primary" value="${rom}" checked>
-                            <span class="ml-2">${rom}</span>
-                        </label>
-                    </li>`;
-            });
-            html += `</ul>`;
-            html += `
-                <div class="mt-6">
-                    <button id="import-roms-btn" class="bg-primary hover:bg-primary-dark px-4 py-2 rounded font-semibold transition-colors">
-                        Import Selected ROMs
-                    </button>
-                </div>`;
-        } else {
-            html += `<p>No potential ROMs found.</p>`;
+        const romsTableBody = document.getElementById('roms-table-body');
+        romsTableBody.innerHTML = roms.map(rom => `
+            <tr data-rom="${rom}" data-status="new">
+                <td class="p-3"><input type="checkbox" class="rom-checkbox"></td>
+                <td class="p-3">${rom}</td>
+                <td class="p-3"><input type="text" class="w-full bg-neutral-700 p-2 rounded" value=""></td>
+                <td class="p-3"><span class="status-badge bg-gray-600">New</span></td>
+                <td class="p-3">
+                    <button class="details-btn bg-neutral-600 hover:bg-neutral-500 px-3 py-1 rounded text-sm" disabled>Details</button>
+                </td>
+            </tr>
+        `).join('');
+
+        document.getElementById('scan-pipeline').classList.remove('hidden');
+    }
+
+    async getSuggestions() {
+        const romRows = Array.from(document.querySelectorAll('#roms-table-body tr'));
+        const selectedRows = romRows.filter(row => row.querySelector('.rom-checkbox').checked);
+
+        if (selectedRows.length === 0) {
+            alert('Please select at least one ROM to get suggestions for.');
+            return;
         }
-        scanResultsDiv.innerHTML += html;
 
-        if (roms.length > 0) {
-            document.getElementById('select-all-roms').addEventListener('click', () => {
-                document.querySelectorAll('.rom-checkbox').forEach(cb => cb.checked = true);
-            });
+        const platformName = this.getPlatformName(document.getElementById('scan-platform-select').value);
+        const romsToProcess = selectedRows.map(row => row.dataset.rom);
 
-            document.getElementById('deselect-all-roms').addEventListener('click', () => {
-                document.querySelectorAll('.rom-checkbox').forEach(cb => cb.checked = false);
-            });
-
-            document.getElementById('import-roms-btn').addEventListener('click', () => {
-                const selectedRoms = Array.from(document.querySelectorAll('.rom-checkbox:checked')).map(cb => cb.value);
-                this.importRoms(selectedRoms);
-            });
+        const batchSize = 25;
+        for (let i = 0; i < romsToProcess.length; i += batchSize) {
+            const batch = romsToProcess.slice(i, i + batchSize);
+            try {
+                const suggestions = await window.electronAPI.queryGeminiTitlesBatch(batch, platformName);
+                selectedRows.forEach(row => {
+                    const romName = row.dataset.rom;
+                    if (suggestions[romName]) {
+                        row.querySelector('input[type="text"]').value = suggestions[romName];
+                        this.updateRomStatus(row, 'Suggested', 'bg-blue-600');
+                    }
+                });
+            } catch (error) {
+                console.error('Error getting suggestions from AI:', error);
+                alert('An error occurred while getting suggestions from the AI.');
+            }
         }
     }
 
-    importRoms(roms) {
-        console.log('Importing roms:', roms);
-        // Further implementation needed
+    async enrichSelected() {
+        const romRows = Array.from(document.querySelectorAll('#roms-table-body tr'));
+        const selectedRows = romRows.filter(row => row.querySelector('.rom-checkbox').checked);
+
+        if (selectedRows.length === 0) {
+            alert('Please select at least one ROM to enrich.');
+            return;
+        }
+
+        const platformId = document.getElementById('scan-platform-select').value;
+
+        for (const row of selectedRows) {
+            const suggestedTitle = row.querySelector('input[type="text"]').value;
+            if (!suggestedTitle) {
+                this.updateRomStatus(row, 'Needs Suggestion', 'bg-yellow-600');
+                continue;
+            }
+
+            this.updateRomStatus(row, 'Enriching...', 'bg-yellow-600');
+
+            try {
+                const rawGameData = await window.electronAPI.searchGameOnScreenScraper(platformId, suggestedTitle);
+                if (rawGameData) {
+                    const enrichedGame = this.processScreenScraperResponse({ response: { jeux: [rawGameData] } }, row.dataset.rom);
+                    if (enrichedGame) {
+                        row.dataset.enriched = JSON.stringify(enrichedGame);
+                        this.updateRomStatus(row, 'Enriched', 'bg-green-600');
+                        row.querySelector('.details-btn').disabled = false;
+                    } else {
+                        this.updateRomStatus(row, 'Enrichment Failed', 'bg-red-600');
+                    }
+                } else {
+                    this.updateRomStatus(row, 'Not Found', 'bg-red-600');
+                }
+            } catch (error) {
+                console.error(`Failed to enrich ${suggestedTitle}:`, error);
+                this.updateRomStatus(row, 'Error', 'bg-red-600');
+            }
+        }
+    }
+
+    async importSelected() {
+        const romRows = Array.from(document.querySelectorAll('#roms-table-body tr'));
+        const selectedRows = romRows.filter(row => row.querySelector('.rom-checkbox').checked && row.dataset.enriched);
+
+        if (selectedRows.length === 0) {
+            alert('Please select at least one enriched ROM to import.');
+            return;
+        }
+
+        let importedCount = 0;
+        for (const row of selectedRows) {
+            const gameData = JSON.parse(row.dataset.enriched);
+            await this.addGame(gameData);
+            this.updateRomStatus(row, 'Imported', 'bg-purple-600');
+            row.querySelector('.rom-checkbox').disabled = true;
+            importedCount++;
+        }
+
+        alert(`${importedCount} games imported successfully!`);
+        this.showView('games');
+    }
+
+    updateRomStatus(row, text, badgeClass) {
+        const statusBadge = row.querySelector('.status-badge');
+        statusBadge.textContent = text;
+        statusBadge.className = `status-badge ${badgeClass}`;
+    }
+
+    showEnrichedDetails(row) {
+        const gameData = JSON.parse(row.dataset.enriched);
+        const fields = [
+            { id: 'title', label: 'Title', value: gameData.title, readOnly: true },
+            { id: 'platform', label: 'Platform', value: this.getPlatformName(gameData.platformId), readOnly: true },
+            { id: 'description', label: 'Description', type: 'textarea', value: gameData.description, readOnly: true },
+            { id: 'genre', label: 'Genre', value: gameData.genre, readOnly: true },
+            { id: 'releaseDate', label: 'Release Date', value: gameData.releaseDate, readOnly: true },
+            { id: 'cover_image_path', label: 'Cover Image', value: gameData.cover_image_path, readOnly: true },
+        ];
+        this.showModal('Enriched Details', fields, () => {});
+    }
+
+    processScreenScraperResponse(gameData, romPath) {
+        // Find the most relevant game from the search results.
+        // This example prioritizes games with a synopsis and a screenshot.
+        const game = gameData.response.jeux.find(g => g.synopsis && g.medias.some(m => m.type === 'ss' || m.type === 'screenshot'));
+
+        if (!game) {
+            return null;
+        }
+
+        const getTitle = (noms) => {
+            const preferredRegions = ['us', 'eu', 'ss'];
+            for (const region of preferredRegions) {
+                const nom = noms.find(n => n.region === region);
+                if (nom) return nom.text;
+            }
+            return noms[0]?.text || 'Unknown Title';
+        };
+
+        const getScreenshot = (medias) => {
+            const screenshot = medias.find(m => m.type === 'ss' || m.type === 'screenshot');
+            if (screenshot) return screenshot.url;
+            const boxart = medias.find(m => m.type === 'box-2D');
+            return boxart ? boxart.url : '';
+        };
+
+        const getDescription = (synopsis) => {
+            if (!synopsis) return '';
+            const desc = synopsis.find(s => s.langue === 'en');
+            return desc ? desc.text : (synopsis[0]?.text || '');
+        };
+
+        const getGenre = (genres) => {
+            if (!genres || genres.length === 0) return '';
+            const genre = genres[0];
+            const enGenre = genre.noms.find(n => n.langue === 'en');
+            return enGenre ? enGenre.text : (genre.noms[0]?.text || '');
+        };
+        
+        const getReleaseDate = (dates) => {
+            if(!dates || dates.length === 0) return '';
+            return dates[0].text;
+        }
+
+        return {
+            id: game.id,
+            title: getTitle(game.noms),
+            platformId: game.systeme.id,
+            romPath: romPath,
+            cover_image_path: getScreenshot(game.medias),
+            description: getDescription(game.synopsis),
+            genre: getGenre(game.genres),
+            releaseDate: getReleaseDate(game.dates),
+            tags: []
+        };
     }
 
     async saveSettings() {
@@ -717,6 +880,8 @@ class RetroGameLauncher {
             { id: 'name', label: 'Emulator Name', value: emulator.name || '' },
             { id: 'executablePath', label: 'Executable Path', value: emulator.executablePath || '' },
             { id: 'args', label: 'Arguments', value: emulator.args || '' },
+            { id: 'description', label: 'Description', type: 'textarea', value: emulator.description || '' },
+            { id: 'website', label: 'Website', value: emulator.website || '' },
             { id: 'tags', label: 'Tags', type: 'tags', value: emulator.tags || [] }
         ];
 
@@ -731,6 +896,8 @@ class RetroGameLauncher {
                 emulator.name = data.name;
                 emulator.executablePath = data.executablePath;
                 emulator.args = data.args;
+                emulator.description = data.description;
+                emulator.website = data.website;
                 emulator.tags = data.tags;
                 this.saveData('emulators', this.emulators);
                 this.renderEmulators();
@@ -766,17 +933,7 @@ class RetroGameLauncher {
         }
     }
 
-    updateScanButtonStates() {
-        const platformSelected = !!document.getElementById('scan-platform-select').value;
-        const folderSelected = !!this.selectedScanFolder;
-        const startScanBtn = document.getElementById('start-scan-btn');
-        const selectFolderBtn = document.getElementById('scan-folder-btn');
-
-        selectFolderBtn.disabled = !platformSelected;
-        startScanBtn.classList.toggle('hidden', !(platformSelected && folderSelected));
-    }
-
-    populateScanPlatformSelect() {
+    initializeScanView() {
         const select = document.getElementById('scan-platform-select');
         select.innerHTML = '<option value="">-- Select a Platform --</option>';
 
@@ -788,10 +945,10 @@ class RetroGameLauncher {
         });
 
         select.addEventListener('change', () => {
-            this.updateScanButtonStates();
+            document.getElementById('scan-folder-btn').disabled = !select.value;
         });
 
-        this.updateScanButtonStates();
+        document.getElementById('scan-folder-btn').disabled = !select.value;
     }
 
     loadTags() {

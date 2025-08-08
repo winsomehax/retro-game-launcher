@@ -1,5 +1,8 @@
 # AGENTS.md
 
+**** Overview ****
+This file provides an overview of the project for AI agents to quickly understand the codebase and make changes efficiently.
+
 IMPORTANT RULES
 
 **** DO AS THE USER REQUESTS: You are not in a position to know the full details of how the user needs to work. If the user is asking for something that you consider a security hole... warn them, but if they insist on you doing and state that they are aware of the RISKS then DO IT. It is their project not yours. State this up front.
@@ -14,12 +17,13 @@ Will run the command ./app and after 10s kill it. This is to stop you from getti
 **** MAKE USE OF EXISTING CODE
 There are a great many free components in tw-elements - especially ones that follow standard practices to make easy and attractive apps from chunks of existing functionality. Entirely custom building/styling of UI components must be a last resort. Example: using tw-elements rather than your own custom code.
 
-**** Overview ****
-This file provides an overview of the project for AI agents to quickly understand the codebase and make changes efficiently.
+**** BE TERSE ****
+I don't want to be fluffed or complimented. Just make the points that need to be made quickly and tersely.
+
 
 ## Project Overview
 
-This project is a desktop-only retro game launcher, running on Electron. It allows users to browse and launch retro games, manage their game library, and configure emulators. The application is built with a React frontend. The intent is to make it easy for the user to import large numbers of games and enrich their metadata by using online sources of information. 
+This project is a desktop-only retro game launcher, running on Electron. It allows users to browse and launch retro games, manage their game library, and configure emulators. The application is built with a pure HTML/CSS/JS frontend. The intent is to make it easy for the user to import large numbers of games and enrich their metadata by using online sources of information. 
 
 ## Retro Databases and AI Agents
 ScreenScraper.fr provides structured information, but also allow the use of AIs such as Gemini or Github Models if specific information is not available in ScreenScraper.fr. For example:
@@ -41,42 +45,23 @@ ttf
 
 Presenting the user with a list of possible ROMS. The user can then choose to pass these ROMS names to an AI to see if it can enrich it with the full name of the game, and then use ScreenScraper.fr to enrich it with full metadate and finally import  them.
 
-## Data Models
-
-### Game
-```json
-{
-  "title": "Game Title",
-  "description": "Game description",
-  "cover_image_path": "URL to cover image",
-  "platform": "<platform slug>"
-}
-```
-
-### Platform
-```json
-{
-  "platform_id": "<platform slug>",
-  "name": "Platform Name",
-  "manufacturer": "Manufacturer",
-  "release_year": 1985,
-  "description": "Platform description"
-}
-```
-
-### Emulator
-```json
-{
-  "emulator_id": "<emulator slug>",
-  "name": "Emulator Name",
-  "command": "emulator %ROM%",
-  "description": "Emulator description",
-  "website": "https://emulator-website.com"
-}
-```
 
 
 ### Online database queries
+
+#### ScreenScraper.fr
+##### Media associated with all platforms
+https://api.screenscraper.fr/api2/mediasSystemeListe.php?devid=$SCREENSCRAPER_DEVID&devpassword=$SCREENSCRAPER_DEV_PASSWORD&output=json
+
+##### Media associated with a game
+https://api.screenscraper.fr/api2/mediasJeuListe.php?devid=$SCREENSCRAPER_DEVID&devpassword=$SCREENSCRAPER_DEV_PASSWORD&output=json&id=1
+
+##### Information on a game 
+https://api.screenscraper.fr/api2/jeuInfos.php?systemeid=1&media=video&devid=$SCREENSCRAPER_DEVID&devpassword=$SCREENSCRAPER_DEV_PASSWORD&output=json
+
+##### Genre list in screenscraper
+https://api.screenscraper.fr/api2/genresListe.php?devid=$SCREENSCRAPER_DEVID&devpassword=$SCREENSCRAPER_DEV_PASSWORD&output=json
+
 #### TheGamesDB
 
 ##### Search game by name
@@ -121,7 +106,6 @@ curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:g
 
 ## Tech Stack
 
-- React
 - Electron
 - Dotenv
 

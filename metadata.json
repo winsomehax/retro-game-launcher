@@ -3,69 +3,41 @@
   "description": "A web application to browse, manage, and launch your retro game collection. It allows configuring platforms, emulators, and game details. (ROM scanning and launching are simulated).",
   "requestFramePermissions": [],
   "prompt": "",
-  "games": [
-    {
-      "id": "1752996706128",
-      "title": "paradroid",
-      "platformId": "e0029bf7-fe89-4519-9e27-813596180e76",
-      "romPath": "fsdf",
-      "coverImageUrl": "",
-      "description": "",
-      "genre": "",
-      "releaseDate": "",
-      "tags": []
-    }
-  ],
+  "games": [],
   "platforms": [
     {
-      "name": "Nintendo Game Boy",
+      "id": "36",
+      "platform_id": 36,
+      "name": "Acorn ATOM",
       "manufacturer": "",
-      "release_year": null,
-      "description": "The Nintendo Game Boy, released in 1989, was a revolutionary handheld video game console that redefined portable gaming. Its simple design, affordability, and impressive game library quickly captivated a generation. The Game Boy's iconic design featured a rectangular, grey-green plastic body with a directional pad, action buttons (A and B), Start and Select buttons, a screen, and a headphone jack. Though its 8-bit processor and monochrome (green-tinted) LCD screen were modest compared to home consoles, the Game Boy’s battery efficiency allowed for hours of gameplay on a set of AA batteries.\n\nOne of the key factors in the Game Boy's success was its robust library of games. Blockbuster titles like Tetris, bundled with the system, instantly hooked players. The console also saw the release of iconic franchises such as Pokémon, Super Mario Land, The Legend of Zelda: Link's Awakening, and Metroid II: Return of Samus. These titles, with their addictive gameplay and charming aesthetics, established the Game Boy as a must-have device for gamers of all ages.\n\nThe Game Boy’s cartridge-based system made swapping games a simple process, allowing for a diverse range of experiences. The system also fostered social interaction with the Game Link Cable, which allowed players to connect with each other for competitive and cooperative gameplay, particularly crucial for Pokémon. While not perfect, the Game Boy’s durability, long battery life, and easy-to-use interface contributed to its widespread appeal.\n\nOver its lifespan, the Game Boy saw several iterations, including the Game Boy Pocket (smaller and lighter) and the Game Boy Color (with a color screen). However, the original grey brick remains the most iconic, representing a pivotal moment in gaming history and paving the way for the handheld market we know today. The Game Boy’s impact is undeniable, remembered for its accessibility, engaging games, and the joy it brought to millions.",
-      "id": "9f0e876f-9752-4440-9039-b14ca42bde71",
-      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=9&media=minicon",
-      "screenscraper_id": 9,
-      "tags": []
+      "release_year": "",
+      "description": "The Acorn ATOM: A Microcomputer Revolution\n\nThe Acorn ATOM, released in 1979 by Acorn Computers Ltd, was a groundbreaking microcomputer that played a pivotal role in the early British home computing scene. Smaller and more affordable than many of its contemporaries, the ATOM democratized computing for individuals and educational institutions alike, paving the way for the modern computing landscape.\n\nPowered by a MOS Technology 6502 processor, the ATOM offered a surprisingly capable platform. It came standard with 2KB or 12KB of RAM, expandable to a substantial 20KB for the time. Its 6502 CPU architecture made it compatible with a vast library of software that was burgeoning in the early 80s.\n\nIts programming language of choice was BASIC, specifically a version heavily influenced by the BBC BASIC variant later adopted by Acorn for its successor, the BBC Micro. This made the ATOM an accessible entry point for aspiring programmers. Its BASIC interpreter offered robust features for handling graphics, sound, and user input, encouraging a hands-on approach to learning and creating.\n\nThe ATOM's design prioritized simplicity and ease of use. It boasted an integrated keyboard and connected to a standard television for display. Storage was typically handled via cassette tape, though floppy disk drives became available as a later expansion. The integrated keyboard was a membrane keyboard with a decent layout, although some felt it lacked tactile feedback.\n\nWhile its technical specifications may seem modest by today's standards, the ATOM punch well above its weight, influencing the future of home computing. It fostered a vibrant community of enthusiasts and software developers who produced a diverse range of games, educational programs, and utility software. The legacy of the Acorn ATOM lies not only in its hardware but also in its contribution to the explosion of interest in computers during the late 70s and early 80s and its fostering of a generation of programmers. Although the ATOM itself was quickly replaced by the BBC Micro, its impact on the history of personal computers continues to be felt.",
+      "tags": [
+        "3db1f2e8-81e7-4b36-997b-08aef665e8f7"
+      ],
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=36&media=wheel(wor)"
     },
     {
-      "name": "Sega Megadrive",
-      "manufacturer": "",
-      "release_year": null,
-      "description": "The Sega Mega Drive (Genesis in North America) was a 16-bit home video game console released by Sega in 1988. Known for its fast processing speed, arcade-quality games, and rivalry with the Super Nintendo, it popularized genres like fast-paced platformers and beat 'em ups. Its library includes iconic titles such as Sonic the Hedgehog, Streets of Rage, and Mortal Kombat.",
-      "id": "ab8bce1f-3064-4cce-82de-6305d9da4574",
-      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=1&media=minicon",
-      "screenscraper_id": 1,
-      "tags": []
-    },
-    {
+      "id": "66",
+      "platform_id": 66,
       "name": "Commodore 64",
-      "manufacturer": "",
+      "manufacturer": "Commodore",
       "release_year": null,
-      "description": "The Commodore 64, affectionately known as the C64, was a home computer released in 1982 by Commodore International. It quickly became the best-selling single personal computer model of all time, a testament to its affordability and accessibility. The C64’s impact on gaming was monumental, shaping the landscape of the industry and influencing countless developers and players.\n\nAt its heart was the MOS Technology 6510 8-bit microprocessor, clocking in at a modest 1 MHz. While not the most powerful CPU of its era, the C64 compensated with its impressive capabilities. A key feature was its advanced graphics and sound chipset: the VIC-II (Video Interface Chip), enabling sprites, scrolling, and a variety of colours, and the SID (Sound Interface Device), which delivered rich and complex audio previously unheard of in a home computer at that price point.\n\nThe C64’s graphical capabilities, although limited by today's standards (320x200 resolution, 16 colours), allowed for vibrant and engaging visuals. The SID chip, however, was a true innovation, capable of creating complex melodies, sound effects, and even digitized speech. This, combined with the C64's relatively low price, made it a favourite amongst indie developers, resulting in a vast library of games.\n\nGames were primarily loaded from cassette tapes, although floppy disk drives (the Commodore 1541 being the most popular) offered a quicker and more reliable alternative. Cartridges provided instant access to games and utilities. The joystick was the dominant input device, alongside the keyboard for some games.\n\nThe C64 boasted a wide range of genres. From platformers like 'Impossible Mission' and 'Giana Sisters', to shoot 'em ups such as 'Raid Over Moscow' and 'Uridium', to adventure games and simulations, the C64 offered something for everyone. The user-friendly BASIC programming language further fueled its appeal, allowing users to learn to code and create their own games. The C64's legacy continues to resonate today, with active communities, emulators, and new games still being developed, proving that its impact on gaming was not just historical, but enduring.",
-      "id": "e0029bf7-fe89-4519-9e27-813596180e76",
-      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=66&media=wheel(wor)",
-      "screenscraper_id": 66,
-      "tags": []
+      "description": "The Commodore 64, affectionately known as the C64, was an 8-bit home computer released in 1982 by Commodore International. It quickly became one of the best-selling personal computer models of all time, and a defining machine of the 1980s gaming scene. Affordable and packed with impressive graphics and sound capabilities for its era, the C64 fostered a thriving community of amateur programmers and game developers. \n\nBoasting a MOS Technology 6510 processor running at approximately 1 MHz, the C64 offered 64 kilobytes of RAM, a significant amount for its time. Its custom VIC-II chip powered its graphics, displaying a palette of 16 colors at a resolution of 320x200 pixels, capable of sprites and scrolling backgrounds. The SID (Sound Interface Device) chip provided rich, synthesized sound, allowing for complex musical scores and sound effects that helped immerse players in their chosen games. \n\nGameplay was primarily accessed through cartridges, floppy disks (5.25-inch), and cassette tapes, offering a wide range of experiences. From arcade conversions like *Defender* and *Gorf* to original classics like *Impossible Mission*, *Summer Games*, and *The Last Ninja*, the C64’s library was expansive and diverse. The platform's BASIC programming language also allowed users to create their own games and modify existing ones, leading to innovative hacks and user-generated content. \n\nThe C64’s influence extended beyond just gaming. It was also used for word processing, productivity, and educational software. Its accessible price point and ease of use contributed to its widespread adoption, making it a staple in many homes and shaping the early years of personal computing. Even today, the Commodore 64 enjoys a passionate fanbase who keep the legacy of this classic gaming platform alive through emulation, homebrew game development, and nostalgic appreciation for its simple yet engaging gameplay.",
+      "tags": [
+        "75e51f6c-8845-47b9-b410-5dba5ab4e509"
+      ],
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=66&media=wheel-carbon(wor)"
     },
     {
-      "name": "Commodore Amiga",
-      "manufacturer": "",
-      "release_year": null,
-      "description": "The Commodore Amiga, a revolutionary home computer line introduced in 1985, carved its niche in gaming and multimedia through its advanced hardware and user-friendly operating system. Unlike its contemporaries, the Amiga packed a punch with its custom chips designed for superior graphics, audio, and multitasking capabilities. This was a key selling point, making it a gamer's dream. \n\nAt the heart of the Amiga was the Motorola 68000 series processor, a powerhouse for its time. However, the true magic lay in the custom chips: the blitter for quickly manipulating graphics, and the Paula chip, handling audio and input/output. This allowed for stunning visuals, often pushing the limits of what was considered possible, with vibrant colors, smooth scrolling, and complex soundscapes that surpassed other systems.\n\nThe Amiga’s operating system, AmigaOS, was a multitasking marvel. While other computers were largely limited to one task at a time, users could simultaneously play a game, listen to music, and even work on a document. This made it a versatile system, popular not only for gaming but also for creative applications.\n\nIconic titles defined the Amiga's library. Games like 'Shadow of the Beast', 'Sensible Soccer', 'Another World', 'Turrican', and 'Worms' showcased its graphical prowess and innovative gameplay. Its audio capabilities were also utilized to great effect. The Amiga became a favorite for music creation and editing, inspiring many musicians and composers.\n\nSeveral models were released, including the Amiga 1000, 500, 1200, and CDTV. Each iteration brought further enhancements and refinements. The Amiga, though eventually overshadowed by later technologies and the rise of the PC, left an indelible mark on gaming history. Its impact is felt even today, with its legacy inspiring retro gaming enthusiasts and its unique features influencing modern software development. The Amiga was a glimpse into the future, a testament to innovation, and a beloved platform for a generation of gamers and creators.",
-      "id": "3451f56c-0a44-44fd-a82b-f42b514911ec",
-      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=64&media=minicon",
-      "screenscraper_id": 64,
-      "tags": []
-    },
-    {
-      "id": "22b197e0-9d25-47e8-80cd-5147d0bbe161",
+      "id": "76",
+      "platform_id": 76,
       "name": "Sinclair ZX-Spectrum",
       "manufacturer": "",
       "release_year": null,
-      "description": "The Sinclair ZX Spectrum, released in 1982, was a revolutionary 8-bit home computer that brought affordable computing and, crucially, gaming to the masses. Designed by Sir Clive Sinclair, the Spectrum aimed for simplicity and accessibility, and it certainly delivered. Its iconic rubber keyboard, the bane of many a joystick-wielding gamer, and its distinctive rainbow stripes became instantly recognizable. \n\nPowered by a Z80 processor, the Spectrum offered a relatively modest 48KB of RAM (though later models expanded this). Despite its technical limitations by today's standards, it fostered a vibrant gaming scene. The Spectrum's low cost made it extremely popular, leading to a massive library of games developed by both established companies and bedroom coders. These games, often distributed on cassette tapes, became legendary. Loading times were notoriously long, testing the patience of many eager players, but the anticipation built the excitement.\n\nThe graphics, while simple with a palette of only 15 colors, were surprisingly vibrant, and the sound generated by the single-channel beeper speaker was iconic. Classic games such as 'Manic Miner', 'Jet Set Willy', 'Atic Atac', and 'Elite' showcased the Spectrum's capabilities and became cultural touchstones. These games, and many others, pioneered game genres and established game design principles that are still relevant today.\n\nBeyond gaming, the Spectrum was also used for basic programming, introducing many to the world of coding. Its BASIC programming language was relatively easy to learn, making it an excellent educational tool for budding programmers. The Spectrum's legacy extends far beyond its time, influencing the development of future gaming platforms and game design itself. It was a truly influential machine, a symbol of a generation, and a nostalgic reminder of a simpler time in gaming.",
-      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=76&media=wheel-carbon(wor)",
-      "screenscraper_id": 76,
-      "tags": []
+      "description": "The Sinclair ZX Spectrum, a vibrant and iconic home computer released in 1982 by Sinclair Research, etched itself into the hearts of a generation. It wasn't just a computer; it was a gateway to gaming, creativity, and a technological revolution that democratized computing for the masses. Its affordability and accessibility made it a runaway success, particularly in the UK and Europe.\n\n Sporting a distinctive rubber keyboard and a relatively low price tag, the Spectrum was instantly recognizable. Though its specifications were modest – featuring a Z80 processor, 16KB or 48KB of RAM (with later models boasting 128KB), and an eight-color display – it packed a surprisingly powerful punch. Programmed primarily in BASIC, or later in assembly language for more complex applications, the Spectrum offered a steep learning curve, but the rewards for mastering it were immense.\n\n The Spectrum's limitations spurred innovation. Developers were forced to squeeze every ounce of performance from the hardware, resulting in a vibrant and diverse library of games. From classic arcade conversions like Pac-Man and Space Invaders to original titles like Jet Set Willy and Manic Miner, the Spectrum's game library was legendary. Its unique color palette, with its attribute clash issues (where only two colors could be used per 8x8 pixel block), became a defining aesthetic.\n\n Beyond gaming, the Spectrum was used for a range of other applications, including word processing, educational software, and even early forms of business computing. It fostered a thriving community of programmers and hobbyists, spawning magazines, user groups, and a collaborative spirit that helped propel the home computing revolution forward.\n\nThe legacy of the ZX Spectrum continues to endure. Emulators allow modern gamers to experience its classic titles, and the machine's impact on game development is undeniable. It remains a nostalgic symbol of a time when technology was exciting, accessible, and fuelled by a passion for creation.",
+      "tags": [],
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=76&media=photo(wor)"
     }
   ],
   "emulators": [
@@ -81,8 +53,16 @@
   ],
   "tags": [
     {
+      "id": "79b24091-d8f3-4f63-b217-6c71c6a63c12",
+      "name": "acorn"
+    },
+    {
       "id": "75e51f6c-8845-47b9-b410-5dba5ab4e509",
       "name": "commodore"
+    },
+    {
+      "id": "3db1f2e8-81e7-4b36-997b-08aef665e8f7",
+      "name": "home computer"
     }
   ]
 }
