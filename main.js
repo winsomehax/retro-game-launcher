@@ -2,18 +2,9 @@ const { app, BrowserWindow, ipcMain, net } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-//const ScreenScraperAPI = require('./js/screenscraperAPI'); // Ensure screenscraper is imported
 const GameService = require('./js/GameService'); // Import GameService
 
-//const ssAPI=new ScreenScraperAPI("Motor1024","QPpIpcSkR2p"); // Initialize the screenscraper API
-const gs=new GameService("Motor1024", "QPpIpcSkR2p"); // Initialize GameService with credentials
-gs.getGameOverview("Jet Set Willy", 76).then(gameOverview => {
-    console.log("Game Overview:", gameOverview);
-}).catch(error => {
-    console.error("Error fetching game overview:", error);
-});
-// Example usage of GameService to fetch game overvi
-//console.log(gs.getGameOverview("Sonic the Hedgehog", 1)); // Example usage of GameService to fetch game overview
+const gs = new GameService("Motor1024", "QPpIpcSkR2p"); // Initialize GameService with credentials
 
 require('dotenv').config();
 
@@ -65,9 +56,8 @@ ipcMain.handle('get-platforms', async () => {
     console.error('Error reading cache:', error);
   }
 
-  try
-  {
-    data=await ssAPI.getSystemsList();
+  try {
+    const data = await gs.ssAPI.getSystemsList();
 
     if (data.response && data.response.systemes) {
       const platforms = data.response.systemes.map(system => {
@@ -175,7 +165,7 @@ async function queryGemini(platformName) {
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = await response.text();
-    const jsonText = text.replace(/```json\n/g, '').replace(/```/g, '');
+    const jsonText = text.replace(/```json\\n/g, '').replace(/```/g, '');
     return JSON.parse(jsonText);
   } catch (error) {
     console.error('Error querying Gemini:', error);
@@ -208,14 +198,21 @@ async function queryGeminiTitlesBatch(romNames, platformName) {
   const text = await response.text();
 
   // Extract the JSON from the response
-  const jsonMatch = text.match(/```json\n(.*)\n```/s);
+  const jsonMatch = text.match(/```json\s*({.*?})\s*```/s);
   if (jsonMatch && jsonMatch[1]) {
     return JSON.parse(jsonMatch[1]);
   } else {
-    // Fallback for when the model doesn't use markdown
-    try {
-      return JSON.parse(text);
-    } catch (e) {
+    // Try to find JSON without markdown
+    const jsonRegex = /({[^}]+(?:{[^}]+}[^}]*)*})/s;
+    const jsonMatch2 = text.match(jsonRegex);
+    if (jsonMatch2 && jsonMatch2[1]) {
+      try {
+        return JSON.parse(jsonMatch2[1]);
+      } catch (e) {
+        console.error("Failed to parse Gemini response as JSON:", text);
+        throw new Error("Invalid JSON response from Gemini API");
+      }
+    } else {
       console.error("Failed to parse Gemini response as JSON:", text);
       throw new Error("Invalid JSON response from Gemini API");
     }
@@ -233,7 +230,7 @@ async function queryGeminiTitle(romName) {
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = await response.text();
-    const jsonText = text.replace(/```json\n/g, '').replace(/```/g, '');
+    const jsonText = text.replace(/```json\\n/g, '').replace(/```/g, '');
     return JSON.parse(jsonText);
   } catch (error) {
     console.error('Error querying Gemini:', error);
@@ -269,7 +266,6 @@ ipcMain.handle('scan-folder', async () => {
   return result.filePaths[0];
 });
 
-
 ipcMain.handle('read-directory', async (event, dirPath) => {
   try {
     const files = fs.readdirSync(dirPath);
@@ -280,6 +276,94 @@ ipcMain.handle('read-directory', async (event, dirPath) => {
   } catch (error) {
     console.error('Error reading directory:', error);
     return [];
+  }
+});
+
+ipcMain.handle('save-settings', async (event, settings) => {
+  try {
+    const envPath = path.join(__dirname, '.env');
+    let envContent = '';
+
+    // Read existing .env file if it exists
+    if (fs.existsSync(envPath)) {
+      envContent = fs.readFileSync(envPath, 'utf-8');
+    }
+
+    // Update or add each setting
+    for (const [key, value] of Object.entries(settings)) {
+      const regex = new RegExp(`^${key}=.*$`, 'm');
+      if (envContent.match(regex)) {
+        envContent = envContent.replace(regex, `${key}=${value}`);
+      } else {
+        envContent += `\n${key}=${value}`;
+      }
+    }
+
+    // Write updated content back to .env file
+    fs.writeFileSync(envPath, envContent.trim());
+    
+    // Update process.env for immediate use
+    Object.assign(process.env, settings);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving settings:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('load-settings', async () => {
+  try {
+    const settings = {
+      THEGAMESDB_API_KEY: process.env.THEGAMESDB_API_KEY || '',
+      RAWG_API_KEY: process.env.RAWG_API_KEY || '',
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY || ''
+    };
+    return settings;
+  } catch (error) {
+    console.error('Error loading settings:', error);
+    return {};
+  }
+});
+
+ipcMain.handle('launch-game', async (event, launchConfig) => {
+  try {
+    const { romPath, emulatorPath, emulatorArgs } = launchConfig;
+    
+    // Validate paths
+    if (!romPath || !emulatorPath) {
+      throw new Error('ROM path and emulator path are required');
+    }
+    
+    // Check if files exist
+    if (!fs.existsSync(romPath)) {
+      throw new Error(`ROM file not found: ${romPath}`);
+    }
+    
+    if (!fs.existsSync(emulatorPath)) {
+      throw new Error(`Emulator not found: ${emulatorPath}`);
+    }
+    
+    // Replace placeholders in emulator args
+    let finalArgs = emulatorArgs || '';
+    finalArgs = finalArgs.replace('{romPath}', romPath);
+    
+    // Import child_process module
+    const { spawn } = require('child_process');
+    
+    // Launch the emulator
+    const child = spawn(emulatorPath, finalArgs.split(' ').filter(arg => arg !== ''), {
+      cwd: path.dirname(emulatorPath),
+      detached: true,
+      stdio: 'ignore'
+    });
+    
+    child.unref();
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error launching game:', error);
+    return { success: false, error: error.message };
   }
 });
 

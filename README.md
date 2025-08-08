@@ -1,145 +1,138 @@
 # Retro Game Launcher
 
-This is a React-based retro game launcher intended for local desktop use. It features a frontend for managing your game library and a backend API server to fetch game information from external services like TheGamesDB, RAWG, and generate descriptions using Google's Gemini.
+A desktop application for managing and launching retro games, built with Electron, HTML, CSS, and JavaScript.
 
 ## Features
 
-- Browse and manage your retro game collection.
-- Fetch game details (metadata, box art) from TheGamesDB.
-- Search for game information on RAWG.
-- Generate game descriptions using Google's Gemini AI.
-- Configure emulators and platforms.
-- Launch games using configured emulators.
+- **Game Library Management**: Add, edit, and organize your retro game collection
+- **Platform Support**: Configure and manage different gaming platforms
+- **Emulator Integration**: Set up emulators for different platforms and launch games
+- **ROM Scanning**: Automatically scan folders for ROM files and filter out non-ROM files
+- **Metadata Enrichment**: Use AI (Google Gemini) and ScreenScraper.fr to enrich ROM metadata
+- **Tagging System**: Organize games, platforms, and emulators with custom tags
+- **Data Persistence**: All data is saved locally in JSON format
+
+## Prerequisites
+
+- Node.js (v14 or later recommended)
+- npm (usually comes with Node.js)
+
+## Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd retro-game-launcher
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Create a `.env` file in the project root with your API keys:
+   ```env
+   GEMINI_API_KEY=your_google_gemini_api_key
+   SCREENSCRAPER_DEVID=your_screenscraper_dev_id
+   SCREENSCRAPER_DEV_PASSWORD=your_screenscraper_dev_password
+   ```
+
+## Running the Application
+
+Start the application with:
+```bash
+npm start
+```
+
+## Usage
+
+### Setting Up Platforms
+
+1. Navigate to the "Platforms" view
+2. Click "Add Platform"
+3. Select a platform from the ScreenScraper database
+4. Optionally add manufacturer, release year, and description
+5. Save the platform
+
+### Configuring Emulators
+
+1. Navigate to the "Emulators" view
+2. Click "Add Emulator"
+3. Enter the emulator name, executable path, and command-line arguments
+4. Save the emulator configuration
+
+### Adding Games Manually
+
+1. Navigate to the "Games" view
+2. Click "Add Game"
+3. Enter game details including title, platform, and ROM path
+4. Save the game
+
+### Scanning and Importing ROMs
+
+1. Navigate to the "Scan ROMs" view
+2. Select a platform from the dropdown
+3. Click "Select Folder to Scan" and choose a folder containing ROMs
+4. The application will automatically filter out non-ROM files
+5. Select ROMs to process
+6. Click "Get Suggestions" to use AI to identify game titles
+7. Click "Enrich Selected" to fetch metadata from ScreenScraper
+8. Click "Import Selected" to add games to your library
+
+### Launching Games
+
+1. Navigate to the "Games" view
+2. Find the game you want to launch
+3. Click the "Launch" button
+4. The game will launch using the configured emulator
+
+## API Keys
+
+The application uses external services for metadata enrichment:
+
+- **Google Gemini**: For AI-powered ROM filename interpretation
+- **ScreenScraper.fr**: For comprehensive game metadata
+
+You'll need to obtain API keys from these services and add them to your `.env` file.
 
 ## Project Structure
 
-- `src/` (or root for `App.tsx`, `index.tsx`, etc.): Contains the React frontend application.
-  - `components/`: Reusable UI components.
-  - `pages/`: Top-level page components.
-  - `hooks/`: Custom React hooks.
-  - `data/`: Local data files (e.g., `games.json`, `platforms.json`).
-- `server/`: Contains the Node.js Express API server.
-  - `proxy-server.js`: The main file for the backend API server.
-- `public/`: Static assets for the frontend.
+```
+retro-game-launcher/
+├── js/                 # JavaScript modules
+│   ├── app.js          # Main frontend application
+│   ├── GameService.js  # Game metadata service
+│   └── screenscraperAPI.js # ScreenScraper API wrapper
+├── tests/              # Playwright tests
+├── index.html          # Main HTML file
+├── main.js             # Electron main process
+├── preload.js          # Electron preload script
+├── package.json        # Project dependencies and scripts
+└── README.md           # This file
+```
 
-## Running Locally
+## Development
 
-**Prerequisites:**
+### Running Tests
 
-- Node.js (v16 or later recommended)
-- npm (usually comes with Node.js)
+```bash
+npm test
+```
 
-**Setup:**
+### Building for Production
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository-url>
-    cd <repository-directory>
-    ```
+```bash
+npm run build
+```
 
-2.  **Install frontend dependencies:**
-    ```bash
-    npm install
-    ```
+## Contributing
 
-3.  **Install server dependencies:**
-    Navigate to the server directory and install its dependencies.
-    ```bash
-    cd server
-    npm install
-    cd ..
-    ```
-    *(Note: If the server's `package.json` is minimal or doesn't exist, you might need to create one and add `express`, `axios`, `cors`, `dotenv` as dependencies if they are not already managed by the root `package.json` for a monorepo-like setup. Based on the current structure, the server seems to be using ES Modules, so ensure your Node version supports this or adjust server code accordingly.)*
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-4.  **Configure Environment Variables:**
-    The backend server requires API keys for external services. Create a `.env` file in the `server/` directory (i.e., `server/.env`). Add the following variables:
+## License
 
-    ```env
-    # API server port (default is 3001 if not specified)
-    PORT=3001
-
-    # URL of the frontend application (for CORS configuration)
-    # This MUST match the URL your frontend development server is running on.
-    # Common defaults are http://localhost:5173 (Vite) or http://localhost:3000 (Create React App).
-    # Update this value if your frontend runs on a different port.
-    FRONTEND_URL=http://localhost:5173
-
-    # API Keys for external services
-    THEGAMESDB_API_KEY=your_thegamesdb_api_key
-    RAWG_API_KEY=your_rawg_api_key
-    GEMINI_API_KEY=your_gemini_api_key
-
-    # (Optional) Proxy Secret for an additional layer of security on API calls
-    # If set, requests to the backend API must include an 'X-Proxy-Secret' header with this value.
-    # PROXY_SECRET=your_strong_secret_key
-
-    # (Optional) Timeout for external API calls in milliseconds (default: 10000ms = 10s)
-    EXTERNAL_API_TIMEOUT=10000
-    ```
-    Replace `your_..._api_key` with your actual API keys. You can obtain these from the respective service websites (TheGamesDB.net, RAWG.io, Google AI Studio for Gemini).
-
-5.  **Run the API Server:**
-    Open a terminal and navigate to the `server/` directory.
-    ```bash
-    cd server
-    node proxy-server.js
-    ```
-    The API server should start, typically on `http://localhost:3001`.
-
-6.  **Run the Frontend Application:**
-    Open another terminal in the project root directory.
-    ```bash
-    npm run dev
-    ```
-    This will usually start the React development server (e.g., Vite on `http://localhost:5173` or Create React App on `http://localhost:3000`). Check your `package.json` for the exact command and port.
-
-    Ensure the `FRONTEND_URL` in `server/.env` matches the address your frontend is running on.
-
-## API Server Endpoints
-
-The backend server (`server/proxy-server.js`) provides the following endpoints:
-
--   **`GET /api/search/thegamesdb/bygamename`**: Searches for games on TheGamesDB by name.
-    -   Query Parameters:
-        -   `name` (required): The name of the game to search for.
-        -   `fields` (optional): Comma-separated list of fields to include from TheGamesDB.
-        -   `include` (optional): Comma-separated list of related data to include (e.g., `boxart`, `platform`).
-        -   `page` (optional): For pagination.
-    -   Example: `/api/search/thegamesdb/bygamename?name=Zelda&include=boxart`
-
--   **`GET /api/search/rawg/games`**: Searches for games on RAWG.
-    -   Query Parameters:
-        -   `search` (required): The search term.
-        -   `page` (optional): Page number for results.
-        -   `page_size` (optional): Number of results per page.
-    -   Example: `/api/search/rawg/games?search=Witcher`
-
--   **`POST /api/gemini/generatecontent`**: Generates content (e.g., game descriptions) using Google's Gemini API.
-    -   Request Body (JSON):
-        ```json
-        {
-          "contents": [{ "parts": [{ "text": "Your prompt here" }] }]
-        }
-        ```
-    -   Example: Send a POST request with the above JSON structure to `/api/gemini/generatecontent`.
-
--   **`POST /api/games/launch`**: Launches a game using the configured emulator.
-    -   Request Body (JSON):
-        ```json
-        {
-          "romPath": "/path/to/your/rom.nes",
-          "platformId": "platform_id_from_platforms.json",
-          "emulatorId": "emulator_id_configured_for_the_platform"
-        }
-        ```
-    -   The server uses Node.js `child_process` to execute the emulator.
-
-## Development Notes
-
--   **API Key Management**: All API keys for external services (TheGamesDB, RAWG, Gemini) are managed exclusively by the backend server. They are configured in the `server/.env` file and are never exposed to the frontend client. The frontend makes requests to the local proxy server, which then injects the necessary API keys before forwarding requests to external services.
--   **Emulator Launching**: Game launching is handled by the backend `/api/games/launch` endpoint. The frontend sends the ROM path, platform ID, and emulator ID. The backend looks up the emulator configuration (executable path and command-line arguments) from `server/data/platforms.json` and uses Node.js `child_process.spawn` to run the emulator.
-    -   Emulator command-line arguments can use `{romPath}` as a placeholder for the game's ROM file path and `{emulatorPath}` for the emulator's executable path.
--   Ensure your `.env` file in the `server/` directory is correctly configured with API keys before running the application.
--   The API server uses `server/data/thegamesdb_platforms.json` to map TheGamesDB platform IDs to their names and aliases. This file is based on data from TheGamesDB API and might need to be updated periodically if TheGamesDB adds or changes platforms.
--   When fetching game information from TheGamesDB, if a game's platform is not found in your local `data/platforms.json` (by matching ID, name, or alias), the application will attempt to add it automatically to `data/platforms.json` using the information (ID, name, alias) from `server/thegamesdb_platforms.json`.
--   The application relies on local JSON files (`server/data/games.json`, `server/data/platforms.json`) for storing user game data and platform configurations. These are managed by the backend API and updated by the frontend through API calls.
+This project is licensed under the MIT License.

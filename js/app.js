@@ -30,6 +30,7 @@ class RetroGameLauncher {
         this.setupNavigation();
         this.setupEventListeners();
         this.loadData().then(() => {
+            this.loadSettings();
             this.showView('games');
         });
     }
@@ -126,6 +127,9 @@ class RetroGameLauncher {
                 <div class="flex space-x-2 mt-2">
                     <button onclick='app.showEditGameModal(${JSON.stringify(game)})' class="bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">
                         Edit
+                    </button>
+                    <button onclick="app.launchGame('${game.id}')" class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm transition-colors">
+                        Launch
                     </button>
                     <button onclick="app.deleteGame('${game.id}')" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">
                         Delete
@@ -331,6 +335,26 @@ class RetroGameLauncher {
             this.addTag(newTagInput.value.trim());
             newTagInput.value = '';
         });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + S to save settings
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                if (this.currentView === 'settings') {
+                    this.saveSettings();
+                }
+            }
+            
+            // ESC to close modals
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('modal');
+                if (!modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    document.getElementById('modal-save').classList.remove('hidden');
+                }
+            }
+        });
     }
         showModal(title, fields, onSubmit) {
         const modal = document.getElementById('modal');
@@ -392,8 +416,19 @@ class RetroGameLauncher {
             if (tagsSelect) {
                 data.tags = Array.from(tagsSelect.selectedOptions).map(option => option.value);
             }
+            
+            // Show loading state
+            const saveButton = document.getElementById('modal-save');
+            const originalText = saveButton.textContent;
+            saveButton.textContent = 'Saving...';
+            saveButton.disabled = true;
+            
             onSubmit(data);
             closeModal();
+            
+            // Reset button state (in case closeModal didn't handle it)
+            saveButton.textContent = originalText;
+            saveButton.disabled = false;
         };
 
         const closeModal = () => {
@@ -484,6 +519,22 @@ class RetroGameLauncher {
     }
 
     async addGame(gameData) {
+        // Validate required fields
+        if (!gameData.title) {
+            alert('Game title is required.');
+            return;
+        }
+        
+        if (!gameData.platformId) {
+            alert('Platform is required.');
+            return;
+        }
+        
+        if (!gameData.romPath) {
+            alert('ROM path is required.');
+            return;
+        }
+
         const existingGame = this.games.find(g => g.title === gameData.title && g.platformId === gameData.platformId);
         if (existingGame) {
             alert(`Game with title "${existingGame.title}" and platform "${this.getPlatformName(existingGame.platformId)}" already exists.`);
@@ -508,6 +559,17 @@ class RetroGameLauncher {
     }
 
     async addPlatform(platformData) {
+        // Validate required fields
+        if (!platformData.id) {
+            alert('Platform ID is required.');
+            return;
+        }
+        
+        if (!platformData.name) {
+            alert('Platform name is required.');
+            return;
+        }
+
         const existingPlatform = this.platforms.find(p => p.platform_id === platformData.id);
         if (existingPlatform) {
             alert(`Platform with name "${platformData.name}" already exists.`);
@@ -530,6 +592,17 @@ class RetroGameLauncher {
     }
 
     async addEmulator(emulatorData) {
+        // Validate required fields
+        if (!emulatorData.name) {
+            alert('Emulator name is required.');
+            return;
+        }
+        
+        if (!emulatorData.executablePath) {
+            alert('Emulator executable path is required.');
+            return;
+        }
+
         const existingEmulator = this.emulators.find(e => e.name === emulatorData.name);
         if (existingEmulator) {
             alert(`Emulator with name "${existingEmulator.name}" already exists.`);
@@ -580,27 +653,37 @@ class RetroGameLauncher {
             return;
         }
 
-        const files = await window.electronAPI.readDirectory(this.selectedScanFolder);
-        const ignoredExtensions = ['.txt', '.doc', '.jpg', '.gif', '.png', '.mkv', '.avi', '.mp4', '.ttf'];
-        const roms = files.filter(file => {
-            const extension = file.substring(file.lastIndexOf('.')).toLowerCase();
-            return !ignoredExtensions.includes(extension);
-        });
-
+        // Show scanning indicator
         const romsTableBody = document.getElementById('roms-table-body');
-        romsTableBody.innerHTML = roms.map(rom => `
-            <tr data-rom="${rom}" data-status="new">
-                <td class="p-3"><input type="checkbox" class="rom-checkbox"></td>
-                <td class="p-3">${rom}</td>
-                <td class="p-3"><input type="text" class="w-full bg-neutral-700 p-2 rounded" value=""></td>
-                <td class="p-3"><span class="status-badge bg-gray-600">New</span></td>
-                <td class="p-3">
-                    <button class="details-btn bg-neutral-600 hover:bg-neutral-500 px-3 py-1 rounded text-sm" disabled>Details</button>
-                </td>
-            </tr>
-        `).join('');
+        romsTableBody.innerHTML = '<tr><td colspan="5" class="p-3 text-center">Scanning folder... <span id="scan-progress"></span></td></tr>';
 
-        document.getElementById('scan-pipeline').classList.remove('hidden');
+        try {
+            const files = await window.electronAPI.readDirectory(this.selectedScanFolder);
+            const ignoredExtensions = ['.txt', '.doc', '.jpg', '.gif', '.png', '.mkv', '.avi', '.mp4', '.ttf'];
+            
+            // Filter ROM files
+            const roms = files.filter(file => {
+                const extension = file.substring(file.lastIndexOf('.')).toLowerCase();
+                return !ignoredExtensions.includes(extension);
+            });
+
+            romsTableBody.innerHTML = roms.map(rom => `
+                <tr data-rom="${rom}" data-status="new">
+                    <td class="p-3"><input type="checkbox" class="rom-checkbox"></td>
+                    <td class="p-3">${rom}</td>
+                    <td class="p-3"><input type="text" class="w-full bg-neutral-700 p-2 rounded" value=""></td>
+                    <td class="p-3"><span class="status-badge bg-gray-600">New</span></td>
+                    <td class="p-3">
+                        <button class="details-btn bg-neutral-600 hover:bg-neutral-500 px-3 py-1 rounded text-sm" disabled>Details</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('scan-pipeline').classList.remove('hidden');
+        } catch (error) {
+            console.error('Error scanning folder:', error);
+            romsTableBody.innerHTML = '<tr><td colspan="5" class="p-3 text-center text-red-500">Error scanning folder. Check console for details.</td></tr>';
+        }
     }
 
     async getSuggestions() {
@@ -615,9 +698,23 @@ class RetroGameLauncher {
         const platformName = this.getPlatformName(document.getElementById('scan-platform-select').value);
         const romsToProcess = selectedRows.map(row => row.dataset.rom);
 
+        // Show progress
+        const progressElement = document.getElementById('scan-progress');
+        if (progressElement) {
+            progressElement.textContent = `Processing ${romsToProcess.length} ROMs...`;
+        }
+
         const batchSize = 25;
+        let processedCount = 0;
+        
         for (let i = 0; i < romsToProcess.length; i += batchSize) {
             const batch = romsToProcess.slice(i, i + batchSize);
+            
+            // Update progress
+            if (progressElement) {
+                progressElement.textContent = `Processing ${processedCount}/${romsToProcess.length} ROMs...`;
+            }
+            
             try {
                 const suggestions = await window.electronAPI.queryGeminiTitlesBatch(batch, platformName);
                 selectedRows.forEach(row => {
@@ -627,11 +724,21 @@ class RetroGameLauncher {
                         this.updateRomStatus(row, 'Suggested', 'bg-blue-600');
                     }
                 });
+                
+                processedCount += batch.length;
             } catch (error) {
                 console.error('Error getting suggestions from AI:', error);
                 alert('An error occurred while getting suggestions from the AI.');
+                break;
             }
         }
+        
+        // Clear progress indicator
+        if (progressElement) {
+            progressElement.textContent = '';
+        }
+        
+        alert(`${processedCount} ROMs processed!`);
     }
 
     async enrichSelected() {
@@ -644,8 +751,17 @@ class RetroGameLauncher {
         }
 
         const platformId = document.getElementById('scan-platform-select').value;
+        
+        // Show progress
+        const progressElement = document.getElementById('scan-progress');
+        if (progressElement) {
+            progressElement.textContent = `Enriching ${selectedRows.length} ROMs...`;
+        }
 
-        for (const row of selectedRows) {
+        let enrichedCount = 0;
+        let errorCount = 0;
+
+        for (const [index, row] of selectedRows.entries()) {
             const suggestedTitle = row.querySelector('input[type="text"]').value;
             if (!suggestedTitle) {
                 this.updateRomStatus(row, 'Needs Suggestion', 'bg-yellow-600');
@@ -662,17 +778,33 @@ class RetroGameLauncher {
                         row.dataset.enriched = JSON.stringify(enrichedGame);
                         this.updateRomStatus(row, 'Enriched', 'bg-green-600');
                         row.querySelector('.details-btn').disabled = false;
+                        enrichedCount++;
                     } else {
                         this.updateRomStatus(row, 'Enrichment Failed', 'bg-red-600');
+                        errorCount++;
                     }
                 } else {
                     this.updateRomStatus(row, 'Not Found', 'bg-red-600');
+                    errorCount++;
                 }
             } catch (error) {
                 console.error(`Failed to enrich ${suggestedTitle}:`, error);
                 this.updateRomStatus(row, 'Error', 'bg-red-600');
+                errorCount++;
+            }
+            
+            // Update progress
+            if (progressElement) {
+                progressElement.textContent = `Enriched ${enrichedCount}/${selectedRows.length} ROMs...`;
             }
         }
+        
+        // Clear progress indicator
+        if (progressElement) {
+            progressElement.textContent = '';
+        }
+        
+        alert(`Enrichment complete! ${enrichedCount} enriched, ${errorCount} errors.`);
     }
 
     async importSelected() {
@@ -684,13 +816,29 @@ class RetroGameLauncher {
             return;
         }
 
+        // Show progress
+        const progressElement = document.getElementById('scan-progress');
+        if (progressElement) {
+            progressElement.textContent = `Importing ${selectedRows.length} ROMs...`;
+        }
+
         let importedCount = 0;
-        for (const row of selectedRows) {
+        for (const [index, row] of selectedRows.entries()) {
             const gameData = JSON.parse(row.dataset.enriched);
             await this.addGame(gameData);
             this.updateRomStatus(row, 'Imported', 'bg-purple-600');
             row.querySelector('.rom-checkbox').disabled = true;
             importedCount++;
+            
+            // Update progress
+            if (progressElement) {
+                progressElement.textContent = `Imported ${importedCount}/${selectedRows.length} ROMs...`;
+            }
+        }
+
+        // Clear progress indicator
+        if (progressElement) {
+            progressElement.textContent = '';
         }
 
         alert(`${importedCount} games imported successfully!`);
@@ -779,9 +927,63 @@ class RetroGameLauncher {
             GEMINI_API_KEY: document.getElementById('gemini-key').value
         };
         
-        // Save settings logic would go here
-        console.log('Settings saved:', settings);
-        alert('Settings saved!');
+        try {
+            // Save settings through Electron IPC
+            await window.electronAPI.saveSettings(settings);
+            alert('Settings saved successfully!');
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            alert('Failed to save settings. Check console for details.');
+        }
+    }
+
+    async loadSettings() {
+        try {
+            const settings = await window.electronAPI.loadSettings();
+            document.getElementById('thegamesdb-key').value = settings.THEGAMESDB_API_KEY || '';
+            document.getElementById('rawg-key').value = settings.RAWG_API_KEY || '';
+            document.getElementById('gemini-key').value = settings.GEMINI_API_KEY || '';
+        } catch (error) {
+            console.error('Error loading settings:', error);
+        }
+    }
+
+    async launchGame(gameId) {
+        const game = this.games.find(g => g.id === gameId);
+        if (!game) {
+            alert('Game not found!');
+            return;
+        }
+
+        const platform = this.platforms.find(p => p.id === game.platformId);
+        if (!platform) {
+            alert('Platform not found!');
+            return;
+        }
+
+        // Find emulator for this platform
+        const emulator = this.emulators.find(e => {
+            // This is a simplified approach - in a real app, you'd have a more sophisticated way
+            // of associating emulators with platforms
+            return e.tags && e.tags.includes(platform.id);
+        }) || this.emulators[0]; // Fallback to first emulator if none found
+
+        if (!emulator) {
+            alert('No emulator configured! Please add an emulator first.');
+            return;
+        }
+
+        try {
+            await window.electronAPI.launchGame({
+                romPath: game.romPath,
+                emulatorPath: emulator.executablePath,
+                emulatorArgs: emulator.args || ''
+            });
+            console.log('Game launch initiated');
+        } catch (error) {
+            console.error('Error launching game:', error);
+            alert('Failed to launch game. Check console for details.');
+        }
     }
 
     async deleteGame(id) {

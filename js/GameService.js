@@ -9,6 +9,11 @@ module.exports=class GameService {
         this.#ssApi = new ScreenScraperAPI(user, password);
     }
 
+    // Expose the ScreenScraperAPI instance
+    get ssAPI() {
+        return this.#ssApi;
+    }
+
     /**
      * Searches for a game by name and fetches its primary info and default media.
      * Returns the first match with basic details and media URLs.
