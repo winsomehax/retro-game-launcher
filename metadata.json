@@ -3,19 +3,107 @@
   "description": "A web application to browse, manage, and launch your retro game collection. It allows configuring platforms, emulators, and game details. (ROM scanning and launching are simulated).",
   "requestFramePermissions": [],
   "prompt": "",
-  "games": [],
+  "games": [
+    {
+      "id": "45282",
+      "title": "Jet Set Willy II : The Final Frontier",
+      "platformId": "76",
+      "emulatorId": "",
+      "romPath": "Jet Set Willy.z80",
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=76&jeuid=45282&media=ss(eu)",
+      "video_url": "https://neoclone.screenscraper.fr/api2/mediaVideoJeu.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=76&jeuid=45282&media=video",
+      "description": "This platform game is the sequel of Jet Set Willy. Again has each room its own hazards, such as spikes, revolving razors and ropes. The route through the house must be navigated carefully, due to the multiple entrances to some rooms - this is perhaps the first action game where mapping is an advantage. Another innovation, to the chagrin of players everywhere, is manual protection - a sheet of colour-coded numbers.\r",
+      "genre": "Platform",
+      "releaseDate": "1985",
+      "tags": []
+    },
+    {
+      "id": "45414",
+      "title": "Manic Miner",
+      "platformId": "76",
+      "emulatorId": "",
+      "romPath": "Manic Miner.z80",
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=76&jeuid=45414&media=ss(eu)",
+      "video_url": "https://neoclone.screenscraper.fr/api2/mediaVideoJeu.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=76&jeuid=45414&media=video",
+      "description": "You play the role of Miner Willy, a bold explorer and adventurer. He discovers a network of underground caverns used by an advanced but now extinct civilization, and realizes that the mines contain lucrative metal ores. Through 20 caverns, you must collect all treasures before all time (air) runs out, watching out for the nasty guardians, the obstacles, dead falls, quicksands and all elements to be found in a classic platform game.\r",
+      "genre": "Platform",
+      "releaseDate": "1983",
+      "tags": [
+        "8482d755-454e-42e9-b4cb-18b76918090e",
+        "c1a2b3c4-d5e6-4f78-9012-3456789abcde",
+        "f2b3c4d5-e6f7-4890-ab12-456789bcdef0",
+        "3e660cba-dbe6-4a7c-b56b-30706e859c19",
+        "010f4693-5bfc-44e6-b6c8-8b6ca6c91ece",
+        "0e44d7c1-10f2-4ec8-a84a-fe26fa84e88f",
+        "f4567890-1234-5678-9012-789abcdef123",
+        "d6f78901-2345-6789-ef01-9012f3456789",
+        "d0b384fb-0af9-407e-9515-b2e3baac55cd",
+        "cd730c12-0fe9-44e7-b4d0-5227ecfd7ff0"
+      ]
+    }
+  ],
   "platforms": [
     {
       "id": "36",
       "platform_id": 36,
       "name": "Acorn ATOM",
-      "manufacturer": "",
-      "release_year": "",
-      "description": "The Acorn ATOM: A Microcomputer Revolution\n\nThe Acorn ATOM, released in 1979 by Acorn Computers Ltd, was a groundbreaking microcomputer that played a pivotal role in the early British home computing scene. Smaller and more affordable than many of its contemporaries, the ATOM democratized computing for individuals and educational institutions alike, paving the way for the modern computing landscape.\n\nPowered by a MOS Technology 6502 processor, the ATOM offered a surprisingly capable platform. It came standard with 2KB or 12KB of RAM, expandable to a substantial 20KB for the time. Its 6502 CPU architecture made it compatible with a vast library of software that was burgeoning in the early 80s.\n\nIts programming language of choice was BASIC, specifically a version heavily influenced by the BBC BASIC variant later adopted by Acorn for its successor, the BBC Micro. This made the ATOM an accessible entry point for aspiring programmers. Its BASIC interpreter offered robust features for handling graphics, sound, and user input, encouraging a hands-on approach to learning and creating.\n\nThe ATOM's design prioritized simplicity and ease of use. It boasted an integrated keyboard and connected to a standard television for display. Storage was typically handled via cassette tape, though floppy disk drives became available as a later expansion. The integrated keyboard was a membrane keyboard with a decent layout, although some felt it lacked tactile feedback.\n\nWhile its technical specifications may seem modest by today's standards, the ATOM punch well above its weight, influencing the future of home computing. It fostered a vibrant community of enthusiasts and software developers who produced a diverse range of games, educational programs, and utility software. The legacy of the Acorn ATOM lies not only in its hardware but also in its contribution to the explosion of interest in computers during the late 70s and early 80s and its fostering of a generation of programmers. Although the ATOM itself was quickly replaced by the BBC Micro, its impact on the history of personal computers continues to be felt.",
+      "manufacturer": "Acorn Computers Ltd",
+      "release_year": "1980",
+      "description": "The Acorn ATOM was a British home computer released in 1980. It was designed by Acorn Computers Ltd, the same company behind the BBC Micro. The ATOM was aimed at the hobbyist and educational market, offering a more affordable alternative to some of its competitors. It featured a Motorola 6502 processor, a relatively high resolution display for its time, and a BASIC interpreter built into its ROM. Users could expand its capabilities through various interfaces and expansion cards, including cassette tape for storage and an optional disk drive. While not as widely popular as the BBC Micro or Commodore's offerings, the ATOM played a role in the early home computer revolution in the UK and helped establish Acorn's presence in the market.",
       "tags": [
-        "3db1f2e8-81e7-4b36-997b-08aef665e8f7"
+        "97bd7c02-4f6e-4e50-b410-dcb957e5decc"
       ],
-      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=36&media=wheel(wor)"
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=36&media=photo(wor)"
+    },
+    {
+      "id": "76",
+      "platform_id": 76,
+      "name": "Sinclair ZX-Spectrum",
+      "manufacturer": "Sinclair Research",
+      "release_year": "1982",
+      "description": "The Sinclair ZX Spectrum, often simply called the Spectrum, was an 8-bit personal home computer launched in the United Kingdom in 1982 by Sinclair Research. It was known for its iconic rubber keyboard, distinctive rainbow stripes, and relatively low price, making it accessible to a wide audience. The Spectrum played a significant role in popularizing home computing and video gaming in the UK and Europe, with a vast library of games that pushed the limits of its hardware, including titles like 'Jet Set Willy', 'Manic Miner', and 'Elite'. The Spectrum's simple design and affordable cost fueled a flourishing homebrew software scene, with many programmers creating games and utilities in BASIC and machine code.",
+      "tags": [
+        "97bd7c02-4f6e-4e50-b410-dcb957e5decc"
+      ],
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=76&media=photo(wor)",
+      "video_url": "/home/gdo/.config/retro-game-launcher/asset-cache/b2c5f041254900994fbe8e1c6e613cd0.mp4"
+    },
+    {
+      "id": "91",
+      "platform_id": 91,
+      "name": "Dragon 32/64",
+      "manufacturer": "Dragon Data Ltd.",
+      "release_year": "1982",
+      "description": "The Dragon 32 and Dragon 64 were home computers produced in the early 1980s, primarily for the UK and Australian markets. They were designed as clones of the Tandy TRS-80 Color Computer, sharing a similar architecture and functionality. The main difference between the two models was the amount of RAM, with the Dragon 32 having 32KB and the Dragon 64 boasting 64KB. Both machines featured a Motorola 6809E processor, a custom sound chip, and a built-in BASIC programming language. They were popular for educational purposes and for playing a wide range of games, and had good graphics for the time. Although not as successful as some competitors, the Dragon computers provided a capable and affordable entry point into home computing.",
+      "tags": [
+        "97bd7c02-4f6e-4e50-b410-dcb957e5decc"
+      ],
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=91&media=photo(wor)",
+      "video_url": "/home/gdo/.config/retro-game-launcher/asset-cache/319d86049c165538efc36521f689c6c3.mp4"
+    },
+    {
+      "id": "59",
+      "platform_id": 59,
+      "name": "Sony Playstation 3",
+      "manufacturer": "Sony Computer Entertainment",
+      "release_year": "2006",
+      "description": "The PlayStation 3 (PS3) is a home video game console developed by Sony Computer Entertainment. Released in 2006, it competed with Microsoft's Xbox 360 and Nintendo's Wii during the seventh generation of video game consoles. The PS3 boasted a powerful Cell processor and a Blu-ray Disc drive, allowing it to play high-definition movies and games. It offered online gaming services through PlayStation Network, providing access to downloadable games, demos, and online multiplayer experiences. The console went through several hardware revisions, including the \"Slim\" and \"Super Slim\" models, refining its design and adding features over its lifespan. It played a significant role in the gaming industry and helped popularize Blu-ray technology.",
+      "tags": [
+        "ebc9785d-09d4-4bb9-9a42-dcda2b0e561a"
+      ],
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=59&media=photo(wor)",
+      "video_url": "/home/gdo/.config/retro-game-launcher/asset-cache/104ef8ed8a9e229bbc82f4580c6e845e.mp4"
+    },
+    {
+      "id": "27",
+      "platform_id": 27,
+      "name": "Atari Jaguar",
+      "manufacturer": "Atari Corporation",
+      "release_year": 1993,
+      "description": "The Atari Jaguar is a home video game console released by Atari Corporation in 1993. It was marketed as the first 64-bit system, though its architecture was more complex and arguably less powerful than some of its contemporaries. Despite ambitious marketing, the Jaguar faced several challenges, including a high price point, a difficult-to-program architecture, and limited software support. It struggled to compete with the Sega Genesis, Super Nintendo Entertainment System, and later, the Sony PlayStation and Sega Saturn. Despite its commercial failures, the Jaguar has a dedicated fanbase that appreciates its unique hardware and library of games, which includes titles like Alien vs Predator and Tempest 2000. The Jaguar CD, an add-on that allowed for CD-ROM based games, was also released. The console and add-ons had relatively low sales compared to its competition.",
+      "tags": [],
+      "video_url": "/home/gdo/.config/retro-game-launcher/asset-cache/678f29c0f69e1079d96a12fe5253ae4b.mp4",
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=27&media=background(wor)"
     },
     {
       "id": "66",
@@ -23,21 +111,21 @@
       "name": "Commodore 64",
       "manufacturer": "Commodore",
       "release_year": null,
-      "description": "The Commodore 64, affectionately known as the C64, was an 8-bit home computer released in 1982 by Commodore International. It quickly became one of the best-selling personal computer models of all time, and a defining machine of the 1980s gaming scene. Affordable and packed with impressive graphics and sound capabilities for its era, the C64 fostered a thriving community of amateur programmers and game developers. \n\nBoasting a MOS Technology 6510 processor running at approximately 1 MHz, the C64 offered 64 kilobytes of RAM, a significant amount for its time. Its custom VIC-II chip powered its graphics, displaying a palette of 16 colors at a resolution of 320x200 pixels, capable of sprites and scrolling backgrounds. The SID (Sound Interface Device) chip provided rich, synthesized sound, allowing for complex musical scores and sound effects that helped immerse players in their chosen games. \n\nGameplay was primarily accessed through cartridges, floppy disks (5.25-inch), and cassette tapes, offering a wide range of experiences. From arcade conversions like *Defender* and *Gorf* to original classics like *Impossible Mission*, *Summer Games*, and *The Last Ninja*, the C64’s library was expansive and diverse. The platform's BASIC programming language also allowed users to create their own games and modify existing ones, leading to innovative hacks and user-generated content. \n\nThe C64’s influence extended beyond just gaming. It was also used for word processing, productivity, and educational software. Its accessible price point and ease of use contributed to its widespread adoption, making it a staple in many homes and shaping the early years of personal computing. Even today, the Commodore 64 enjoys a passionate fanbase who keep the legacy of this classic gaming platform alive through emulation, homebrew game development, and nostalgic appreciation for its simple yet engaging gameplay.",
-      "tags": [
-        "75e51f6c-8845-47b9-b410-5dba5ab4e509"
-      ],
-      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=66&media=wheel-carbon(wor)"
+      "description": "",
+      "tags": [],
+      "video_url": "/home/gdo/.config/retro-game-launcher/asset-cache/1f497e61002a4aa0523bfb73c42a801c.mp4",
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=66&media=photo(wor)"
     },
     {
-      "id": "76",
-      "platform_id": 76,
-      "name": "Sinclair ZX-Spectrum",
-      "manufacturer": "",
-      "release_year": null,
-      "description": "The Sinclair ZX Spectrum, a vibrant and iconic home computer released in 1982 by Sinclair Research, etched itself into the hearts of a generation. It wasn't just a computer; it was a gateway to gaming, creativity, and a technological revolution that democratized computing for the masses. Its affordability and accessibility made it a runaway success, particularly in the UK and Europe.\n\n Sporting a distinctive rubber keyboard and a relatively low price tag, the Spectrum was instantly recognizable. Though its specifications were modest – featuring a Z80 processor, 16KB or 48KB of RAM (with later models boasting 128KB), and an eight-color display – it packed a surprisingly powerful punch. Programmed primarily in BASIC, or later in assembly language for more complex applications, the Spectrum offered a steep learning curve, but the rewards for mastering it were immense.\n\n The Spectrum's limitations spurred innovation. Developers were forced to squeeze every ounce of performance from the hardware, resulting in a vibrant and diverse library of games. From classic arcade conversions like Pac-Man and Space Invaders to original titles like Jet Set Willy and Manic Miner, the Spectrum's game library was legendary. Its unique color palette, with its attribute clash issues (where only two colors could be used per 8x8 pixel block), became a defining aesthetic.\n\n Beyond gaming, the Spectrum was used for a range of other applications, including word processing, educational software, and even early forms of business computing. It fostered a thriving community of programmers and hobbyists, spawning magazines, user groups, and a collaborative spirit that helped propel the home computing revolution forward.\n\nThe legacy of the ZX Spectrum continues to endure. Emulators allow modern gamers to experience its classic titles, and the machine's impact on game development is undeniable. It remains a nostalgic symbol of a time when technology was exciting, accessible, and fuelled by a passion for creation.",
+      "id": "84",
+      "platform_id": 84,
+      "name": "Acorn Archimedes",
+      "manufacturer": "Acorn Computers",
+      "release_year": 1987,
+      "description": "The Acorn Archimedes was a British home computer released in 1987 by Acorn Computers. It was notable for being one of the first widely available home computers to utilize the ARM (Acorn RISC Machine) processor, a Reduced Instruction Set Computing (RISC) architecture that would later become ubiquitous in mobile devices. The Archimedes offered impressive performance for its time, particularly in graphics and multimedia. Its operating system, RISC OS, was designed specifically for the ARM processor and provided a fast and responsive user interface. It supported a range of peripherals and software, and it was a popular choice for educational institutions and enthusiasts in the UK. While it did not achieve widespread commercial success outside of the UK, its technological advancements and the ARM processor's legacy have had a profound impact on the computing industry.",
       "tags": [],
-      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=76&media=photo(wor)"
+      "video_url": "/home/gdo/.config/retro-game-launcher/asset-cache/d2079b772c888c5c70e428ac4ca4a1f6.mp4",
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=84&media=photo(wor)"
     }
   ],
   "emulators": [
@@ -49,6 +137,194 @@
       "website": "https://emulator-website.com",
       "id": "b356685f-9de0-43af-88ba-68904c1927ac",
       "tags": []
+    },
+    {
+      "emulator_id": "656c76ae-24e2-43ed-b308-17bc6585ad0f",
+      "name": "Citra",
+      "executablePath": "flatpak run org.citra_emu.citra",
+      "args": "",
+      "description": "Auto-discovered flatpak emulator",
+      "website": "",
+      "tags": [],
+      "installationType": "flatpak",
+      "packageInfo": null,
+      "flatpakInfo": {
+        "appId": "org.citra_emu.citra",
+        "name": "Citra Emulator Team"
+      },
+      "snapInfo": null,
+      "supportedPlatforms": [
+        "n64"
+      ],
+      "workingDirectory": "",
+      "environmentVariables": {},
+      "displayMode": "windowed",
+      "resolution": "",
+      "audioSettings": {},
+      "performance": {}
+    },
+    {
+      "emulator_id": "8b6d0a4a-c722-4876-92eb-232503be25b9",
+      "name": "DuckStation",
+      "executablePath": "flatpak run org.duckstation.DuckStation",
+      "args": "",
+      "description": "Auto-discovered flatpak emulator",
+      "website": "",
+      "tags": [],
+      "installationType": "flatpak",
+      "packageInfo": null,
+      "flatpakInfo": {
+        "appId": "org.duckstation.DuckStation",
+        "name": "DuckStation"
+      },
+      "snapInfo": null,
+      "supportedPlatforms": [
+        "ps1"
+      ],
+      "workingDirectory": "",
+      "environmentVariables": {},
+      "displayMode": "windowed",
+      "resolution": "",
+      "audioSettings": {},
+      "performance": {}
+    },
+    {
+      "emulator_id": "c7da997a-3e18-4a6c-84e3-6f592b570e7b",
+      "name": "Flycast",
+      "executablePath": "flatpak run org.flycast.Flycast",
+      "args": "",
+      "description": "Auto-discovered flatpak emulator",
+      "website": "",
+      "tags": [],
+      "installationType": "flatpak",
+      "packageInfo": null,
+      "flatpakInfo": {
+        "appId": "org.flycast.Flycast",
+        "name": "Flycast"
+      },
+      "snapInfo": null,
+      "supportedPlatforms": [
+        "dreamcast"
+      ],
+      "workingDirectory": "",
+      "environmentVariables": {},
+      "displayMode": "windowed",
+      "resolution": "",
+      "audioSettings": {},
+      "performance": {}
+    },
+    {
+      "emulator_id": "2c436e23-5d60-4056-833a-103226df4d2b",
+      "name": "RetroArch",
+      "executablePath": "flatpak run org.libretro.RetroArch",
+      "args": "",
+      "description": "Auto-discovered flatpak emulator",
+      "website": "",
+      "tags": [],
+      "installationType": "flatpak",
+      "packageInfo": null,
+      "flatpakInfo": {
+        "appId": "org.libretro.RetroArch",
+        "name": "RetroArch"
+      },
+      "snapInfo": null,
+      "supportedPlatforms": [
+        "nes",
+        "snes",
+        "gba",
+        "gb",
+        "gbc",
+        "genesis",
+        "n64",
+        "psx"
+      ],
+      "workingDirectory": "",
+      "environmentVariables": {},
+      "displayMode": "windowed",
+      "resolution": "",
+      "audioSettings": {},
+      "performance": {}
+    },
+    {
+      "emulator_id": "3a215905-6909-4d0c-ab32-7c13fbbf6d57",
+      "name": "Ryujinx",
+      "executablePath": "flatpak run org.ryujinx.Ryujinx",
+      "args": "",
+      "description": "Auto-discovered flatpak emulator",
+      "website": "",
+      "tags": [],
+      "installationType": "flatpak",
+      "packageInfo": null,
+      "flatpakInfo": {
+        "appId": "org.ryujinx.Ryujinx",
+        "name": "Ryujinx"
+      },
+      "snapInfo": null,
+      "supportedPlatforms": [
+        "switch"
+      ],
+      "workingDirectory": "",
+      "environmentVariables": {},
+      "displayMode": "windowed",
+      "resolution": "",
+      "audioSettings": {},
+      "performance": {}
+    },
+    {
+      "emulator_id": "7ec7aba0-89af-4382-8851-89d03463cc93",
+      "name": "Yuzu",
+      "executablePath": "flatpak run org.yuzu_emu.yuzu",
+      "args": "",
+      "description": "Auto-discovered flatpak emulator",
+      "website": "",
+      "tags": [],
+      "installationType": "flatpak",
+      "packageInfo": null,
+      "flatpakInfo": {
+        "appId": "org.yuzu_emu.yuzu",
+        "name": "yuzu Emulator Team"
+      },
+      "snapInfo": null,
+      "supportedPlatforms": [
+        "switch"
+      ],
+      "workingDirectory": "",
+      "environmentVariables": {},
+      "displayMode": "windowed",
+      "resolution": "",
+      "audioSettings": {},
+      "performance": {}
+    },
+    {
+      "emulator_id": "a8c5be15-5a11-4016-b273-cb2357c2c70a",
+      "name": "RetroArch",
+      "executablePath": "snap run retroarch",
+      "args": "",
+      "description": "Auto-discovered snap emulator",
+      "website": "",
+      "tags": [],
+      "installationType": "snap",
+      "packageInfo": null,
+      "flatpakInfo": null,
+      "snapInfo": {
+        "name": "retroarch"
+      },
+      "supportedPlatforms": [
+        "nes",
+        "snes",
+        "gba",
+        "gb",
+        "gbc",
+        "genesis",
+        "n64",
+        "psx"
+      ],
+      "workingDirectory": "",
+      "environmentVariables": {},
+      "displayMode": "windowed",
+      "resolution": "",
+      "audioSettings": {},
+      "performance": {}
     }
   ],
   "tags": [
@@ -63,6 +339,148 @@
     {
       "id": "3db1f2e8-81e7-4b36-997b-08aef665e8f7",
       "name": "home computer"
+    },
+    {
+      "id": "d5c4bafc-f405-4db4-a1a3-61fb28f46c49",
+      "name": "console"
+    }
+  ],
+  "gameTags": [
+    {
+      "id": "8482d755-454e-42e9-b4cb-18b76918090e",
+      "name": "8-bit graphics"
+    },
+    {
+      "id": "c1a2b3c4-d5e6-4f78-9012-3456789abcde",
+      "name": "action"
+    },
+    {
+      "id": "546afac4-5817-4f72-b8f5-193034a15b5c",
+      "name": "action-adventure hybrid"
+    },
+    {
+      "id": "f2b3c4d5-e6f7-4890-ab12-456789bcdef0",
+      "name": "adventure"
+    },
+    {
+      "id": "3e660cba-dbe6-4a7c-b56b-30706e859c19",
+      "name": "arcade influenced"
+    },
+    {
+      "id": "d8901234-5678-9012-3456-bcdef56789ab",
+      "name": "battle royale"
+    },
+    {
+      "id": "e9012345-6789-0123-4567-cdef6789abcd",
+      "name": "card/digital collectible"
+    },
+    {
+      "id": "ba4823bb-72c1-4f48-a2d6-ffdbc52a90bd",
+      "name": "commodore 64 classic"
+    },
+    {
+      "id": "58fa1eb4-66dc-407a-9475-80a041d8f46e",
+      "name": "desert setting"
+    },
+    {
+      "id": "010f4693-5bfc-44e6-b6c8-8b6ca6c91ece",
+      "name": "exploration"
+    },
+    {
+      "id": "a9012345-6789-0123-4567-23456789abcd",
+      "name": "Fighting"
+    },
+    {
+      "id": "0e44d7c1-10f2-4ec8-a84a-fe26fa84e88f",
+      "name": "high score chasing"
+    },
+    {
+      "id": "c1234567-8901-2345-6789-456789abcdef",
+      "name": "Horror"
+    },
+    {
+      "id": "f0123456-7890-1234-5678-def789abcde1",
+      "name": "Interactive Fiction/Visual Novel"
+    },
+    {
+      "id": "c7890123-4567-8901-2345-abcdef456789",
+      "name": "Massively Multiplayer Online (MMO)"
+    },
+    {
+      "id": "59dcc76a-9bc6-41a8-89f6-ae525dedc9ce",
+      "name": "mutant creatures"
+    },
+    {
+      "id": "f4567890-1234-5678-9012-789abcdef123",
+      "name": "Platformer"
+    },
+    {
+      "id": "d6f78901-2345-6789-ef01-9012f3456789",
+      "name": "Puzzle"
+    },
+    {
+      "id": "f8901234-5678-9012-3456-123456789abc",
+      "name": "Racing"
+    },
+    {
+      "id": "ecebebbd-94ab-45a0-b263-88e23db427e8",
+      "name": "resource management"
+    },
+    {
+      "id": "d0b384fb-0af9-407e-9515-b2e3baac55cd",
+      "name": "retro gaming"
+    },
+    {
+      "id": "a5678901-2345-6789-0123-89abcdef2345",
+      "name": "Rhythm"
+    },
+    {
+      "id": "a3c4d5e6-f789-4012-bc34-56789cdef012",
+      "name": "Role-Playing Game (RPG)"
+    },
+    {
+      "id": "e3456789-0123-4567-8901-6789abcdef12",
+      "name": "Sandbox/Open World"
+    },
+    {
+      "id": "b0123456-7890-1234-5678-3456789abcde",
+      "name": "Shooter"
+    },
+    {
+      "id": "b4d5e6f7-8901-4234-cd56-7890def12345",
+      "name": "Simulation"
+    },
+    {
+      "id": "cd730c12-0fe9-44e7-b4d0-5227ecfd7ff0",
+      "name": "single-player experience"
+    },
+    {
+      "id": "e7890123-4567-8901-f234-0123456789ab",
+      "name": "Sports"
+    },
+    {
+      "id": "d2345678-9012-3456-7890-56789abcdef0",
+      "name": "Stealth"
+    },
+    {
+      "id": "c5e6f789-0123-4567-de89-8901ef234567",
+      "name": "Strategy"
+    },
+    {
+      "id": "b6789012-3456-7890-1234-9abcdef34567",
+      "name": "Survival"
+    },
+    {
+      "id": "8b67e687-3497-4f8c-93e3-bafc79f75ca7",
+      "name": "survival elements"
+    },
+    {
+      "id": "a94231e6-063d-4115-ba9e-49d4ce38cad8",
+      "name": "text-based interface"
+    },
+    {
+      "id": "b2cb64ec-302c-4b04-b2ca-2727eafd9f16",
+      "name": "turn-based gameplay"
     }
   ]
 }

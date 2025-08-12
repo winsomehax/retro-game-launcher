@@ -116,7 +116,8 @@ class RetroGameLauncher {
                     }
                 </div>
                 <h3 class="font-semibold mb-1">${game.title}</h3>
-                <p class="text-sm text-neutral-400 mb-2">${this.getPlatformName(game.platformId)}</p>
+                <p class="text-sm text-neutral-400 mb-1">${this.getPlatformName(game.platformId)}</p>
+                <p class="text-sm text-neutral-400 mb-1">${this.getEmulatorName(game.emulatorId)}</p>
                 <p class="text-sm text-neutral-400 mb-2">${game.description || 'No description'}</p>
                 <div class="flex flex-wrap gap-1 mb-2">
                     ${(game.tags || []).map(tagId => {
@@ -280,61 +281,99 @@ class RetroGameLauncher {
         });
 
         // Add platform button
-        document.getElementById('add-platform-btn').addEventListener('click', async () => {
-            const platforms = await window.electronAPI.getPlatforms();
-            this.showAddPlatformModal(platforms);
-        });
+        const addPlatformBtn = document.getElementById('add-platform-btn');
+        if (addPlatformBtn) {
+            addPlatformBtn.addEventListener('click', async () => {
+                const platforms = await window.electronAPI.getPlatforms();
+                this.showAddPlatformModal(platforms);
+            });
+        }
 
         // Add emulator button
-        document.getElementById('add-emulator-btn').addEventListener('click', () => {
-            this.showAddEmulatorModal();
-        });
+        const addEmulatorBtn = document.getElementById('add-emulator-btn');
+        if (addEmulatorBtn) {
+            addEmulatorBtn.addEventListener('click', () => {
+                this.showAddEmulatorModal();
+            });
+        }
+
+        // Discover emulators button
+        const discoverEmulatorsBtn = document.getElementById('discover-emulators-btn');
+        if (discoverEmulatorsBtn) {
+            discoverEmulatorsBtn.addEventListener('click', () => {
+                this.discoverEmulators();
+            });
+        }
 
         // Scan folder button
-        document.getElementById('scan-folder-btn').addEventListener('click', () => {
-            this.scanFolder();
-        });
+        const scanFolderBtn = document.getElementById('scan-folder-btn');
+        if (scanFolderBtn) {
+            scanFolderBtn.addEventListener('click', () => {
+                this.scanFolder();
+            });
+        }
 
         // Get suggestions button
-        document.getElementById('get-suggestions-btn').addEventListener('click', () => {
-            this.getSuggestions();
-        });
+        const getSuggestionsBtn = document.getElementById('get-suggestions-btn');
+        if (getSuggestionsBtn) {
+            getSuggestionsBtn.addEventListener('click', () => {
+                this.getSuggestions();
+            });
+        }
 
         // Enrich selected button
-        document.getElementById('enrich-selected-btn').addEventListener('click', () => {
-            this.enrichSelected();
-        });
+        const enrichSelectedBtn = document.getElementById('enrich-selected-btn');
+        if (enrichSelectedBtn) {
+            enrichSelectedBtn.addEventListener('click', () => {
+                this.enrichSelected();
+            });
+        }
 
         // Import selected button
-        document.getElementById('import-selected-btn').addEventListener('click', () => {
-            this.importSelected();
-        });
+        const importSelectedBtn = document.getElementById('import-selected-btn');
+        if (importSelectedBtn) {
+            importSelectedBtn.addEventListener('click', () => {
+                this.importSelected();
+            });
+        }
 
         // Select all ROMs checkbox
-        document.getElementById('select-all-roms').addEventListener('change', (e) => {
-            const checkboxes = document.querySelectorAll('.rom-checkbox');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = e.target.checked;
+        const selectAllRoms = document.getElementById('select-all-roms');
+        if (selectAllRoms) {
+            selectAllRoms.addEventListener('change', (e) => {
+                const checkboxes = document.querySelectorAll('.rom-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = e.target.checked;
+                });
             });
-        });
+        }
 
         // Event delegation for details buttons
-        document.getElementById('roms-table-body').addEventListener('click', (e) => {
-            if (e.target.classList.contains('details-btn')) {
-                this.showEnrichedDetails(e.target.closest('tr'));
-            }
-        });
+        const romsTableBody = document.getElementById('roms-table-body');
+        if (romsTableBody) {
+            romsTableBody.addEventListener('click', (e) => {
+                if (e.target.classList.contains('details-btn')) {
+                    this.showEnrichedDetails(e.target.closest('tr'));
+                }
+            });
+        }
 
         // Save settings button
-        document.getElementById('save-settings-btn').addEventListener('click', () => {
-            this.saveSettings();
-        });
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
+        if (saveSettingsBtn) {
+            saveSettingsBtn.addEventListener('click', () => {
+                this.saveSettings();
+            });
+        }
 
-        document.getElementById('add-tag-btn').addEventListener('click', () => {
-            const newTagInput = document.getElementById('new-tag-input');
-            this.addTag(newTagInput.value.trim());
-            newTagInput.value = '';
-        });
+        const addTagBtn = document.getElementById('add-tag-btn');
+        if (addTagBtn) {
+            addTagBtn.addEventListener('click', () => {
+                const newTagInput = document.getElementById('new-tag-input');
+                this.addTag(newTagInput.value.trim());
+                newTagInput.value = '';
+            });
+        }
         
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -349,9 +388,12 @@ class RetroGameLauncher {
             // ESC to close modals
             if (e.key === 'Escape') {
                 const modal = document.getElementById('modal');
-                if (!modal.classList.contains('hidden')) {
+                if (modal && !modal.classList.contains('hidden')) {
                     modal.classList.add('hidden');
-                    document.getElementById('modal-save').classList.remove('hidden');
+                    const modalSave = document.getElementById('modal-save');
+                    if (modalSave) {
+                        modalSave.classList.remove('hidden');
+                    }
                 }
             }
         });
@@ -445,20 +487,13 @@ class RetroGameLauncher {
         return platform ? platform.name : 'Unknown Platform';
     }
 
-    showAddGameModal() {
-        const platformOptions = this.platforms.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-        const fields = [
-            { id: 'title', label: 'Game Title' },
-            { id: 'platformId', label: 'Platform', type: 'select', options: platformOptions },
-            { id: 'romPath', label: 'ROM Path' },
-            { id: 'tags', label: 'Tags', type: 'tags', value: [] }
-        ];
-        this.showModal('Add Game', fields, (data) => {
-            if (data.title && data.platformId && data.romPath) {
-                this.addGame(data);
-            }
-        });
+    getEmulatorName(emulatorId) {
+        if (!emulatorId) return 'No emulator selected';
+        const emulator = this.emulators.find(e => e.emulator_id === emulatorId);
+        return emulator ? emulator.name : 'Unknown Emulator';
     }
+
+    showAddGameModal() {\n        const platformOptions = this.platforms.map(p => `<option value=\"${p.id}\">${p.name}</option>`).join('');\n        const emulatorOptions = this.emulators.map(e => `<option value=\"${e.emulator_id}\">${e.name}</option>`).join('');\n        const fields = [\n            { id: 'title', label: 'Game Title' },\n            { id: 'platformId', label: 'Platform', type: 'select', options: platformOptions },\n            { id: 'emulatorId', label: 'Emulator', type: 'select', options: `<option value=\"\">-- Select an Emulator --</option>${emulatorOptions}` },\n            { id: 'romPath', label: 'ROM Path' },\n            { id: 'tags', label: 'Tags', type: 'tags', value: [] }\n        ];\n        this.showModal('Add Game', fields, (data) => {\n            if (data.title && data.platformId && data.romPath) {\n                this.addGame(data);\n            }\n        });\n    }
 
     showAddPlatformModal(platforms) {
         const platformOptions = platforms.map(p => {
@@ -545,6 +580,7 @@ class RetroGameLauncher {
             id: gameData.id || Date.now().toString(),
             title: gameData.title,
             platformId: gameData.platformId,
+            emulatorId: gameData.emulatorId || '',
             romPath: gameData.romPath,
             cover_image_path: gameData.cover_image_path || '',
             description: gameData.description || '',
@@ -638,6 +674,101 @@ class RetroGameLauncher {
             this.selectedScanFolder = folderPath;
             document.getElementById('scan-folder-btn').textContent = this.selectedScanFolder;
             this.startScan();
+        }
+    }
+
+    async discoverEmulators() {
+        try {
+            // Show scanning indicator with progress
+            const emulatorsList = document.getElementById('emulators-list');
+            emulatorsList.innerHTML = `
+                <div class="text-neutral-400 text-center py-8">
+                    <p>Discovering emulators... <span class="loading-spinner"></span></p>
+                    <div id="discovery-progress" class="mt-4 text-sm text-neutral-500">
+                        <p>Initializing discovery...</p>
+                    </div>
+                </div>
+            `;
+
+            const progressElement = document.getElementById('discovery-progress');
+            
+            // Update progress text
+            const updateProgress = (message) => {
+                if (progressElement) {
+                    progressElement.innerHTML = `<p>${message}</p>`;
+                }
+            };
+
+            // Set up progress handler
+            window.handleEmulatorDiscoveryProgress = updateProgress;
+
+            // Call the Electron IPC to discover emulators
+            const discoveredEmulators = await window.electronAPI.discoverEmulators();
+
+            // Clean up progress handler
+            window.handleEmulatorDiscoveryProgress = null;
+
+            if (discoveredEmulators.length === 0) {
+                emulatorsList.innerHTML = '<p class="text-neutral-400 text-center py-8">No emulators found. You can manually add emulators using the "Add Emulator" button.</p>';
+                return;
+            }
+
+            // Add discovered emulators to our list (avoiding duplicates)
+            updateProgress(`Found ${discoveredEmulators.length} emulators. Configuring...`);
+            
+            let addedCount = 0;
+            for (const [index, discovered] of discoveredEmulators.entries()) {
+                const existing = this.emulators.find(e => e.executablePath === discovered.executablePath);
+                if (!existing) {
+                    this.emulators.push({
+                        emulator_id: discovered.id,
+                        name: discovered.name,
+                        executablePath: discovered.executablePath,
+                        args: discovered.args || '',
+                        description: `Auto-discovered ${discovered.installationType} emulator`,
+                        website: '',
+                        tags: discovered.tags || [],
+                        installationType: discovered.installationType,
+                        packageInfo: discovered.packageInfo || null,
+                        flatpakInfo: discovered.flatpakInfo || null,
+                        snapInfo: discovered.snapInfo || null,
+                        supportedPlatforms: discovered.supportedPlatforms || [],
+                        workingDirectory: '',
+                        environmentVariables: {},
+                        displayMode: 'windowed',
+                        resolution: '',
+                        audioSettings: {},
+                        performance: {}
+                    });
+                    addedCount++;
+                    updateProgress(`Configuring ${discovered.name} (${index + 1}/${discoveredEmulators.length})...`);
+                }
+            }
+
+            await this.saveData('emulators', this.emulators);
+            this.renderEmulators();
+
+            // Show a more detailed result message instead of an alert
+            const resultMessage = addedCount > 0 
+                ? `Discovery complete! Found ${discoveredEmulators.length} emulators, added ${addedCount} new ones.` 
+                : `Discovery complete! Found ${discoveredEmulators.length} emulators. None were added because they already exist.`;
+                
+            // Prepend the success message to the top of the emulators list
+            const successMessage = document.createElement('div');
+            successMessage.className = 'emulator-discovery-success bg-green-900/30 border border-green-800 rounded-lg p-4 mb-6';
+            successMessage.innerHTML = `<p class="text-green-400 font-semibold">${resultMessage}</p>`;
+            emulatorsList.insertBefore(successMessage, emulatorsList.firstChild);
+            
+            // Clear the message after 5 seconds
+            setTimeout(() => {
+                if (successMessage && successMessage.parentNode) {
+                    successMessage.remove();
+                }
+            }, 5000);
+        } catch (error) {
+            console.error('Error discovering emulators:', error);
+            const emulatorsList = document.getElementById('emulators-list');
+            emulatorsList.innerHTML = '<p class="text-red-500 text-center py-8">Error discovering emulators. Check console for details.</p>';
         }
     }
 
@@ -911,6 +1042,7 @@ class RetroGameLauncher {
             id: game.id,
             title: getTitle(game.noms),
             platformId: game.systeme.id,
+            emulatorId: '',
             romPath: romPath,
             cover_image_path: getScreenshot(game.medias),
             description: getDescription(game.synopsis),
@@ -961,12 +1093,19 @@ class RetroGameLauncher {
             return;
         }
 
-        // Find emulator for this platform
-        const emulator = this.emulators.find(e => {
-            // This is a simplified approach - in a real app, you'd have a more sophisticated way
-            // of associating emulators with platforms
-            return e.tags && e.tags.includes(platform.id);
-        }) || this.emulators[0]; // Fallback to first emulator if none found
+        // Find emulator for this game, or fallback to platform-based selection
+        let emulator;
+        if (game.emulatorId) {
+            // Use the specific emulator selected for this game
+            emulator = this.emulators.find(e => e.emulator_id === game.emulatorId);
+        } else {
+            // Fallback to finding emulator for this platform
+            emulator = this.emulators.find(e => {
+                // This is a simplified approach - in a real app, you'd have a more sophisticated way
+                // of associating emulators with platforms
+                return e.tags && e.tags.includes(platform.id);
+            }) || this.emulators[0]; // Fallback to first emulator if none found
+        }
 
         if (!emulator) {
             alert('No emulator configured! Please add an emulator first.');
@@ -996,9 +1135,11 @@ class RetroGameLauncher {
 
     showEditGameModal(game) {
         const platformOptions = this.platforms.map(p => `<option value="${p.id}" ${p.id === game.platformId ? 'selected' : ''}>${p.name}</option>`).join('');
+        const emulatorOptions = this.emulators.map(e => `<option value="${e.emulator_id}" ${e.emulator_id === game.emulatorId ? 'selected' : ''}>${e.name}</option>`).join('');
         const fields = [
             { id: 'title', label: 'Game Title', value: game.title },
             { id: 'platformId', label: 'Platform', type: 'select', options: platformOptions },
+            { id: 'emulatorId', label: 'Emulator', type: 'select', options: `<option value="">-- Select an Emulator --</option>${emulatorOptions}` },
             { id: 'romPath', label: 'ROM Path', value: game.romPath },
             { id: 'tags', label: 'Tags', type: 'tags', value: game.tags || [] }
         ];
@@ -1014,6 +1155,7 @@ class RetroGameLauncher {
                 if (gameToUpdate) {
                     gameToUpdate.title = data.title;
                     gameToUpdate.platformId = data.platformId;
+                    gameToUpdate.emulatorId = data.emulatorId;
                     gameToUpdate.romPath = data.romPath;
                     gameToUpdate.tags = data.tags;
                     this.saveData('games', this.games);

@@ -62,6 +62,7 @@ module.exports=class GameService {
                     if (m.type === 'box2d' && m.url) media.boxArt = m.url;
                     if (m.type === 'screenshot' && m.url) media.screenshot = m.url;
                     if (m.type === 'fanart' && m.url) media.fanArt = m.url;
+                    if (m.type === 'video' && m.url) media.video = m.url;
                     // Add more media types as needed
                 });
             }
