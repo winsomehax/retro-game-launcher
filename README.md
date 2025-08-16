@@ -12,6 +12,10 @@ A desktop application for managing and launching retro games, built with Electro
 - **Tagging System**: Organize games, platforms, and emulators with custom tags
 - **Data Persistence**: All data is saved locally in JSON format
 
+
+<video controls src="output.mp4" title="Demonstration Video"></video>
+
+
 ## Prerequisites
 
 - Node.js (v14 or later recommended)
