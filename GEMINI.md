@@ -62,6 +62,10 @@ https://api.screenscraper.fr/api2/jeuInfos.php?systemeid=1&media=video&devid=$SC
 ##### Genre list in screenscraper
 https://api.screenscraper.fr/api2/genresListe.php?devid=$SCREENSCRAPER_DEVID&devpassword=$SCREENSCRAPER_DEV_PASSWORD&output=json
 
+#### Search for game by name
+
+https://api.screenscraper.fr/api2/jeuRecherche.php?systemeid=&recherche=&devid={{devid}}&devpassword={{devpassword}}&softname={{softname}}&output=json
+
 #### TheGamesDB
 
 ##### Search game by name
@@ -110,3 +114,76 @@ curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:g
 - Dotenv
 
 ## Project Structure
+
+## Current Implementation Decisions
+
+### Platform Data Enrichment
+- When querying platform information, the application uses a fallback system:
+  1. First tries ScreenScraper.fr (currently a placeholder)
+  2. Then tries GitHub Models (currently a placeholder)
+  3. Finally uses Gemini API as a fallback
+- The Gemini API is queried with information about the platform and existing tags
+- The response includes suggested tags that are automatically applied to the platform
+- Platform information includes description (max 250 words), release year, and manufacturer
+
+### Game Editing
+- Fixed JavaScript syntax errors when editing games with special characters in their data
+- Changed from embedding game data directly in HTML onclick attributes to using data attributes with event delegation
+
+### ROM Scanning
+- Users can select a folder to scan for ROM files
+- The application filters out non-ROM files (documents, images, videos, fonts)
+- Users can get AI suggestions for game titles using Gemini API
+- Games can be enriched with metadata from ScreenScraper.fr
+- Status badges provide visual feedback on the enrichment process
+- "Review Needed" status is now clickable to handle games requiring user input
+
+## Further AI Enrichment Work
+
+1. **Game Genre Classification**:
+   - Use AI to analyze game descriptions and automatically classify games into genres (action, adventure, RPG, etc.)
+   - This could help with organizing and filtering your game library
+
+2. **Game Similarity Recommendations**:
+   - Implement an AI system that suggests similar games based on metadata, descriptions, and tags
+   - "If you like Game X, you might also enjoy Game Y"
+
+3. **Automated Game Rating Estimation**:
+   - Use AI to estimate game ratings based on descriptions, genre, publisher, and other metadata
+   - This could help prioritize which games to play or import
+
+4. **Enhanced Game Descriptions**:
+   - Expand short or missing game descriptions with AI-generated content
+   - Include historical context, gameplay mechanics, or cultural significance
+
+5. **Screenshot Analysis**:
+   - Analyze game screenshots to automatically detect visual themes, color palettes, or game elements
+   - Use this for tagging or categorization
+
+6. **Developer/Publisher Enrichment**:
+   - Automatically research and add information about game developers and publishers
+   - Include historical information, other notable games, etc.
+
+7. **Multi-language Support**:
+   - Use AI to translate game descriptions and metadata into multiple languages
+   - This would make your launcher more accessible to international users
+
+8. **Game Series Detection**:
+   - Identify games that belong to the same series and group them together
+   - Show sequels, prequels, and related titles
+
+9. **Hardware Requirement Analysis**:
+   - For emulators, analyze games to suggest optimal system requirements
+   - Help users understand what hardware they need for smooth gameplay
+
+10. **Custom Playlists Generation**:
+    - Create AI-powered playlists like "Games for Beginners", "Challenging Classics", or "Short Session Games"
+    - Based on game length, difficulty, genre, and other factors
+
+11. **Retro Achievement Suggestions**:
+    - Generate achievement-like challenges for classic games that didn't originally have them
+    - "Complete the game without continuing", "Beat the final boss with minimal health", etc.
+
+12. **Historical Context Enrichment**:
+    - Add historical information about when and where games were popular
+    - Include information about the gaming culture of that era

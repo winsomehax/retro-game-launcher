@@ -5,13 +5,60 @@
   "prompt": "",
   "games": [
     {
+      "id": "109606",
+      "title": "AMC : Advance of the Mega Camels",
+      "platformId": "66",
+      "emulatorId": "",
+      "romPath": "AMC - Attack of the Mutant Camels (280).zip",
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=66&jeuid=109606&media=ss(wor)",
+      "description": "“AMC: Attack of the Mutant Camels” is a side-scrolling shooter where the player pilots a spaceship and fights off gigantic mutant camels charging toward the base. Unlike traditional side-scrollers, the ship can fly in both directions, and the jet speed is adjustable. The camels start out yellow and change color with each hit until they are ultimately destroyed. There's no time to waste, though – the enemies are relentlessly advancing and must be stopped quickly. In North America, the game was released as “Advance of the Mega Camels” to prevent confusion with other titles.",
+      "genre": "Shoot'em Up / Horizontal",
+      "releaseDate": "1983",
+      "tags": []
+    },
+    {
+      "id": "35838",
+      "title": "Altered Beast",
+      "platformId": "66",
+      "emulatorId": "",
+      "romPath": "Altered Beast (267).zip",
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=66&jeuid=35838&media=ss(wor)",
+      "description": "You are a hero raised from the dead by the god Zeus to rescue his daughter Athena. With scenery inspired by Ancient Greece, you have to fight hordes of undead and demons, with a boss at the end of each level until you meet the god Neff, who holds the girl captive. The Altered Beast title refers to your shapeshifting abilities. In this platformer, you can collect spirit balls by defeating two-headed wolves, allowing you to mutate into different beasts such as a werewolf, a dragon, a tiger, a bear and others depending on the version. Each form, tied to a level, comes with special abilities such as flight and powerful attacks, easily superseding the basic set of punches and kicks in your human form.",
+      "genre": "Beat'em Up",
+      "releaseDate": "1989",
+      "tags": []
+    },
+    {
+      "id": "36160",
+      "title": "Archon II : Adept",
+      "platformId": "66",
+      "emulatorId": "",
+      "romPath": "Archon (378).zip",
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=66&jeuid=36160&media=ss(wor)",
+      "description": "The Age of Archon is ending. Mighty wars of magic rage and monsters roam the elements hungry for power and prey. The doom of Apocalypse shadows all. Change is at hand and the battle would find an end. This is that battle. The ending is yours.\r\n- Unique blend of Strategy and Arcade Action\r\n- Different backgrounds for Earth, Water, Air, and Fire\r\n- 12 different conjurable monsters\r\n- 4 conjuring Adepts on each side\r\n- Play the Computer (difficult!) or a friend",
+      "genre": "Board game",
+      "releaseDate": "1984-08-01",
+      "tags": []
+    },
+    {
+      "id": "109736",
+      "title": "Auf Wiedersehen Monty",
+      "platformId": "66",
+      "emulatorId": "",
+      "romPath": "Auf Wiedersehen Monty (494).zip",
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=66&jeuid=109736&media=ss(eu)",
+      "description": "Poor, Persecuted Monty Mole, who was incarcerated by the bastions of law for borrowing coal to keep warm, has escaped and fled these pleasant isles. Lying low in Gibraltar, Monty's whereabouts have been leaked to Intermole, who are in hot pursuit.",
+      "genre": "Platform",
+      "releaseDate": "1987",
+      "tags": []
+    },
+    {
       "id": "45282",
       "title": "Jet Set Willy II : The Final Frontier",
       "platformId": "76",
       "emulatorId": "",
       "romPath": "Jet Set Willy.z80",
       "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=76&jeuid=45282&media=ss(eu)",
-      "video_url": "https://neoclone.screenscraper.fr/api2/mediaVideoJeu.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=76&jeuid=45282&media=video",
       "description": "This platform game is the sequel of Jet Set Willy. Again has each room its own hazards, such as spikes, revolving razors and ropes. The route through the house must be navigated carefully, due to the multiple entrances to some rooms - this is perhaps the first action game where mapping is an advantage. Another innovation, to the chagrin of players everywhere, is manual protection - a sheet of colour-coded numbers.\r",
       "genre": "Platform",
       "releaseDate": "1985",
@@ -24,22 +71,10 @@
       "emulatorId": "",
       "romPath": "Manic Miner.z80",
       "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=76&jeuid=45414&media=ss(eu)",
-      "video_url": "https://neoclone.screenscraper.fr/api2/mediaVideoJeu.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=76&jeuid=45414&media=video",
       "description": "You play the role of Miner Willy, a bold explorer and adventurer. He discovers a network of underground caverns used by an advanced but now extinct civilization, and realizes that the mines contain lucrative metal ores. Through 20 caverns, you must collect all treasures before all time (air) runs out, watching out for the nasty guardians, the obstacles, dead falls, quicksands and all elements to be found in a classic platform game.\r",
       "genre": "Platform",
       "releaseDate": "1983",
-      "tags": [
-        "8482d755-454e-42e9-b4cb-18b76918090e",
-        "c1a2b3c4-d5e6-4f78-9012-3456789abcde",
-        "f2b3c4d5-e6f7-4890-ab12-456789bcdef0",
-        "3e660cba-dbe6-4a7c-b56b-30706e859c19",
-        "010f4693-5bfc-44e6-b6c8-8b6ca6c91ece",
-        "0e44d7c1-10f2-4ec8-a84a-fe26fa84e88f",
-        "f4567890-1234-5678-9012-789abcdef123",
-        "d6f78901-2345-6789-ef01-9012f3456789",
-        "d0b384fb-0af9-407e-9515-b2e3baac55cd",
-        "cd730c12-0fe9-44e7-b4d0-5227ecfd7ff0"
-      ]
+      "tags": []
     }
   ],
   "platforms": [
@@ -54,19 +89,6 @@
         "97bd7c02-4f6e-4e50-b410-dcb957e5decc"
       ],
       "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=36&media=photo(wor)"
-    },
-    {
-      "id": "76",
-      "platform_id": 76,
-      "name": "Sinclair ZX-Spectrum",
-      "manufacturer": "Sinclair Research",
-      "release_year": "1982",
-      "description": "The Sinclair ZX Spectrum, often simply called the Spectrum, was an 8-bit personal home computer launched in the United Kingdom in 1982 by Sinclair Research. It was known for its iconic rubber keyboard, distinctive rainbow stripes, and relatively low price, making it accessible to a wide audience. The Spectrum played a significant role in popularizing home computing and video gaming in the UK and Europe, with a vast library of games that pushed the limits of its hardware, including titles like 'Jet Set Willy', 'Manic Miner', and 'Elite'. The Spectrum's simple design and affordable cost fueled a flourishing homebrew software scene, with many programmers creating games and utilities in BASIC and machine code.",
-      "tags": [
-        "97bd7c02-4f6e-4e50-b410-dcb957e5decc"
-      ],
-      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=zzz&ssid=&sspassword=&systemeid=76&media=photo(wor)",
-      "video_url": "/home/gdo/.config/retro-game-launcher/asset-cache/b2c5f041254900994fbe8e1c6e613cd0.mp4"
     },
     {
       "id": "91",
@@ -126,6 +148,16 @@
       "tags": [],
       "video_url": "/home/gdo/.config/retro-game-launcher/asset-cache/d2079b772c888c5c70e428ac4ca4a1f6.mp4",
       "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=84&media=photo(wor)"
+    },
+    {
+      "id": "76",
+      "platform_id": 76,
+      "name": "Sinclair ZX-Spectrum",
+      "manufacturer": "Sinclair Research",
+      "release_year": "1982",
+      "description": "The Sinclair ZX Spectrum, a home computer released in 1982 by Sinclair Research, was a pivotal machine in the history of personal computing and gaming. It quickly became incredibly popular, especially in the UK, due to its affordability and ease of programming. The Spectrum used a Z80 processor, came with a rubber keyboard (on early models), and was known for its distinctive color display and limited sound capabilities. It primarily used cassette tapes for game loading, and games often featured simplistic graphics and gameplay, but this fostered incredible creativity, and the platform spawned a vibrant homebrew game development scene. The Spectrum's impact extended beyond gaming; it was used for education, word processing, and general computing tasks, making it a true icon of the 1980s home computer revolution.",
+      "tags": [],
+      "cover_image_path": "https://neoclone.screenscraper.fr/api2/mediaSysteme.php?devid=Motor1024&devpassword=QPpIpcSkR2p&softname=&ssid=&sspassword=&systemeid=76&media=photo(wor)"
     }
   ],
   "emulators": [

@@ -1,0 +1,195 @@
+[
+  {
+    "platform": "MS-DOS",
+    "emulators": [
+      "DOSBox"
+    ]
+  },
+  {
+    "platform": "IBM PC (x86)",
+    "emulators": [
+      "86Box",
+      "Bochs",
+      "PCem"
+    ]
+  },
+  {
+    "platform": "Apple Macintosh (68k)",
+    "emulators": [
+      "Basilisk II",
+      "Mini vMac"
+    ]
+  },
+  {
+    "platform": "Apple Macintosh (PowerPC)",
+    "emulators": [
+      "SheepShaver"
+    ]
+  },
+  {
+    "platform": "Apple II",
+    "emulators": [
+      "AppleWin",
+      "KEGS"
+    ]
+  },
+  {
+    "platform": "Commodore 64",
+    "emulators": [
+      "VICE"
+    ]
+  },
+  {
+    "platform": "Amiga",
+    "emulators": [
+      "WinUAE",
+      "FS-UAE"
+    ]
+  },
+  {
+    "platform": "Atari ST",
+    "emulators": [
+      "Hatari"
+    ]
+  },
+  {
+    "platform": "Sinclair ZX Spectrum",
+    "emulators": [
+      "Fuse",
+      "Spectaculator"
+    ]
+  },
+  {
+    "platform": "Amstrad CPC",
+    "emulators": [
+      "WinAPE",
+      "CPC464"
+    ]
+  },
+  {
+    "platform": "PlayStation",
+    "emulators": [
+      "DuckStation",
+      "ePSXe"
+    ]
+  },
+  {
+    "platform": "PlayStation 2",
+    "emulators": [
+      "PCSX2"
+    ]
+  },
+  {
+    "platform": "PlayStation 3",
+    "emulators": [
+      "RPCS3"
+    ]
+  },
+  {
+    "platform": "PlayStation Portable (PSP)",
+    "emulators": [
+      "PPSSPP"
+    ]
+  },
+  {
+    "platform": "Nintendo Entertainment System (NES)",
+    "emulators": [
+      "FCEUX",
+      "Nestopia"
+    ]
+  },
+  {
+    "platform": "Super Nintendo Entertainment System (SNES)",
+    "emulators": [
+      "Snes9x",
+      "ZSNES",
+      "higan"
+    ]
+  },
+  {
+    "platform": "Nintendo 64",
+    "emulators": [
+      "Project64",
+      "Mupen64Plus"
+    ]
+  },
+  {
+    "platform": "Game Boy",
+    "emulators": [
+      "mGBA",
+      "VisualBoyAdvance"
+    ]
+  },
+  {
+    "platform": "Game Boy Color",
+    "emulators": [
+      "mGBA",
+      "VisualBoyAdvance"
+    ]
+  },
+  {
+    "platform": "Game Boy Advance",
+    "emulators": [
+      "mGBA",
+      "VisualBoyAdvance"
+    ]
+  },
+  {
+    "platform": "Nintendo DS",
+    "emulators": [
+      "DeSmuME"
+    ]
+  },
+  {
+    "platform": "Nintendo 3DS",
+    "emulators": [
+      "Citra"
+    ]
+  },
+  {
+    "platform": "GameCube/Wii",
+    "emulators": [
+      "Dolphin"
+    ]
+  },
+  {
+    "platform": "Wii U",
+    "emulators": [
+      "Cemu"
+    ]
+  },
+  {
+    "platform": "Nintendo Switch",
+    "emulators": [
+      "Yuzu",
+      "Ryujinx"
+    ]
+  },
+  {
+    "platform": "Sega Genesis/Mega Drive",
+    "emulators": [
+      "Kega Fusion",
+      "Genesis Plus GX"
+    ]
+  },
+  {
+    "platform": "Sega Saturn",
+    "emulators": [
+      "Mednafen",
+      "SSF"
+    ]
+  },
+  {
+    "platform": "Sega Dreamcast",
+    "emulators": [
+      "redream",
+      "Flycast"
+    ]
+  },
+  {
+    "platform": "Multiple Arcade Systems",
+    "emulators": [
+      "MAME (Multiple Arcade Machine Emulator)"
+    ]
+  }
+]
