@@ -27,7 +27,7 @@
 <body class="bg-neutral-900 text-neutral-100 font-sans">
     <div id="app" class="min-h-screen flex">
         <!-- Sidebar -->
-        <nav class="w-64 bg-neutral-800 p-6">
+        <nav class="fixed w-64 bg-neutral-800 p-6 h-screen overflow-y-auto">
             <h1 class="text-2xl font-display font-bold text-primary mb-8">Retro Launcher</h1>
             <ul class="space-y-2">
                 <li><a href="#games" class="nav-link block p-3 rounded hover:bg-neutral-700 transition-colors">Games</a></li>
@@ -40,7 +40,7 @@
         </nav>
 
         <!-- Main Content -->
-        <main class="flex-1 p-8">
+        <main class="flex-1 p-8 ml-64">
             <!-- Games View -->
             <div id="games-view" class="view">
                 <h2 class="text-4xl font-display font-bold mb-6">Games Library</h2>
