@@ -511,87 +511,8 @@ class RetroGameLauncher {
         });
     }
     showModal(title, fields, onSubmit) {
-        const modal = document.getElementById('modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalFields = document.getElementById('modal-fields');
-        const modalForm = document.getElementById('modal-form');
-        const modalCancel = document.getElementById('modal-cancel');
-
-        modalTitle.textContent = title;
-        modalFields.innerHTML = fields.map(field => {
-            let inputHtml = '';
-            if (field.type === 'tags') {
-                const itemTags = field.value || [];
-                const tagOptions = this.tags.map(tag => {
-                    const isSelected = itemTags.includes(tag.id);
-                    return `<option value="${tag.id}" ${isSelected ? 'selected' : ''}>${tag.name}</option>`;
-                }).join('');
-                inputHtml = `
-                    <select id="${field.id}" name="${field.id}" multiple class="w-full p-3 bg-neutral-800 border border-neutral-700 rounded h-32">
-                        ${tagOptions}
-                    </select>
-                `;
-            }
-            else if (field.type === 'select') {
-                inputHtml = `
-                    <select id="${field.id}" name="${field.id}" class="p-3 bg-neutral-800 border border-neutral-700 rounded w-full" multiple>
-                        ${field.options}
-                    </select>
-                `;
-            } else if (field.type === 'textarea') {
-                inputHtml = `
-                    <textarea id="${field.id}" name="${field.id}" class="w-full p-3 bg-neutral-800 border border-neutral-700 rounded" ${field.readOnly ? 'readonly' : ''}>${field.value || ''}</textarea>
-                `;
-            } else {
-                inputHtml = `
-                    <input type="${field.type || 'text'}" id="${field.id}" name="${field.id}" value="${field.value || ''}" ${field.readOnly ? 'readonly' : ''} class="w-full p-3 bg-neutral-800 border border-neutral-700 rounded">
-                `;
-            }
-            return `
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-2">${field.label}</label>
-                    ${inputHtml}
-                </div>
-            `;
-        }).join('');
-
-        modal.classList.remove('hidden');
-
-        const handleSubmit = (e) => {
-            e.preventDefault();
-            const formData = new FormData(modalForm);
-            const data = {};
-            for (const [key, value] of formData.entries()) {
-                data[key] = value;
-            }
-
-            // Handle multi-select for tags
-            const tagsSelect = modalForm.querySelector('select[name="tags"]');
-            if (tagsSelect) {
-                data.tags = Array.from(tagsSelect.selectedOptions).map(option => option.value);
-            }
-
-            // Show loading state
-            const saveButton = document.getElementById('modal-save');
-            const originalText = saveButton.textContent;
-            saveButton.textContent = 'Saving...';
-            saveButton.disabled = true;
-
-            onSubmit(data);
-            closeModal();
-
-            // Reset button state (in case closeModal didn't handle it)
-            saveButton.textContent = originalText;
-            saveButton.disabled = false;
-        };
-
-        const closeModal = () => {
-            modal.classList.add('hidden');
-            modalForm.removeEventListener('submit', handleSubmit);
-        };
-
-        modalForm.addEventListener('submit', handleSubmit);
-        modalCancel.addEventListener('click', closeModal);
+        // Use the new secure ModalSystem
+        window.ModalSystem.show(title, fields, onSubmit);
     }
 
     getPlatformName(platformId) {
@@ -668,23 +589,24 @@ class RetroGameLauncher {
     async addGame(gameData) {
         // Validate required fields
         if (!gameData.title) {
-            alert('Game title is required.');
+            window.NotificationSystem?.warning('Game title is required.') || console.warn('Game title is required.');
             return;
         }
 
         if (!gameData.platformId) {
-            alert('Platform is required.');
+            window.NotificationSystem?.warning('Platform is required.') || console.warn('Platform is required.');
             return;
         }
 
         if (!gameData.romPath) {
-            alert('ROM path is required.');
+            window.NotificationSystem?.warning('ROM path is required.') || console.warn('ROM path is required.');
             return;
         }
 
         const existingGame = this.games.find(g => g.title === gameData.title && g.platformId === gameData.platformId);
         if (existingGame) {
-            alert(`Game with title "${existingGame.title}" and platform "${this.getPlatformName(existingGame.platformId)}" already exists.`);
+            const message = `Game with title "${existingGame.title}" and platform "${this.getPlatformName(existingGame.platformId)}" already exists.`;
+            window.NotificationSystem?.warning(message) || console.warn(message);
             return;
         }
 
@@ -709,18 +631,19 @@ class RetroGameLauncher {
     async addPlatform(platformData) {
         // Validate required fields
         if (!platformData.id) {
-            alert('Platform ID is required.');
+            window.NotificationSystem?.warning('Platform ID is required.') || console.warn('Platform ID is required.');
             return;
         }
 
         if (!platformData.name) {
-            alert('Platform name is required.');
+            window.NotificationSystem?.warning('Platform name is required.') || console.warn('Platform name is required.');
             return;
         }
 
         const existingPlatform = this.platforms.find(p => p.platform_id === platformData.id);
         if (existingPlatform) {
-            alert(`Platform with name "${platformData.name}" already exists.`);
+            const message = `Platform with name "${platformData.name}" already exists.`;
+            window.NotificationSystem?.warning(message) || console.warn(message);
             return;
         }
 
@@ -742,18 +665,19 @@ class RetroGameLauncher {
     async addEmulator(emulatorData) {
         // Validate required fields
         if (!emulatorData.name) {
-            alert('Emulator name is required.');
+            window.NotificationSystem?.warning('Emulator name is required.') || console.warn('Emulator name is required.');
             return;
         }
 
         if (!emulatorData.executablePath) {
-            alert('Emulator executable path is required.');
+            window.NotificationSystem?.warning('Emulator executable path is required.') || console.warn('Emulator executable path is required.');
             return;
         }
 
         const existingEmulator = this.emulators.find(e => e.name === emulatorData.name);
         if (existingEmulator) {
-            alert(`Emulator with name "${existingEmulator.name}" already exists.`);
+            const message = `Emulator with name "${existingEmulator.name}" already exists.`;
+            window.NotificationSystem?.warning(message) || console.warn(message);
             return;
         }
 
@@ -886,13 +810,13 @@ class RetroGameLauncher {
 
     async startScan() {
         if (!this.selectedScanFolder) {
-            alert('Please select a folder first.');
+            window.NotificationSystem?.warning('Please select a folder first.') || console.warn('Please select a folder first.');
             return;
         }
 
         const platformId = document.getElementById('scan-platform-select').value;
         if (!platformId) {
-            alert('Please select a platform first.');
+            window.NotificationSystem?.warning('Please select a platform first.') || console.warn('Please select a platform first.');
             return;
         }
 
@@ -934,7 +858,7 @@ class RetroGameLauncher {
         const selectedRows = romRows.filter(row => row.querySelector('.rom-checkbox').checked);
 
         if (selectedRows.length === 0) {
-            alert('Please select at least one ROM to get suggestions for.');
+            window.NotificationSystem?.warning('Please select at least one ROM to get suggestions for.') || console.warn('Please select at least one ROM to get suggestions for.');
             return;
         }
 
@@ -971,7 +895,7 @@ class RetroGameLauncher {
                 processedCount += batch.length;
             } catch (error) {
                 console.error('Error getting suggestions from AI:', error);
-                alert('An error occurred while getting suggestions from the AI.');
+                window.NotificationSystem?.error('An error occurred while getting suggestions from the AI.') || console.error('An error occurred while getting suggestions from the AI.');
                 break;
             }
         }
@@ -981,7 +905,7 @@ class RetroGameLauncher {
             progressElement.textContent = '';
         }
 
-        alert(`${processedCount} ROMs processed!`);
+        window.NotificationSystem?.success(`${processedCount} ROMs processed!`) || console.log(`${processedCount} ROMs processed!`);
     }
 
     async enrichSelected() {
@@ -989,7 +913,7 @@ class RetroGameLauncher {
         const selectedRows = romRows.filter(row => row.querySelector('.rom-checkbox').checked);
 
         if (selectedRows.length === 0) {
-            alert('Please select at least one ROM to enrich.');
+            window.NotificationSystem?.warning('Please select at least one ROM to enrich.') || console.warn('Please select at least one ROM to enrich.');
             return;
         }
 
@@ -1034,7 +958,7 @@ class RetroGameLauncher {
                         this.updateRomStatus(row, 'Auth Error', 'bg-red-800');
                         // Show alert for authentication error but only once
                         if (errorCount === 0) {
-                            alert('Authentication failed: Please check your ScreenScraper credentials in the .env file');
+                            window.NotificationSystem?.error('Authentication failed: Please check your ScreenScraper credentials in the .env file') || console.error('Authentication failed: Please check your ScreenScraper credentials in the .env file');
                         }
                     } else {
                         this.updateRomStatus(row, 'Not Found', 'bg-red-600');
@@ -1061,7 +985,7 @@ class RetroGameLauncher {
             progressElement.textContent = '';
         }
 
-        alert(`Enrichment complete! ${enrichedCount} enriched, ${errorCount} errors.`);
+        window.NotificationSystem?.info(`Enrichment complete! ${enrichedCount} enriched, ${errorCount} errors.`) || console.log(`Enrichment complete! ${enrichedCount} enriched, ${errorCount} errors.`);
     }
 
     async importSelected() {
@@ -1069,7 +993,7 @@ class RetroGameLauncher {
         const selectedRows = romRows.filter(row => row.querySelector('.rom-checkbox').checked && row.dataset.enriched);
 
         if (selectedRows.length === 0) {
-            alert('Please select at least one enriched ROM to import.');
+            window.NotificationSystem?.warning('Please select at least one enriched ROM to import.') || console.warn('Please select at least one enriched ROM to import.');
             return;
         }
 
@@ -1098,7 +1022,7 @@ class RetroGameLauncher {
             progressElement.textContent = '';
         }
 
-        alert(`${importedCount} games imported successfully!`);
+        window.NotificationSystem?.success(`${importedCount} games imported successfully!`) || console.log(`${importedCount} games imported successfully!`);
         this.showView('games');
     }
 
@@ -1216,38 +1140,26 @@ class RetroGameLauncher {
                         window.checkLowResourcesSetting();
                     }, 100);
                 }
-                alert('Settings saved successfully!');
+                window.NotificationSystem?.success('Settings saved successfully!') || console.log('Settings saved successfully!');
             } else {
                 throw new Error(result.error || 'Unknown error');
             }
         } catch (error) {
             console.error('Error saving settings:', error);
-            alert('Failed to save settings. Check console for details.');
-        }
-    }
-
-    async loadSettings() {
-        try {
-            const settings = await window.electronAPI.loadSettings();
-            document.getElementById('thegamesdb-key').value = settings.THEGAMESDB_API_KEY || '';
-            document.getElementById('rawg-key').value = settings.RAWG_API_KEY || '';
-            document.getElementById('gemini-key').value = settings.GEMINI_API_KEY || '';
-            document.getElementById('low-resources-mode').checked = settings.LOW_RESOURCES_MODE || false;
-        } catch (error) {
-            console.error('Error loading settings:', error);
+            window.NotificationSystem?.error('Failed to save settings. Check console for details.') || console.error('Failed to save settings. Check console for details.');
         }
     }
 
     async launchGame(gameId) {
         const game = this.games.find(g => g.id === gameId);
         if (!game) {
-            alert('Game not found!');
+            window.NotificationSystem?.error('Game not found!') || console.error('Game not found!');
             return;
         }
 
         const platform = this.platforms.find(p => p.id === game.platformId);
         if (!platform) {
-            alert('Platform not found!');
+            window.NotificationSystem?.error('Platform not found!') || console.error('Platform not found!');
             return;
         }
 
@@ -1266,7 +1178,7 @@ class RetroGameLauncher {
         }
 
         if (!emulator) {
-            alert('No emulator configured! Please add an emulator first.');
+            window.NotificationSystem?.warning('No emulator configured! Please add an emulator first.') || console.warn('No emulator configured! Please add an emulator first.');
             return;
         }
 
@@ -1279,7 +1191,7 @@ class RetroGameLauncher {
             console.log('Game launch initiated');
         } catch (error) {
             console.error('Error launching game:', error);
-            alert('Failed to launch game. Check console for details.');
+            window.NotificationSystem?.error('Failed to launch game. Check console for details.') || console.error('Failed to launch game. Check console for details.');
         }
     }
 
@@ -1305,7 +1217,8 @@ class RetroGameLauncher {
             if (data.title && data.platformId && data.romPath) {
                 const existingGame = this.games.find(g => g.title === data.title && g.platformId === data.platformId && g.id !== game.id);
                 if (existingGame) {
-                    alert(`Game with title "${existingGame.title}" and platform "${this.getPlatformName(existingGame.platformId)}" already exists.`);
+                    const message = `Game with title "${existingGame.title}" and platform "${this.getPlatformName(existingGame.platformId)}" already exists.`;
+                    window.NotificationSystem?.warning(message) || console.warn(message);
                     return;
                 }
 
@@ -1313,9 +1226,9 @@ class RetroGameLauncher {
                 if (gameToUpdate) {
                     gameToUpdate.title = data.title;
                     gameToUpdate.platformId = data.platformId;
-                    gameToUpdate.emulatorId = data.emulatorId;
+                    gameToUpdate.emulatorId = data.emulatorId || '';
                     gameToUpdate.romPath = data.romPath;
-                    gameToUpdate.tags = data.tags;
+                    gameToUpdate.tags = data.tags || [];
                     this.saveData('games', this.games);
                     this.renderGames();
                 }
@@ -1391,7 +1304,8 @@ class RetroGameLauncher {
             if (data.name) {
                 const existingEmulator = this.emulators.find(e => e.name === data.name && e.emulator_id !== id);
                 if (existingEmulator) {
-                    alert(`Emulator with name "${existingEmulator.name}" already exists.`);
+                    const message = `Emulator with name "${existingEmulator.name}" already exists.`;
+                    window.NotificationSystem?.warning(message) || console.warn(message);
                     return;
                 }
 
@@ -1487,7 +1401,7 @@ class RetroGameLauncher {
         if (!tagName) return;
         tagName = tagName.toLowerCase();
         if (this.tags.some(t => t.name === tagName)) {
-            alert('Tag already exists.');
+            window.NotificationSystem?.warning('Tag already exists.') || console.warn('Tag already exists.');
             return;
         }
         const newTag = new Tag(tagName);
@@ -1508,7 +1422,7 @@ class RetroGameLauncher {
             const newTagName = data.name.trim().toLowerCase();
             if (newTagName && newTagName !== tag.name) {
                 if (this.tags.some(t => t.name === newTagName && t.id !== tagId)) {
-                    alert('Tag already exists.');
+                    window.NotificationSystem?.warning('Tag already exists.') || console.warn('Tag already exists.');
                     return;
                 }
                 tag.name = newTagName;
