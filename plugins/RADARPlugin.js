@@ -9,11 +9,11 @@ class RADARPlugin extends BasePlugin {
     
     // Circle parameters
     this.circles = [
-      { radius: 100, speed: 1.2, angle: 0, direction: 1, color: '#42a5f5' },  // Blue
-      { radius: 200, speed: 2.5, angle: 0, direction: -1, color: '#f44336' }, // Red
-      { radius: 300, speed: 3.8, angle: 0, direction: 1, color: '#4caf50' },  // Green
-      { radius: 400, speed: 1.7, angle: 0, direction: -1, color: '#ffab00' }, // Orange
-      { radius: 500, speed: 4.2, angle: 0, direction: 1, color: '#9c27b0' }   // Purple
+      { radius: 100, speed: 1.2, angle: 0, direction: 1, color: '#42a5f5', segment: 0.3 },  // Blue - 30% circle
+      { radius: 200, speed: 2.5, angle: 0, direction: -1, color: '#f44336', segment: 0.5 }, // Red - 50% circle
+      { radius: 300, speed: 3.8, angle: 0, direction: 1, color: '#4caf50', segment: 0.65 },  // Green - 65% circle
+      { radius: 400, speed: 1.7, angle: 0, direction: -1, color: '#ffab00', segment: 0.4 }, // Orange - 40% circle
+      { radius: 500, speed: 4.2, angle: 0, direction: 1, color: '#9c27b0', segment: 0.75 }   // Purple - 75% circle
     ];
     
     // Direction change interval (10 seconds)
@@ -130,18 +130,22 @@ class RADARPlugin extends BasePlugin {
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
 
-    // Draw each circle
+    // Draw each circle segment
     this.circles.forEach(circle => {
       // Update angle based on speed and direction
       circle.angle += circle.speed * circle.direction * 0.016; // Adjust for 60fps
       
-      // Draw circle outline (50px width) with rotation
+      // Draw circle segment (50px width)
       this.ctx.beginPath();
       
-      // Create a full circle with rotation
-      this.ctx.arc(centerX, centerY, circle.radius, circle.angle, circle.angle + Math.PI * 2);
+      // Calculate start and end angles for the segment
+      const startAngle = circle.angle;
+      const endAngle = circle.angle + (2 * Math.PI * circle.segment);
       
-      // Style the circle outline
+      // Create an arc segment
+      this.ctx.arc(centerX, centerY, circle.radius, startAngle, endAngle);
+      
+      // Style the circle segment
       this.ctx.strokeStyle = circle.color;
       this.ctx.lineWidth = 50;
       this.ctx.lineCap = 'round';

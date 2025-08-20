@@ -778,6 +778,17 @@ class RetroGameLauncher {
             });
         }
 
+        // Background effect dropdown
+        const backgroundEffectSelect = document.getElementById('background-effect');
+        if (backgroundEffectSelect) {
+            backgroundEffectSelect.addEventListener('change', () => {
+                // Update background effect immediately
+                if (typeof window.updateBackgroundEffect === 'function') {
+                    window.updateBackgroundEffect(backgroundEffectSelect.value);
+                }
+            });
+        }
+
         const addTagBtn = document.getElementById('add-tag-btn');
         if (addTagBtn) {
             addTagBtn.addEventListener('click', () => {
@@ -1549,8 +1560,8 @@ class RetroGameLauncher {
                 // Update background effect immediately if the function exists
                 if (typeof window.updateBackgroundEffect === 'function') {
                     const selectedEffect = document.getElementById('background-effect').value;
-                    setTimeout(() => {
-                        window.updateBackgroundEffect(selectedEffect);
+                    setTimeout(async () => {
+                        await window.updateBackgroundEffect(selectedEffect);
                     }, 100);
                 }
                 
