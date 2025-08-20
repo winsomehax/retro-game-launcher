@@ -87,9 +87,10 @@ class NotificationSystem {
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
         
-        // Add message
+        // Add message using safe textContent
         const messageElement = document.createElement('span');
-        messageElement.textContent = message;
+        // Sanitize message for display
+        messageElement.textContent = window.Sanitizer ? window.Sanitizer.sanitizeForHTML(message) : message;
         notification.appendChild(messageElement);
         
         // Add close button

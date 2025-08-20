@@ -102,11 +102,17 @@ class AssetManager {
         const filename = this.generateFilename(url);
         const filepath = path.join(this.cacheDir, filename);
         
-        try {
-            await fs.access(filepath);
-            return { exists: true, path: filepath };
-        } catch {
+        // Validate the path to prevent path traversal
+        const validatedPath = this.validatePath(filepath, this.cacheDir);
+        if (!validatedPath) {
             return { exists: false, path: filepath };
+        }
+        
+        try {
+            await fs.access(validatedPath);
+            return { exists: true, path: validatedPath };
+        } catch {
+            return { exists: false, path: validatedPath };
         }
     }
 
@@ -122,6 +128,12 @@ class AssetManager {
             if (exists) {
                 console.log(`Asset already cached: ${url}`);
                 return filepath;
+            }
+
+            // Validate the path to prevent path traversal
+            const validatedPath = this.validatePath(filepath, this.cacheDir);
+            if (!validatedPath) {
+                return null;
             }
 
             console.log(`Downloading asset: ${url}`);
@@ -140,29 +152,76 @@ class AssetManager {
             const filename = this.generateFilename(url, response);
             const finalFilepath = path.join(this.cacheDir, filename);
             
-            await fs.writeFile(finalFilepath, Buffer.from(buffer));
+            // Validate the final path to prevent path traversal
+            const validatedFinalPath = this.validatePath(finalFilepath, this.cacheDir);
+            if (!validatedFinalPath) {
+                return null;
+            }
             
-            console.log(`Asset downloaded and cached: ${url} -> ${finalFilepath} (size: ${buffer.byteLength} bytes)`);
-            return finalFilepath;
+            await fs.writeFile(validatedFinalPath, Buffer.from(buffer));
+            
+            console.log(`Asset downloaded and cached: ${url} -> ${validatedFinalPath} (size: ${buffer.byteLength} bytes)`);
+            return validatedFinalPath;
         } catch (error) {
             console.error(`Failed to download asset from ${url}:`, error);
             return null;
         }
     }
 
-    /**
-     * Gets the local path for an asset, downloading it if necessary.
-     * @param {string} url - The URL of the asset.
-     * @returns {Promise<string|null>} - The local file path of the asset, or null on failure.
-     */
+    /**\n     * Validates and resolves file paths to prevent path traversal attacks.\n     * @param {string} inputPath - The input path to validate.\n     * @param {string} baseDir - The base directory to resolve against.\n     * @returns {string|null} - The resolved path or null if invalid.\n     */
+    validatePath(inputPath, baseDir) {
+        try {
+            // Resolve the path to handle relative paths
+            let resolvedPath = path.resolve(inputPath);
+            
+            // Ensure the path is within the base directory
+            const resolvedBase = path.resolve(baseDir);
+            if (!resolvedPath.startsWith(resolvedBase)) {
+                console.error('Path traversal attempt detected:', inputPath);
+                return null;
+            }
+            
+            // Allow access to the asset cache directory (which is within userData)
+            // The asset cache is a legitimate subdirectory of the base directory
+            if (resolvedPath.startsWith(this.cacheDir)) {
+                return resolvedPath;
+            }
+            
+            // Prevent access to sensitive system directories outside of our app directory
+            // Only block access if the path is NOT within our application's data directory
+            const appDataDir = path.resolve(app.getPath('userData'));
+            if (!resolvedPath.startsWith(appDataDir)) {
+                const sensitivePaths = ['/etc/', '/root/', '/usr/', '/var/'];
+                for (const sensitivePath of sensitivePaths) {
+                    if (resolvedPath.startsWith(sensitivePath)) {
+                        console.error('Access to sensitive system directories is forbidden:', inputPath);
+                        return null;
+                    }
+                }
+            }
+            
+            return resolvedPath;
+        } catch (error) {
+            console.error('Error validating path:', error);
+            return null;
+        }
+    }
+
+    /**\n     * Gets the local path for an asset, downloading it if necessary.\n     * @param {string} url - The URL of the asset.\n     * @returns {Promise<string|null>} - The local file path of the asset, or null on failure.\n     */
     async getAssetPath(url) {
         if (!url) return null;
 
         // Check if the URL is already a local file path that exists
         if ((url.startsWith('/') || /^[A-Za-z]:/.test(url)) && url.includes(this.cacheDir)) {
+            // Validate the path to prevent path traversal
+            const validatedPath = this.validatePath(url, this.cacheDir);
+            if (!validatedPath) {
+                return null;
+            }
+            
             try {
-                await fs.access(url);
-                return url;
+                await fs.access(validatedPath);
+                return validatedPath;
             } catch {
                 // File doesn't exist, continue with normal processing
             }

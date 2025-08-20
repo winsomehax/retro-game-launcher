@@ -1,11 +1,11 @@
+// Simple retro game launcher app
+
 class Tag {
     constructor(name) {
-        this.id = app.generateUUID();
+        this.id = RetroGameLauncher.generateUUID();
         this.name = name;
     }
 }
-
-// Simple retro game launcher app
 class RetroGameLauncher {
     constructor() {
         this.games = [];
@@ -18,7 +18,7 @@ class RetroGameLauncher {
     }
 
     // Simple UUID generator
-    generateUUID() {
+    static generateUUID() {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
             var r = Math.random() * 16 | 0,
                 v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -78,49 +78,149 @@ class RetroGameLauncher {
 
     async loadData() {
         try {
-            this.games = await window.electronAPI.loadData('games') || [];
-            this.platforms = await window.electronAPI.loadData('platforms') || [];
-            this.emulators = await window.electronAPI.loadData('emulators') || [];
-            this.tags = await window.electronAPI.loadData('tags') || [];
+            const rawData = {
+                games: await window.electronAPI.loadData('games') || [],
+                platforms: await window.electronAPI.loadData('platforms') || [],
+                emulators: await window.electronAPI.loadData('emulators') || [],
+                tags: await window.electronAPI.loadData('tags') || []
+            };
 
-            // Normalize platform data to ensure 'id' property exists and process media
-            if (this.platforms) {
-                this.platforms.forEach(p => {
-                    if (p.platform_id && !p.id) {
-                        p.id = p.platform_id.toString();
-                    }
-                    // Add video URL if available in media
-                    if (p.media && p.media.video && !p.video_url) {
-                        p.video_url = p.media.video;
-                    }
-                });
-            }
+            // Normalize data using DataModel
+            this.games = window.DataModel ? 
+                window.DataModel.normalizeGameData(rawData.games) : 
+                rawData.games;
+                
+            this.platforms = window.DataModel ? 
+                window.DataModel.normalizePlatformData(rawData.platforms) : 
+                rawData.platforms;
+                
+            this.emulators = window.DataModel ? 
+                window.DataModel.normalizeEmulatorData(rawData.emulators) : 
+                rawData.emulators;
+                
+            this.tags = window.DataModel ? 
+                window.DataModel.normalizeTagData(rawData.tags) : 
+                rawData.tags;
 
+            // Build indexes for efficient searching and filtering
+            this.buildIndexes();
+            
             this.renderGames();
             this.renderPlatforms();
             this.renderEmulators();
         } catch (error) {
-            console.error('Error loading data:', error);
+            const sanitizedError = window.Sanitizer ? window.Sanitizer.sanitizeForLog(error.message) : error.message;
+            console.error('Error loading data:', sanitizedError);
+        }
+    }
+
+    // Build indexes for efficient searching and filtering
+    buildIndexes() {
+        // Indexes for efficient searching and filtering
+        this.gameIndex = new Map(); // Index by game ID
+        this.gameTitleIndex = new Map(); // Index by lowercase title for search
+        this.gamePlatformIndex = new Map(); // Index by platform ID for filtering
+        this.gameGenreIndex = new Map(); // Index by genre for search
+        this.gameDescriptionIndex = new Map(); // Index by description for search
+        
+        // Build indexes
+        for (const game of this.games) {
+            // Index by ID
+            this.gameIndex.set(game.id, game);
+            
+            // Index by title (lowercase for case-insensitive search)
+            if (game.title) {
+                const lowerTitle = game.title.toLowerCase();
+                if (!this.gameTitleIndex.has(lowerTitle)) {
+                    this.gameTitleIndex.set(lowerTitle, []);
+                }
+                this.gameTitleIndex.get(lowerTitle).push(game);
+            }
+            
+            // Index by platform
+            if (game.platformId) {
+                if (!this.gamePlatformIndex.has(game.platformId)) {
+                    this.gamePlatformIndex.set(game.platformId, []);
+                }
+                this.gamePlatformIndex.get(game.platformId).push(game);
+            }
+            
+            // Index by genre
+            if (game.genre) {
+                const lowerGenre = game.genre.toLowerCase();
+                if (!this.gameGenreIndex.has(lowerGenre)) {
+                    this.gameGenreIndex.set(lowerGenre, []);
+                }
+                this.gameGenreIndex.get(lowerGenre).push(game);
+            }
+            
+            // Index by description
+            if (game.description) {
+                const lowerDescription = game.description.toLowerCase();
+                if (!this.gameDescriptionIndex.has(lowerDescription)) {
+                    this.gameDescriptionIndex.set(lowerDescription, []);
+                }
+                this.gameDescriptionIndex.get(lowerDescription).push(game);
+            }
+        }
+        
+        // Indexes for platforms
+        this.platformIndex = new Map(); // Index by platform ID
+        this.platformNameIndex = new Map(); // Index by platform name
+        
+        for (const platform of this.platforms) {
+            // Index by ID
+            this.platformIndex.set(platform.id, platform);
+            
+            // Index by name
+            if (platform.name) {
+                this.platformNameIndex.set(platform.name.toLowerCase(), platform);
+            }
+        }
+        
+        // Indexes for emulators
+        this.emulatorIndex = new Map(); // Index by emulator ID
+        
+        for (const emulator of this.emulators) {
+            // Index by ID
+            this.emulatorIndex.set(emulator.emulator_id, emulator);
         }
     }
 
     async getAssetPath(url) {
         if (!url) return url;
         try {
-            // Use a simple caching mechanism to avoid repeated IPC calls for the same URL
+            // Use a more sophisticated caching mechanism with expiration
             if (!this.assetPathCache) {
                 this.assetPathCache = new Map();
+                this.assetPathCacheTimestamps = new Map();
             }
             
+            const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+            
+            // Check if we have a cached version that's still valid
             if (this.assetPathCache.has(url)) {
-                return this.assetPathCache.get(url);
+                const timestamp = this.assetPathCacheTimestamps.get(url);
+                if (Date.now() - timestamp < CACHE_DURATION) {
+                    return this.assetPathCache.get(url);
+                } else {
+                    // Expired, remove from cache
+                    this.assetPathCache.delete(url);
+                    this.assetPathCacheTimestamps.delete(url);
+                }
             }
             
             const assetPath = await window.electronAPI.getAssetPath(url);
-            this.assetPathCache.set(url, assetPath || url); // Fallback to original URL if asset path is null
-            return assetPath || url;
+            const finalPath = assetPath || url;
+            
+            // Cache the result with timestamp
+            this.assetPathCache.set(url, finalPath);
+            this.assetPathCacheTimestamps.set(url, Date.now());
+            
+            return finalPath;
         } catch (error) {
-            console.error('Error getting asset path:', error);
+            const sanitizedError = window.Sanitizer ? window.Sanitizer.sanitizeForLog(error.message) : error.message;
+            console.error('Error getting asset path:', sanitizedError);
             return url; // Fallback to original URL on error
         }
     }
@@ -128,56 +228,129 @@ class RetroGameLauncher {
     async renderGames() {
         const gamesGrid = document.getElementById('games-grid');
         if (this.games.length === 0) {
-            gamesGrid.innerHTML = '<p class="text-neutral-400 col-span-full text-center py-8">No games found. Add some games to get started!</p>';
+            // Clear the games grid efficiently
+            while (gamesGrid.firstChild) {
+                gamesGrid.removeChild(gamesGrid.firstChild);
+            }
+            
+            // Create the "no games" message using DOM methods
+            const noGamesMessage = document.createElement('p');
+            noGamesMessage.className = 'text-neutral-400 col-span-full text-center py-8';
+            noGamesMessage.textContent = 'No games found. Add some games to get started!';
+            gamesGrid.appendChild(noGamesMessage);
             return;
         }
 
+        // Clear the games grid efficiently
+        while (gamesGrid.firstChild) {
+            gamesGrid.removeChild(gamesGrid.firstChild);
+        }
+        
         // Create a document fragment to build the HTML
         const fragment = document.createDocumentFragment();
         
         for (const game of this.games) {
             const gameElement = document.createElement('div');
             gameElement.className = 'bg-neutral-800 rounded-lg p-4 hover:bg-neutral-700 transition-colors';
-            gameElement.innerHTML = `
-                <div class="aspect-[3/4] bg-neutral-700 rounded mb-3 flex items-center justify-center relative overflow-hidden">
-                    ${game.cover_image_path ? 
-                        `<img src="${game.cover_image_path}" alt="${game.title}" class="w-full h-full object-cover rounded game-image" data-original-src="${game.cover_image_path}">` :
-                        `<span class="text-neutral-500">No Image</span>`
+            
+            // Create the game content using safe DOM methods
+            const aspectDiv = document.createElement('div');
+            aspectDiv.className = 'aspect-[3/4] bg-neutral-700 rounded mb-3 flex items-center justify-center relative overflow-hidden';
+            
+            if (game.cover_image_path) {
+                const img = document.createElement('img');
+                // Don't sanitize image URLs as they may contain special characters that are valid in URLs
+                img.src = game.cover_image_path;
+                img.alt = game.title || 'Game cover';
+                img.className = 'w-full h-full object-cover rounded game-image';
+                img.setAttribute('data-original-src', game.cover_image_path);
+                aspectDiv.appendChild(img);
+            } else {
+                const noImageSpan = document.createElement('span');
+                noImageSpan.className = 'text-neutral-500';
+                noImageSpan.textContent = 'No Image';
+                aspectDiv.appendChild(noImageSpan);
+            }
+            
+            if (game.video_url) {
+                const video = document.createElement('video');
+                video.className = 'game-video absolute inset-0 w-full h-full object-cover rounded opacity-0 transition-opacity duration-300';
+                video.muted = true;
+                video.preload = 'none';
+                
+                const source = document.createElement('source');
+                // Don't sanitize video URLs as they may contain special characters that are valid in URLs
+                source.src = game.video_url;
+                source.type = 'video/mp4';
+                source.setAttribute('data-original-src', game.video_url);
+                video.appendChild(source);
+                aspectDiv.appendChild(video);
+            }
+            
+            const titleEl = document.createElement('h3');
+            titleEl.className = 'font-semibold mb-1';
+            titleEl.textContent = game.title || 'Untitled Game';
+            
+            const platformEl = document.createElement('p');
+            platformEl.className = 'text-sm text-neutral-400 mb-1';
+            platformEl.textContent = this.getPlatformName(game.platformId);
+            
+            const emulatorEl = document.createElement('p');
+            emulatorEl.className = 'text-sm text-neutral-400 mb-1';
+            emulatorEl.textContent = this.getEmulatorName(game.emulatorId);
+            
+            const descriptionEl = document.createElement('p');
+            descriptionEl.className = 'text-sm text-neutral-400 mb-2';
+            descriptionEl.textContent = game.description || 'No description';
+            
+            const tagsDiv = document.createElement('div');
+            tagsDiv.className = 'flex flex-wrap gap-1 mb-2';
+            
+            if (Array.isArray(game.tags) && game.tags.length > 0) {
+                game.tags.forEach(tagId => {
+                    const tag = this.tags.find(t => t.id === tagId);
+                    if (tag) {
+                        const tagSpan = document.createElement('span');
+                        tagSpan.className = 'bg-secondary text-xs px-2 py-1 rounded-full';
+                        tagSpan.textContent = tag.name;
+                        tagsDiv.appendChild(tagSpan);
                     }
-                    ${game.video_url ? 
-                        `<video class="game-video absolute inset-0 w-full h-full object-cover rounded opacity-0 transition-opacity duration-300" muted preload="none">
-                            <source src="${game.video_url}" type="video/mp4" data-original-src="${game.video_url}">
-                        </video>` :
-                        ''
-                    }
-                </div>
-                <h3 class="font-semibold mb-1">${game.title}</h3>
-                <p class="text-sm text-neutral-400 mb-1">${this.getPlatformName(game.platformId)}</p>
-                <p class="text-sm text-neutral-400 mb-1">${this.getEmulatorName(game.emulatorId)}</p>
-                <p class="text-sm text-neutral-400 mb-2">${game.description || 'No description'}</p>
-                <div class="flex flex-wrap gap-1 mb-2">
-                    ${(game.tags || []).map(tagId => {
-                        const tag = this.tags.find(t => t.id === tagId);
-                        return tag ? `<span class="bg-secondary text-xs px-2 py-1 rounded-full">${tag.name}</span>` : '';
-                    }).join('')}
-                </div>
-                <div class="flex space-x-2 mt-2">
-                    <button onclick='app.showEditGameModal(${JSON.stringify(game)})' class="bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">
-                        Edit
-                    </button>
-                    <button onclick="app.launchGame('${game.id}')" class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm transition-colors">
-                        Launch
-                    </button>
-                    <button onclick="app.deleteGame('${game.id}')" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">
-                        Delete
-                    </button>
-                </div>
-            `;
+                });
+            }
+            
+            const buttonsDiv = document.createElement('div');
+            buttonsDiv.className = 'flex space-x-2 mt-2';
+            
+            const editButton = document.createElement('button');
+            editButton.className = 'edit-game-btn bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors';
+            editButton.textContent = 'Edit';
+            editButton.setAttribute('data-game-id', game.id);
+            
+            const launchButton = document.createElement('button');
+            launchButton.className = 'launch-game-btn bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm transition-colors';
+            launchButton.textContent = 'Launch';
+            launchButton.setAttribute('data-game-id', game.id);
+            
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-game-btn bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors';
+            deleteButton.textContent = 'Delete';
+            deleteButton.setAttribute('data-game-id', game.id);
+            
+            buttonsDiv.appendChild(editButton);
+            buttonsDiv.appendChild(launchButton);
+            buttonsDiv.appendChild(deleteButton);
+            
+            gameElement.appendChild(aspectDiv);
+            gameElement.appendChild(titleEl);
+            gameElement.appendChild(platformEl);
+            gameElement.appendChild(emulatorEl);
+            gameElement.appendChild(descriptionEl);
+            gameElement.appendChild(tagsDiv);
+            gameElement.appendChild(buttonsDiv);
             
             fragment.appendChild(gameElement);
         }
         
-        gamesGrid.innerHTML = '';
         gamesGrid.appendChild(fragment);
 
         // Process images and videos to use cached assets
@@ -218,56 +391,172 @@ class RetroGameLauncher {
                 });
             }
         });
+        
+        // Add event listeners for edit game buttons
+        document.querySelectorAll('.edit-game-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const gameId = button.getAttribute('data-game-id');
+                const game = this.games.find(g => g.id === gameId);
+                if (game) {
+                    this.showEditGameModal(game);
+                }
+            });
+        });
+        
+        // Add event listeners for launch game buttons
+        document.querySelectorAll('.launch-game-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const gameId = button.getAttribute('data-game-id');
+                this.launchGame(gameId);
+            });
+        });
+        
+        // Add event listeners for delete game buttons
+        document.querySelectorAll('.delete-game-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const gameId = button.getAttribute('data-game-id');
+                this.deleteGame(gameId);
+            });
+        });
     }
 
-    renderPlatforms() {
+    async renderPlatforms() {
         const platformsList = document.getElementById('platforms-list');
         if (this.platforms.length === 0) {
-            platformsList.innerHTML = '<p class="text-neutral-400 text-center py-8">No platforms configured.</p>';
+            // Clear the platforms list
+            while (platformsList.firstChild) {
+                platformsList.removeChild(platformsList.firstChild);
+            }
+            
+            // Create the "no platforms" message using DOM methods
+            const noPlatformsMessage = document.createElement('p');
+            noPlatformsMessage.className = 'text-neutral-400 text-center py-8';
+            noPlatformsMessage.textContent = 'No platforms configured.';
+            platformsList.appendChild(noPlatformsMessage);
             return;
         }
 
-        platformsList.innerHTML = this.platforms.map(platform => `
-            <div class="bg-neutral-800 rounded-lg p-4 flex items-center">
-                <div class="w-32 h-32 mr-4 flex-shrink-0 relative">
-                    ${platform.cover_image_path ?
-                `<img src="${platform.cover_image_path}" alt="${platform.name}" class="w-full h-full object-contain rounded">` :
-                `<div class="w-full h-full bg-neutral-700 rounded flex items-center justify-center text-neutral-500 text-center">No Image</div>`
+        // Clear the platforms list efficiently
+        while (platformsList.firstChild) {
+            platformsList.removeChild(platformsList.firstChild);
+        }
+        
+        // Create platform elements safely using DOM methods
+        const fragment = document.createDocumentFragment();
+        
+        this.platforms.forEach(platform => {
+            const platformDiv = document.createElement('div');
+            platformDiv.className = 'bg-neutral-800 rounded-lg p-4 flex items-center';
+            
+            const imageContainer = document.createElement('div');
+            imageContainer.className = 'w-32 h-32 mr-4 flex-shrink-0 relative';
+            
+            if (platform.cover_image_path) {
+                const img = document.createElement('img');
+                // Use the asset path directly, the image loading will handle caching
+                img.src = platform.cover_image_path;
+                img.alt = platform.name || 'Platform cover';
+                img.className = 'w-full h-full object-contain rounded';
+                imageContainer.appendChild(img);
+            } else {
+                const noImageDiv = document.createElement('div');
+                noImageDiv.className = 'w-full h-full bg-neutral-700 rounded flex items-center justify-center text-neutral-500 text-center';
+                noImageDiv.textContent = 'No Image';
+                imageContainer.appendChild(noImageDiv);
             }
-                    ${platform.video_url ? 
-                `<button onclick="app.playVideo('${platform.video_url}')" class="absolute bottom-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-8 h-8 flex items-center justify-center">
-                    ▶
-                </button>` : ''
+            
+            if (platform.video_url) {
+                const videoButton = document.createElement('button');
+                videoButton.className = 'absolute bottom-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-8 h-8 flex items-center justify-center';
+                videoButton.textContent = '▶';
+                // Use addEventListener instead of onclick attribute
+                videoButton.addEventListener('click', () => this.playVideo(platform.video_url));
+                imageContainer.appendChild(videoButton);
             }
-                </div>
-                <div class="flex-grow">
-                    <h3 class="font-semibold text-lg mb-2">${platform.name}</h3>
-                    <p class="text-neutral-400 text-sm mb-3">${platform.manufacturer || 'No manufacturer'}</p>
-                    <p class="text-neutral-400 text-sm mb-3">${platform.release_year || 'No release year'}</p>
-                    <p class="text-neutral-400 text-sm mb-3">${platform.description || 'No description available.'}</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        ${(platform.tags || []).map(tagId => {
-                const tag = this.tags.find(t => t.id === tagId);
-                return tag ? `<span class="bg-secondary text-xs px-2 py-1 rounded-full">${tag.name}</span>` : '';
-            }).join('')}
-                    </div>
-                    <div class="flex space-x-2">
-                        <button onclick="app.editPlatform('${platform.id}')" class="bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">
-                            Edit
-                        </button>
-                        <button onclick="app.deletePlatform('${platform.id}')" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">
-                            Delete
-                        </button>
-                        <button onclick="app.viewPlatformImages('${platform.platform_id}')" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm transition-colors">
-                            View Images
-                        </button>
-                        <button onclick="app.queryDataSourcesForPlatform('${platform.name}')" class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm transition-colors">
-                            Query Data Sources
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'flex-grow';
+            
+            const nameEl = document.createElement('h3');
+            nameEl.className = 'font-semibold text-lg mb-2';
+            nameEl.textContent = platform.name || 'Unknown Platform';
+            
+            const manufacturerEl = document.createElement('p');
+            manufacturerEl.className = 'text-neutral-400 text-sm mb-3';
+            manufacturerEl.textContent = platform.manufacturer || 'No manufacturer';
+            
+            const releaseYearEl = document.createElement('p');
+            releaseYearEl.className = 'text-neutral-400 text-sm mb-3';
+            releaseYearEl.textContent = platform.release_year || 'No release year';
+            
+            const descriptionEl = document.createElement('p');
+            descriptionEl.className = 'text-neutral-400 text-sm mb-3';
+            descriptionEl.textContent = platform.description || 'No description available.';
+            
+            const tagsDiv = document.createElement('div');
+            tagsDiv.className = 'flex flex-wrap gap-1 mb-2';
+            
+            if (platform.tags && Array.isArray(platform.tags)) {
+                platform.tags.forEach(tagId => {
+                    const tag = this.tags.find(t => t.id === tagId);
+                    if (tag) {
+                        const tagSpan = document.createElement('span');
+                        tagSpan.className = 'bg-secondary text-xs px-2 py-1 rounded-full';
+                        tagSpan.textContent = tag.name;
+                        tagsDiv.appendChild(tagSpan);
+                    }
+                });
+            }
+            
+            const buttonsDiv = document.createElement('div');
+            buttonsDiv.className = 'flex space-x-2';
+            
+            const editButton = document.createElement('button');
+            editButton.className = 'bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors';
+            editButton.textContent = 'Edit';
+            // Use addEventListener instead of onclick attribute
+            editButton.addEventListener('click', () => this.editPlatform(platform.id));
+            
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors';
+            deleteButton.textContent = 'Delete';
+            // Use addEventListener instead of onclick attribute
+            deleteButton.addEventListener('click', () => this.deletePlatform(platform.id));
+            
+            const viewImagesButton = document.createElement('button');
+            viewImagesButton.className = 'bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm transition-colors';
+            viewImagesButton.textContent = 'View Images';
+            // Use addEventListener instead of onclick attribute
+            viewImagesButton.addEventListener('click', () => {
+                const platformId = platform.platform_id || platform.id;
+                this.viewPlatformImages(platformId);
+            });
+            
+            const queryButton = document.createElement('button');
+            queryButton.className = 'bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm transition-colors';
+            queryButton.textContent = 'Query Data Sources';
+            // Use addEventListener instead of onclick attribute
+            queryButton.addEventListener('click', () => this.queryDataSourcesForPlatform(platform.name));
+            
+            buttonsDiv.appendChild(editButton);
+            buttonsDiv.appendChild(deleteButton);
+            buttonsDiv.appendChild(viewImagesButton);
+            buttonsDiv.appendChild(queryButton);
+            
+            contentDiv.appendChild(nameEl);
+            contentDiv.appendChild(manufacturerEl);
+            contentDiv.appendChild(releaseYearEl);
+            contentDiv.appendChild(descriptionEl);
+            contentDiv.appendChild(tagsDiv);
+            contentDiv.appendChild(buttonsDiv);
+            
+            platformDiv.appendChild(imageContainer);
+            platformDiv.appendChild(contentDiv);
+            
+            fragment.appendChild(platformDiv);
+        });
+        
+        platformsList.appendChild(fragment);
     }
 
     async viewPlatformImages(platformId) {
@@ -287,44 +576,81 @@ class RetroGameLauncher {
 
         modalTitle.textContent = 'Select Platform Media';
 
+        // Clear existing content
+        while (modalFields.firstChild) {
+            modalFields.removeChild(modalFields.firstChild);
+        }
+
         if (!media || Object.keys(media).length === 0) {
-            modalFields.innerHTML = '<p class="text-neutral-400">No media found for this platform.</p>';
+            const noMediaMessage = document.createElement('p');
+            noMediaMessage.className = 'text-neutral-400';
+            noMediaMessage.textContent = 'No media found for this platform.';
+            modalFields.appendChild(noMediaMessage);
         } else {
-            const mediaItems = Object.entries(media).map(([type, url]) => {
-                if (!url) return '';
+            const gridDiv = document.createElement('div');
+            gridDiv.className = 'image-modal-grid grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-8';
+            
+            Object.entries(media).forEach(([type, url]) => {
+                if (!url) return;
                 
                 // Check if it's a video based on file extension
                 const isVideo = url.includes('.mp4') || url.includes('.webm') || url.includes('.ogg');
                 
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'cursor-pointer group select-platform-image-btn';
+                itemDiv.setAttribute('data-url', url);
+                itemDiv.setAttribute('data-platform-id', platformId);
+                
+                const aspectDiv = document.createElement('div');
+                aspectDiv.className = 'aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-neutral-700 flex items-center justify-center';
+                
                 if (isVideo) {
                     // For videos, show a video icon/thumbnail
-                    return `
-                    <div class="cursor-pointer group" onclick="app.selectPlatformImage('${url}', '${platformId}')">
-                        <div class="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-neutral-700 flex items-center justify-center">
-                            <div class="text-center">
-                                <div class="text-4xl mb-2">▶️</div>
-                                <div class="text-neutral-300">Video</div>
-                            </div>
-                        </div>
-                        <h3 class="mt-2 text-sm text-neutral-300 text-center capitalize">${type.replace(/_/g, ' ')}</h3>
-                    </div>
-                    `;
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'text-center';
+                    
+                    const iconDiv = document.createElement('div');
+                    iconDiv.className = 'text-4xl mb-2';
+                    iconDiv.textContent = '▶️';
+                    
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'text-neutral-300';
+                    textDiv.textContent = 'Video';
+                    
+                    contentDiv.appendChild(iconDiv);
+                    contentDiv.appendChild(textDiv);
+                    aspectDiv.appendChild(contentDiv);
                 } else {
                     // For images, show the image
-                    return `
-                    <div class="cursor-pointer group" onclick="app.selectPlatformImage('${url}', '${platformId}')">
-                        <div class="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-neutral-700">
-                        <img src="${url}" class="w-full h-full object-cover object-center group-hover:opacity-75">
-                        </div>
-                        <h3 class="mt-2 text-sm text-neutral-300 text-center capitalize">${type.replace(/_/g, ' ')}</h3>
-                    </div>
-                    `;
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.className = 'w-full h-full object-cover object-center group-hover:opacity-75';
+                    img.alt = type.replace(/_/g, ' ');
+                    aspectDiv.appendChild(img);
                 }
-            }).join('');
-            modalFields.innerHTML = `<div class="image-modal-grid grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-8">${mediaItems}</div>`;
+                
+                const titleEl = document.createElement('h3');
+                titleEl.className = 'mt-2 text-sm text-neutral-300 text-center capitalize';
+                titleEl.textContent = type.replace(/_/g, ' ');
+                
+                itemDiv.appendChild(aspectDiv);
+                itemDiv.appendChild(titleEl);
+                gridDiv.appendChild(itemDiv);
+            });
+            
+            modalFields.appendChild(gridDiv);
         }
 
         modal.classList.remove('hidden');
+
+        // Add event listeners for platform image selection buttons
+        document.querySelectorAll('.select-platform-image-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const imageUrl = button.getAttribute('data-url');
+                const platformId = button.getAttribute('data-platform-id');
+                this.selectPlatformImage(imageUrl, platformId);
+            });
+        });
 
         const closeModal = () => {
             modal.classList.add('hidden');
@@ -526,7 +852,22 @@ class RetroGameLauncher {
         return emulator ? emulator.name : 'Unknown Emulator';
     }
 
-    showAddGameModal() { const platformOptions = this.platforms.map(p => `<option value=\"${p.id}\">${p.name}</option>`).join(''); const emulatorOptions = this.emulators.map(e => `<option value=\"${e.emulator_id}\">${e.name}</option>`).join(''); const fields = [{ id: 'title', label: 'Game Title' }, { id: 'platformId', label: 'Platform', type: 'select', options: platformOptions }, { id: 'emulatorId', label: 'Emulator', type: 'select', options: `<option value=\"\">-- Select an Emulator --</option>${emulatorOptions}` }, { id: 'romPath', label: 'ROM Path' }, { id: 'tags', label: 'Tags', type: 'tags', value: [] }]; this.showModal('Add Game', fields, (data) => { if (data.title && data.platformId && data.romPath) { this.addGame(data); } }); }
+    showAddGameModal() {
+        const platformOptions = this.platforms.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        const emulatorOptions = this.emulators.map(e => `<option value="${e.emulator_id}">${e.name}</option>`).join('');
+        const fields = [
+            { id: 'title', label: 'Game Title' },
+            { id: 'platformId', label: 'Platform', type: 'select', options: platformOptions },
+            { id: 'emulatorId', label: 'Emulator', type: 'select', options: `<option value="">-- Select an Emulator --</option>${emulatorOptions}` },
+            { id: 'romPath', label: 'ROM Path' },
+            { id: 'tags', label: 'Tags', type: 'tags', value: [] }
+        ];
+        this.showModal('Add Game', fields, (data) => {
+            if (data.title && data.platformId && data.romPath) {
+                this.addGame(data);
+            }
+        });
+    }
 
     showAddPlatformModal(platforms) {
         const platformOptions = platforms.map(p => {
@@ -588,25 +929,28 @@ class RetroGameLauncher {
 
     async addGame(gameData) {
         // Validate required fields
+        const errors = [];
         if (!gameData.title) {
-            window.NotificationSystem?.warning('Game title is required.') || console.warn('Game title is required.');
-            return;
+            errors.push('Game title is required.');
         }
 
         if (!gameData.platformId) {
-            window.NotificationSystem?.warning('Platform is required.') || console.warn('Platform is required.');
-            return;
+            errors.push('Platform is required.');
         }
 
         if (!gameData.romPath) {
-            window.NotificationSystem?.warning('ROM path is required.') || console.warn('ROM path is required.');
+            errors.push('ROM path is required.');
+        }
+
+        if (errors.length > 0) {
+            window.ErrorHandler?.handleValidationErrors(errors, 'Add Game') || console.warn('Validation errors in addGame:', errors.join(', '));
             return;
         }
 
         const existingGame = this.games.find(g => g.title === gameData.title && g.platformId === gameData.platformId);
         if (existingGame) {
             const message = `Game with title "${existingGame.title}" and platform "${this.getPlatformName(existingGame.platformId)}" already exists.`;
-            window.NotificationSystem?.warning(message) || console.warn(message);
+            window.ErrorHandler?.handleWarning(message, 'Add Game') || console.warn(message);
             return;
         }
 
@@ -630,20 +974,24 @@ class RetroGameLauncher {
 
     async addPlatform(platformData) {
         // Validate required fields
+        const errors = [];
         if (!platformData.id) {
-            window.NotificationSystem?.warning('Platform ID is required.') || console.warn('Platform ID is required.');
-            return;
+            errors.push('Platform ID is required.');
         }
 
         if (!platformData.name) {
-            window.NotificationSystem?.warning('Platform name is required.') || console.warn('Platform name is required.');
+            errors.push('Platform name is required.');
+        }
+
+        if (errors.length > 0) {
+            window.ErrorHandler?.handleValidationErrors(errors, 'Add Platform') || console.warn('Validation errors in addPlatform:', errors.join(', '));
             return;
         }
 
         const existingPlatform = this.platforms.find(p => p.platform_id === platformData.id);
         if (existingPlatform) {
             const message = `Platform with name "${platformData.name}" already exists.`;
-            window.NotificationSystem?.warning(message) || console.warn(message);
+            window.ErrorHandler?.handleWarning(message, 'Add Platform') || console.warn(message);
             return;
         }
 
@@ -664,20 +1012,24 @@ class RetroGameLauncher {
 
     async addEmulator(emulatorData) {
         // Validate required fields
+        const errors = [];
         if (!emulatorData.name) {
-            window.NotificationSystem?.warning('Emulator name is required.') || console.warn('Emulator name is required.');
-            return;
+            errors.push('Emulator name is required.');
         }
 
         if (!emulatorData.executablePath) {
-            window.NotificationSystem?.warning('Emulator executable path is required.') || console.warn('Emulator executable path is required.');
+            errors.push('Emulator executable path is required.');
+        }
+
+        if (errors.length > 0) {
+            window.ErrorHandler?.handleValidationErrors(errors, 'Add Emulator') || console.warn('Validation errors in addEmulator:', errors.join(', '));
             return;
         }
 
         const existingEmulator = this.emulators.find(e => e.name === emulatorData.name);
         if (existingEmulator) {
             const message = `Emulator with name "${existingEmulator.name}" already exists.`;
-            window.NotificationSystem?.warning(message) || console.warn(message);
+            window.ErrorHandler?.handleWarning(message, 'Add Emulator') || console.warn(message);
             return;
         }
 
@@ -700,7 +1052,11 @@ class RetroGameLauncher {
         try {
             await window.electronAPI.saveData(type, data);
         } catch (error) {
-            console.error(`Error saving ${type}:`, error);
+            const sanitizedName = window.Sanitizer ? window.Sanitizer.sanitizeForLog(type) : type;
+            const sanitizedError = window.Sanitizer ? window.Sanitizer.sanitizeForLog(error.message) : error.message;
+            console.error(`Error saving ${sanitizedName}:`, sanitizedError);
+            const errorMessage = `Failed to save ${sanitizedName}. Check console for details.`;
+            window.ErrorHandler?.handleError(errorMessage, error, 'Save Data') || console.error(errorMessage);
         }
     }
 
@@ -810,13 +1166,13 @@ class RetroGameLauncher {
 
     async startScan() {
         if (!this.selectedScanFolder) {
-            window.NotificationSystem?.warning('Please select a folder first.') || console.warn('Please select a folder first.');
+            window.ErrorHandler?.handleWarning('Please select a folder first.', 'Scan Folder') || console.warn('Please select a folder first.');
             return;
         }
 
         const platformId = document.getElementById('scan-platform-select').value;
         if (!platformId) {
-            window.NotificationSystem?.warning('Please select a platform first.') || console.warn('Please select a platform first.');
+            window.ErrorHandler?.handleWarning('Please select a platform first.', 'Scan Folder') || console.warn('Please select a platform first.');
             return;
         }
 
@@ -834,21 +1190,64 @@ class RetroGameLauncher {
                 return !ignoredExtensions.includes(extension);
             });
 
-            romsTableBody.innerHTML = roms.map(rom => `
-                <tr data-rom="${rom}" data-status="new">
-                    <td class="p-3"><input type="checkbox" class="rom-checkbox"></td>
-                    <td class="p-3">${rom}</td>
-                    <td class="p-3"><input type="text" class="w-full bg-neutral-700 p-2 rounded" value=""></td>
-                    <td class="p-3"><span class="status-badge bg-gray-600">New</span></td>
-                    <td class="p-3">
-                        <button class="details-btn bg-neutral-600 hover:bg-neutral-500 px-3 py-1 rounded text-sm" disabled>Details</button>
-                    </td>
-                </tr>
-            `).join('');
+            // Clear existing content
+            while (romsTableBody.firstChild) {
+                romsTableBody.removeChild(romsTableBody.firstChild);
+            }
+
+            roms.forEach(rom => {
+                const tr = document.createElement('tr');
+                tr.setAttribute('data-rom', window.Sanitizer ? window.Sanitizer.escapeHTML(rom) : rom);
+                tr.setAttribute('data-status', 'new');
+
+                const td1 = document.createElement('td');
+                td1.className = 'p-3';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'rom-checkbox';
+                td1.appendChild(checkbox);
+
+                const td2 = document.createElement('td');
+                td2.className = 'p-3';
+                td2.textContent = rom;
+
+                const td3 = document.createElement('td');
+                td3.className = 'p-3';
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'w-full bg-neutral-700 p-2 rounded';
+                input.value = '';
+                td3.appendChild(input);
+
+                const td4 = document.createElement('td');
+                td4.className = 'p-3';
+                const statusSpan = document.createElement('span');
+                statusSpan.className = 'status-badge bg-gray-600';
+                statusSpan.textContent = 'New';
+                td4.appendChild(statusSpan);
+
+                const td5 = document.createElement('td');
+                td5.className = 'p-3';
+                const detailsBtn = document.createElement('button');
+                detailsBtn.className = 'details-btn bg-neutral-600 hover:bg-neutral-500 px-3 py-1 rounded text-sm';
+                detailsBtn.disabled = true;
+                detailsBtn.textContent = 'Details';
+                td5.appendChild(detailsBtn);
+
+                tr.appendChild(td1);
+                tr.appendChild(td2);
+                tr.appendChild(td3);
+                tr.appendChild(td4);
+                tr.appendChild(td5);
+
+                romsTableBody.appendChild(tr);
+            });
 
             document.getElementById('scan-pipeline').classList.remove('hidden');
         } catch (error) {
             console.error('Error scanning folder:', error);
+            const errorMessage = 'Error scanning folder. Check console for details.';
+            window.ErrorHandler?.handleError(errorMessage, error, 'Scan Folder') || console.error(errorMessage);
             romsTableBody.innerHTML = '<tr><td colspan="5" class="p-3 text-center text-red-500">Error scanning folder. Check console for details.</td></tr>';
         }
     }
@@ -858,7 +1257,7 @@ class RetroGameLauncher {
         const selectedRows = romRows.filter(row => row.querySelector('.rom-checkbox').checked);
 
         if (selectedRows.length === 0) {
-            window.NotificationSystem?.warning('Please select at least one ROM to get suggestions for.') || console.warn('Please select at least one ROM to get suggestions for.');
+            window.ErrorHandler?.handleWarning('Please select at least one ROM to get suggestions for.', 'Get Suggestions') || console.warn('Please select at least one ROM to get suggestions for.');
             return;
         }
 
@@ -895,7 +1294,8 @@ class RetroGameLauncher {
                 processedCount += batch.length;
             } catch (error) {
                 console.error('Error getting suggestions from AI:', error);
-                window.NotificationSystem?.error('An error occurred while getting suggestions from the AI.') || console.error('An error occurred while getting suggestions from the AI.');
+                const errorMessage = 'An error occurred while getting suggestions from the AI.';
+                window.ErrorHandler?.handleError(errorMessage, error, 'Get Suggestions') || console.error(errorMessage, error);
                 break;
             }
         }
@@ -905,7 +1305,8 @@ class RetroGameLauncher {
             progressElement.textContent = '';
         }
 
-        window.NotificationSystem?.success(`${processedCount} ROMs processed!`) || console.log(`${processedCount} ROMs processed!`);
+        const successMessage = `${processedCount} ROMs processed!`;
+        window.ErrorHandler?.showSuccess(successMessage) || console.log(successMessage);
     }
 
     async enrichSelected() {
@@ -913,7 +1314,7 @@ class RetroGameLauncher {
         const selectedRows = romRows.filter(row => row.querySelector('.rom-checkbox').checked);
 
         if (selectedRows.length === 0) {
-            window.NotificationSystem?.warning('Please select at least one ROM to enrich.') || console.warn('Please select at least one ROM to enrich.');
+            window.ErrorHandler?.handleWarning('Please select at least one ROM to enrich.', 'Enrich ROMs') || console.warn('Please select at least one ROM to enrich.');
             return;
         }
 
@@ -958,7 +1359,8 @@ class RetroGameLauncher {
                         this.updateRomStatus(row, 'Auth Error', 'bg-red-800');
                         // Show alert for authentication error but only once
                         if (errorCount === 0) {
-                            window.NotificationSystem?.error('Authentication failed: Please check your ScreenScraper credentials in the .env file') || console.error('Authentication failed: Please check your ScreenScraper credentials in the .env file');
+                            const errorMessage = 'Authentication failed: Please check your ScreenScraper credentials in the .env file';
+                            window.ErrorHandler?.handleError(errorMessage, new Error(result.error), 'Enrich ROMs') || console.error(errorMessage);
                         }
                     } else {
                         this.updateRomStatus(row, 'Not Found', 'bg-red-600');
@@ -985,7 +1387,8 @@ class RetroGameLauncher {
             progressElement.textContent = '';
         }
 
-        window.NotificationSystem?.info(`Enrichment complete! ${enrichedCount} enriched, ${errorCount} errors.`) || console.log(`Enrichment complete! ${enrichedCount} enriched, ${errorCount} errors.`);
+        const resultMessage = `Enrichment complete! ${enrichedCount} enriched, ${errorCount} errors.`;
+        window.ErrorHandler?.showInfo(resultMessage) || console.log(resultMessage);
     }
 
     async importSelected() {
@@ -993,7 +1396,7 @@ class RetroGameLauncher {
         const selectedRows = romRows.filter(row => row.querySelector('.rom-checkbox').checked && row.dataset.enriched);
 
         if (selectedRows.length === 0) {
-            window.NotificationSystem?.warning('Please select at least one enriched ROM to import.') || console.warn('Please select at least one enriched ROM to import.');
+            window.ErrorHandler?.handleWarning('Please select at least one enriched ROM to import.', 'Import ROMs') || console.warn('Please select at least one enriched ROM to import.');
             return;
         }
 
@@ -1022,7 +1425,8 @@ class RetroGameLauncher {
             progressElement.textContent = '';
         }
 
-        window.NotificationSystem?.success(`${importedCount} games imported successfully!`) || console.log(`${importedCount} games imported successfully!`);
+        const successMessage = `${importedCount} games imported successfully!`;
+        window.ErrorHandler?.showSuccess(successMessage) || console.log(successMessage);
         this.showView('games');
     }
 
@@ -1140,26 +1544,42 @@ class RetroGameLauncher {
                         window.checkLowResourcesSetting();
                     }, 100);
                 }
-                window.NotificationSystem?.success('Settings saved successfully!') || console.log('Settings saved successfully!');
+                const successMessage = 'Settings saved successfully!';
+                window.ErrorHandler?.showSuccess(successMessage) || console.log(successMessage);
             } else {
                 throw new Error(result.error || 'Unknown error');
             }
         } catch (error) {
             console.error('Error saving settings:', error);
-            window.NotificationSystem?.error('Failed to save settings. Check console for details.') || console.error('Failed to save settings. Check console for details.');
+            const errorMessage = 'Failed to save settings. Check console for details.';
+            window.ErrorHandler?.handleError(errorMessage, error, 'Save Settings') || console.error(errorMessage, error);
+        }
+    }
+
+    async loadSettings() {
+        try {
+            const settings = await window.electronAPI.loadSettings();
+            document.getElementById('thegamesdb-key').value = settings.THEGAMESDB_API_KEY || '';
+            document.getElementById('rawg-key').value = settings.RAWG_API_KEY || '';
+            document.getElementById('gemini-key').value = settings.GEMINI_API_KEY || '';
+            document.getElementById('low-resources-mode').checked = settings.LOW_RESOURCES_MODE || false;
+        } catch (error) {
+            console.error('Error loading settings:', error);
         }
     }
 
     async launchGame(gameId) {
         const game = this.games.find(g => g.id === gameId);
         if (!game) {
-            window.NotificationSystem?.error('Game not found!') || console.error('Game not found!');
+            const errorMessage = 'Game not found!';
+            window.ErrorHandler?.handleError(errorMessage, new Error(errorMessage), 'Launch Game') || console.error(errorMessage);
             return;
         }
 
         const platform = this.platforms.find(p => p.id === game.platformId);
         if (!platform) {
-            window.NotificationSystem?.error('Platform not found!') || console.error('Platform not found!');
+            const errorMessage = 'Platform not found!';
+            window.ErrorHandler?.handleError(errorMessage, new Error(errorMessage), 'Launch Game') || console.error(errorMessage);
             return;
         }
 
@@ -1178,7 +1598,8 @@ class RetroGameLauncher {
         }
 
         if (!emulator) {
-            window.NotificationSystem?.warning('No emulator configured! Please add an emulator first.') || console.warn('No emulator configured! Please add an emulator first.');
+            const errorMessage = 'No emulator configured! Please add an emulator first.';
+            window.ErrorHandler?.handleError(errorMessage, new Error(errorMessage), 'Launch Game') || console.error(errorMessage);
             return;
         }
 
@@ -1191,7 +1612,8 @@ class RetroGameLauncher {
             console.log('Game launch initiated');
         } catch (error) {
             console.error('Error launching game:', error);
-            window.NotificationSystem?.error('Failed to launch game. Check console for details.') || console.error('Failed to launch game. Check console for details.');
+            const errorMessage = 'Failed to launch game. Check console for details.';
+            window.ErrorHandler?.handleError(errorMessage, error, 'Launch Game') || console.error(errorMessage, error);
         }
     }
 
@@ -1214,24 +1636,39 @@ class RetroGameLauncher {
             { id: 'tags', label: 'Tags', type: 'tags', value: game.tags || [] }
         ];
         this.showModal('Edit Game', fields, (data) => {
-            if (data.title && data.platformId && data.romPath) {
-                const existingGame = this.games.find(g => g.title === data.title && g.platformId === data.platformId && g.id !== game.id);
-                if (existingGame) {
-                    const message = `Game with title "${existingGame.title}" and platform "${this.getPlatformName(existingGame.platformId)}" already exists.`;
-                    window.NotificationSystem?.warning(message) || console.warn(message);
-                    return;
-                }
+            // Validate required fields
+            const errors = [];
+            if (!data.title) {
+                errors.push('Game title is required.');
+            }
+            if (!data.platformId) {
+                errors.push('Platform is required.');
+            }
+            if (!data.romPath) {
+                errors.push('ROM path is required.');
+            }
+            
+            if (errors.length > 0) {
+                window.ErrorHandler?.handleValidationErrors(errors, 'Edit Game') || console.warn('Validation errors in editGame:', errors.join(', '));
+                return;
+            }
 
-                const gameToUpdate = this.games.find(g => g.id === game.id);
-                if (gameToUpdate) {
-                    gameToUpdate.title = data.title;
-                    gameToUpdate.platformId = data.platformId;
-                    gameToUpdate.emulatorId = data.emulatorId || '';
-                    gameToUpdate.romPath = data.romPath;
-                    gameToUpdate.tags = data.tags || [];
-                    this.saveData('games', this.games);
-                    this.renderGames();
-                }
+            const existingGame = this.games.find(g => g.title === data.title && g.platformId === data.platformId && g.id !== game.id);
+            if (existingGame) {
+                const message = `Game with title "${existingGame.title}" and platform "${this.getPlatformName(existingGame.platformId)}" already exists.`;
+                window.ErrorHandler?.handleWarning(message, 'Edit Game') || console.warn(message);
+                return;
+            }
+
+            const gameToUpdate = this.games.find(g => g.id === game.id);
+            if (gameToUpdate) {
+                gameToUpdate.title = data.title;
+                gameToUpdate.platformId = data.platformId;
+                gameToUpdate.emulatorId = data.emulatorId || '';
+                gameToUpdate.romPath = data.romPath;
+                gameToUpdate.tags = data.tags || [];
+                this.saveData('games', this.games);
+                this.renderGames();
             }
         });
     }
@@ -1301,23 +1738,35 @@ class RetroGameLauncher {
         ];
 
         this.showModal('Edit Emulator', fields, (data) => {
-            if (data.name) {
-                const existingEmulator = this.emulators.find(e => e.name === data.name && e.emulator_id !== id);
-                if (existingEmulator) {
-                    const message = `Emulator with name "${existingEmulator.name}" already exists.`;
-                    window.NotificationSystem?.warning(message) || console.warn(message);
-                    return;
-                }
-
-                emulator.name = data.name;
-                emulator.executablePath = data.executablePath;
-                emulator.args = data.args;
-                emulator.description = data.description;
-                emulator.website = data.website;
-                emulator.tags = data.tags;
-                this.saveData('emulators', this.emulators);
-                this.renderEmulators();
+            // Validate required fields
+            const errors = [];
+            if (!data.name) {
+                errors.push('Emulator name is required.');
             }
+            if (!data.executablePath) {
+                errors.push('Emulator executable path is required.');
+            }
+            
+            if (errors.length > 0) {
+                window.ErrorHandler?.handleValidationErrors(errors, 'Edit Emulator') || console.warn('Validation errors in editEmulator:', errors.join(', '));
+                return;
+            }
+
+            const existingEmulator = this.emulators.find(e => e.name === data.name && e.emulator_id !== id);
+            if (existingEmulator) {
+                const message = `Emulator with name "${existingEmulator.name}" already exists.`;
+                window.ErrorHandler?.handleWarning(message, 'Edit Emulator') || console.warn(message);
+                return;
+            }
+
+            emulator.name = data.name;
+            emulator.executablePath = data.executablePath;
+            emulator.args = data.args;
+            emulator.description = data.description;
+            emulator.website = data.website;
+            emulator.tags = data.tags;
+            this.saveData('emulators', this.emulators);
+            this.renderEmulators();
         });
     }
 
@@ -1330,13 +1779,16 @@ class RetroGameLauncher {
     }
 
     async queryDataSourcesForPlatform(platformName) {
-        console.log(`Querying data sources for platform: ${platformName}`);
+        // Sanitize platform name before logging
+        const sanitizedName = window.Sanitizer ? window.Sanitizer.sanitizeForLog(platformName) : platformName;
+        console.log(`Querying data sources for platform: ${sanitizedName}`);
         try {
             const result = await window.electronAPI.queryDataSources(platformName);
             console.log('Query result:', result);
             const platform = this.platforms.find(p => p.name === platformName);
             if (platform && result) {
-                console.log(`Found platform: ${platform.name}. Updating platform information.`);
+                const sanitizedName = window.Sanitizer ? window.Sanitizer.sanitizeForLog(platform.name) : platform.name;
+                console.log(`Found platform: ${sanitizedName}. Updating platform information.`);
                 // Update all available fields from the result
                 if (result.description !== undefined) {
                     platform.description = result.description;
@@ -1350,11 +1802,17 @@ class RetroGameLauncher {
                 await this.saveData('platforms', this.platforms);
                 this.renderPlatforms();
                 console.log('Platform information updated and UI re-rendered.');
+                
+                const successMessage = 'Platform information updated successfully!';
+                window.ErrorHandler?.showSuccess(successMessage) || console.log(successMessage);
             } else {
                 console.warn('Could not find platform or missing result from data sources.', platform, result);
             }
         } catch (error) {
-            console.error('Error querying data sources:', error);
+            const sanitizedError = window.Sanitizer ? window.Sanitizer.sanitizeForLog(error.message) : error.message;
+            console.error('Error querying data sources:', sanitizedError);
+            const errorMessage = 'Error querying data sources. Check console for details.';
+            window.ErrorHandler?.handleError(errorMessage, error, 'Query Data Sources') || console.error(errorMessage, error);
         }
     }
 
@@ -1382,26 +1840,63 @@ class RetroGameLauncher {
 
     renderTags(tags) {
         const tagsList = document.getElementById('tags-list');
-        tagsList.innerHTML = tags.map(tag => `
-            <div class="bg-neutral-800 rounded-lg p-4 flex items-center justify-between">
-                <span>${tag.name}</span>
-                <div>
-                    <button onclick="app.editTag('${tag.id}')" class="bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">
-                        Edit
-                    </button>
-                    <button onclick="app.deleteTag('${tag.id}')" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">
-                        Delete
-                    </button>
-                </div>
-            </div>
-        `).join('');
+        
+        // Clear existing content
+        while (tagsList.firstChild) {
+            tagsList.removeChild(tagsList.firstChild);
+        }
+        
+        tags.forEach(tag => {
+            const div = document.createElement('div');
+            div.className = 'bg-neutral-800 rounded-lg p-4 flex items-center justify-between';
+            
+            const span = document.createElement('span');
+            span.textContent = tag.name;
+            
+            const buttonsDiv = document.createElement('div');
+            
+            const editButton = document.createElement('button');
+            editButton.className = 'edit-tag-btn bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors';
+            editButton.textContent = 'Edit';
+            editButton.setAttribute('data-tag-id', window.Sanitizer ? window.Sanitizer.escapeHTML(tag.id) : tag.id);
+            
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-tag-btn bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors';
+            deleteButton.textContent = 'Delete';
+            deleteButton.setAttribute('data-tag-id', window.Sanitizer ? window.Sanitizer.escapeHTML(tag.id) : tag.id);
+            
+            buttonsDiv.appendChild(editButton);
+            buttonsDiv.appendChild(deleteButton);
+            
+            div.appendChild(span);
+            div.appendChild(buttonsDiv);
+            
+            tagsList.appendChild(div);
+        });
+        
+        // Add event listeners for edit tag buttons
+        document.querySelectorAll('.edit-tag-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const tagId = button.getAttribute('data-tag-id');
+                this.editTag(tagId);
+            });
+        });
+        
+        // Add event listeners for delete tag buttons
+        document.querySelectorAll('.delete-tag-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const tagId = button.getAttribute('data-tag-id');
+                this.deleteTag(tagId);
+            });
+        });
     }
 
     async addTag(tagName) {
         if (!tagName) return;
         tagName = tagName.toLowerCase();
         if (this.tags.some(t => t.name === tagName)) {
-            window.NotificationSystem?.warning('Tag already exists.') || console.warn('Tag already exists.');
+            const warningMessage = 'Tag already exists.';
+            window.ErrorHandler?.handleWarning(warningMessage, 'Add Tag') || console.warn(warningMessage);
             return;
         }
         const newTag = new Tag(tagName);
@@ -1422,7 +1917,8 @@ class RetroGameLauncher {
             const newTagName = data.name.trim().toLowerCase();
             if (newTagName && newTagName !== tag.name) {
                 if (this.tags.some(t => t.name === newTagName && t.id !== tagId)) {
-                    window.NotificationSystem?.warning('Tag already exists.') || console.warn('Tag already exists.');
+                    const warningMessage = 'Tag already exists.';
+                    window.ErrorHandler?.handleWarning(warningMessage, 'Edit Tag') || console.warn(warningMessage);
                     return;
                 }
                 tag.name = newTagName;
@@ -1468,21 +1964,44 @@ class RetroGameLauncher {
 
         modalTitle.textContent = 'Video Player';
         
-        // Create video player element
-        modalFields.innerHTML = `
-            <div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
-                <video controls style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black;">
-                    <source src="${videoUrl}" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-            </div>
-        `;
+        // Clear existing content
+        while (modalFields.firstChild) {
+            modalFields.removeChild(modalFields.firstChild);
+        }
+        
+        // Create video player element using safe DOM methods
+        const videoContainer = document.createElement('div');
+        videoContainer.className = 'video-container';
+        videoContainer.style.position = 'relative';
+        videoContainer.style.paddingBottom = '56.25%';
+        videoContainer.style.height = '0';
+        videoContainer.style.overflow = 'hidden';
+        
+        const video = document.createElement('video');
+        video.controls = true;
+        video.style.position = 'absolute';
+        video.style.top = '0';
+        video.style.left = '0';
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.background = 'black';
+        
+        const source = document.createElement('source');
+        // Sanitize the src attribute
+        source.src = window.Sanitizer ? window.Sanitizer.escapeHTML(videoUrl) : videoUrl;
+        source.type = 'video/mp4';
+        
+        const fallbackText = document.createTextNode('Your browser does not support the video tag.');
+        
+        video.appendChild(source);
+        video.appendChild(fallbackText);
+        videoContainer.appendChild(video);
+        modalFields.appendChild(videoContainer);
 
         modal.classList.remove('hidden');
 
         const closeModal = () => {
             // Pause the video when closing the modal
-            const video = modalFields.querySelector('video');
             if (video) {
                 video.pause();
             }

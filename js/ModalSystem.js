@@ -244,25 +244,64 @@ class ModalSystem {
         return select;
     }
 
-    // Safely parse HTML options string
     parseAndAppendOptions(optionsHtml, selectElement) {
-        // Create a temporary container to parse HTML
+        // Parse HTML options safely without using innerHTML
+        // Create a temporary container to hold the parsed elements
         const tempContainer = document.createElement('div');
-        // Use innerHTML here is safe because we're parsing our own trusted HTML
-        // In a real application, this should be sanitized
-        tempContainer.innerHTML = optionsHtml;
+        
+        // Parse the HTML options string by creating elements individually
+        // This is a safer approach than using innerHTML
+        if (optionsHtml) {
+            // Handle options as array of objects or HTML string
+            if (Array.isArray(optionsHtml)) {
+                optionsHtml.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option.value || '';
+                    // Use textContent to prevent XSS
+                    optionElement.textContent = option.text || '';
+                    if (option.selected) {
+                        optionElement.selected = true;
+                    }
+                    if (option.disabled) {
+                        optionElement.disabled = true;
+                    }
+                    tempContainer.appendChild(optionElement);
+                });
+            } else {
+                // Parse HTML string options safely using DOMParser
+                try {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString('<select>' + optionsHtml + '</select>', 'text/html');
+                    const options = doc.querySelectorAll('option');
+                    options.forEach(option => {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = option.value || '';
+                        // Use textContent to prevent XSS
+                        optionElement.textContent = option.textContent;
+                        if (option.hasAttribute('selected')) {
+                            optionElement.selected = true;
+                        }
+                        if (option.hasAttribute('disabled')) {
+                            optionElement.disabled = true;
+                        }
+                        tempContainer.appendChild(optionElement);
+                    });
+                } catch (e) {
+                    // Fallback to text content only if parsing fails
+                    const optionElement = document.createElement('option');
+                    // Use textContent to prevent XSS
+                    optionElement.textContent = optionsHtml;
+                    tempContainer.appendChild(optionElement);
+                }
+            }
+        }
         
         // Extract and append option elements
         const options = tempContainer.querySelectorAll('option');
         options.forEach(option => {
-            const optionElement = document.createElement('option');
-            optionElement.value = option.value || '';
-            // Use textContent to prevent XSS
-            optionElement.textContent = option.textContent;
-            if (option.hasAttribute('selected')) {
-                optionElement.selected = true;
-            }
-            selectElement.appendChild(optionElement);
+            // Clone the option to avoid moving issues
+            const optionClone = option.cloneNode(true);
+            selectElement.appendChild(optionClone);
         });
     }
 
