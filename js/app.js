@@ -1530,6 +1530,7 @@ class RetroGameLauncher {
             THEGAMESDB_API_KEY: document.getElementById('thegamesdb-key').value,
             RAWG_API_KEY: document.getElementById('rawg-key').value,
             GEMINI_API_KEY: document.getElementById('gemini-key').value,
+            BACKGROUND_EFFECT: document.getElementById('background-effect').value,
             LOW_RESOURCES_MODE: document.getElementById('low-resources-mode').checked
         };
 
@@ -1544,6 +1545,15 @@ class RetroGameLauncher {
                         window.checkLowResourcesSetting();
                     }, 100);
                 }
+                
+                // Update background effect immediately if the function exists
+                if (typeof window.updateBackgroundEffect === 'function') {
+                    const selectedEffect = document.getElementById('background-effect').value;
+                    setTimeout(() => {
+                        window.updateBackgroundEffect(selectedEffect);
+                    }, 100);
+                }
+                
                 const successMessage = 'Settings saved successfully!';
                 window.ErrorHandler?.showSuccess(successMessage) || console.log(successMessage);
             } else {
@@ -1562,6 +1572,7 @@ class RetroGameLauncher {
             document.getElementById('thegamesdb-key').value = settings.THEGAMESDB_API_KEY || '';
             document.getElementById('rawg-key').value = settings.RAWG_API_KEY || '';
             document.getElementById('gemini-key').value = settings.GEMINI_API_KEY || '';
+            document.getElementById('background-effect').value = settings.BACKGROUND_EFFECT || 'XMB';
             document.getElementById('low-resources-mode').checked = settings.LOW_RESOURCES_MODE || false;
         } catch (error) {
             console.error('Error loading settings:', error);
