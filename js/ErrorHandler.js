@@ -74,8 +74,11 @@ class ErrorHandler {
      */
     static handleError(userMessage, error, context = '') {
         // Log to console with context
-        const logMessage = context ? `[${context}] ${userMessage}` : userMessage;
-        console.error(logMessage, error);
+        const sanitizedUserMessage = window.Sanitizer ? window.Sanitizer.sanitizeForLog(userMessage) : userMessage;
+        const sanitizedContext = window.Sanitizer ? window.Sanitizer.sanitizeForLog(context) : context;
+        const logMessage = sanitizedContext ? `[${sanitizedContext}] ${sanitizedUserMessage}` : sanitizedUserMessage;
+        const sanitizedError = window.Sanitizer ? window.Sanitizer.sanitizeForLog(String(error)) : String(error);
+        console.error(logMessage, sanitizedError);
         
         // Show user-friendly message
         this.showMessage(userMessage, 'error');
@@ -88,7 +91,9 @@ class ErrorHandler {
      */
     static handleWarning(userMessage, context = '') {
         // Log to console with context
-        const logMessage = context ? `[${context}] ${userMessage}` : userMessage;
+        const sanitizedUserMessage = window.Sanitizer ? window.Sanitizer.sanitizeForLog(userMessage) : userMessage;
+        const sanitizedContext = window.Sanitizer ? window.Sanitizer.sanitizeForLog(context) : context;
+        const logMessage = sanitizedContext ? `[${sanitizedContext}] ${sanitizedUserMessage}` : sanitizedUserMessage;
         console.warn(logMessage);
         
         // Show user-friendly message

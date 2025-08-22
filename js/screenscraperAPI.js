@@ -29,7 +29,7 @@ module.exports = class ScreenScraperAPI {
         const fullUrl = `${this.#BASE_URL}/${endpoint}?${urlParams.toString()}`;
 
         try {
-            console.log(`Fetching from: ${fullUrl}`);
+            console.log(`Fetching from: ${typeof window !== 'undefined' && window.Sanitizer ? window.Sanitizer.sanitizeForLog(fullUrl) : String(fullUrl).replace(/[\x00-\x1F\x7F]/g, '')}`);
             const response = await fetch(fullUrl);
 
             // Check if response is text and contains authentication error

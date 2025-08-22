@@ -1,5 +1,3 @@
-// NotificationSystem.js - Modern notification system for the Retro Game Launcher
-
 class NotificationSystem {
     constructor() {
         this.container = null;
@@ -82,6 +80,17 @@ class NotificationSystem {
         document.head.appendChild(style);
     }
 
+    // Simple HTML sanitization function to prevent XSS
+    sanitizeHTML(str) {
+        if (window.Sanitizer) {
+            return window.Sanitizer.sanitizeHTML(str);
+        }
+        // Fallback sanitization
+        const temp = document.createElement('div');
+        temp.textContent = str;
+        return temp.innerHTML;
+    }
+
     show(message, type = 'info', duration = 5000) {
         // Create notification element
         const notification = document.createElement('div');
@@ -89,8 +98,8 @@ class NotificationSystem {
         
         // Add message using safe textContent
         const messageElement = document.createElement('span');
-        // Sanitize message for display
-        messageElement.textContent = window.Sanitizer ? window.Sanitizer.sanitizeForHTML(message) : message;
+        // Sanitize message for display - use a proper sanitization function
+        messageElement.textContent = this.sanitizeHTML(message);
         notification.appendChild(messageElement);
         
         // Add close button

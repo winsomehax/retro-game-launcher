@@ -1,18 +1,24 @@
-const { app } = require('electron');
-const path = require('path');
-const fs = require('fs').promises;
-const crypto = require('crypto');
-const { net } = require('electron');
-
 class AssetManager {
     constructor() {
-        this.cacheDir = path.join(app.getPath('userData'), 'asset-cache');
+        const { app } = require('electron');
+        const path = require('path');
+        const fs = require('fs').promises;
+        const crypto = require('crypto');
+        const { net } = require('electron');
+
+        this.app = app;
+        this.path = path;
+        this.fs = fs;
+        this.crypto = crypto;
+        this.net = net;
+
+        this.cacheDir = this.path.join(this.app.getPath('userData'), 'asset-cache');
         this.ensureCacheDir();
     }
 
     async ensureCacheDir() {
         try {
-            await fs.mkdir(this.cacheDir, { recursive: true });
+            await this.fs.mkdir(this.cacheDir, { recursive: true });
         } catch (error) {
             console.error('Failed to create asset cache directory:', error);
         }
@@ -32,14 +38,17 @@ class AssetManager {
         let ext = '';
         if (isLocalPath) {
             // For local paths, use path.extname directly
-            ext = path.extname(url);
+            ext = this.path.extname(url);
         } else {
             try {
-                // For URLs, try to parse with URL constructor
-                ext = path.extname(new URL(url).pathname);
+                // For URLs, try to parse with URL constructor and remove query parameters
+                const parsedUrl = new URL(url);
+                const pathname = parsedUrl.pathname;
+                ext = this.path.extname(pathname);
             } catch (error) {
-                // If URL parsing fails, fall back to path.extname
-                ext = path.extname(url);
+                // If URL parsing fails, fall back to path.extname on the URL without query params
+                const cleanUrl = url.split('?')[0];
+                ext = this.path.extname(cleanUrl);
             }
         }
         
@@ -88,7 +97,7 @@ class AssetManager {
      * @returns {string} - The hashed filename.
      */
     generateFilename(url, response = null) {
-        const hash = crypto.createHash('md5').update(url).digest('hex');
+        const hash = this.crypto.createHash('md5').update(url).digest('hex');
         const ext = this.getFileExtension(url, response);
         return `${hash}${ext}`;
     }
@@ -100,7 +109,7 @@ class AssetManager {
      */
     async isCached(url) {
         const filename = this.generateFilename(url);
-        const filepath = path.join(this.cacheDir, filename);
+        const filepath = this.path.join(this.cacheDir, filename);
         
         // Validate the path to prevent path traversal
         const validatedPath = this.validatePath(filepath, this.cacheDir);
@@ -109,7 +118,7 @@ class AssetManager {
         }
         
         try {
-            await fs.access(validatedPath);
+            await this.fs.access(validatedPath);
             return { exists: true, path: validatedPath };
         } catch {
             return { exists: false, path: validatedPath };
@@ -126,7 +135,7 @@ class AssetManager {
             const { exists, path: filepath } = await this.isCached(url);
             
             if (exists) {
-                console.log(`Asset already cached: ${url}`);
+                console.log(`Asset already cached: ${url.replace(/[\x00-\x1F\x7F]/g, '')}`);
                 return filepath;
             }
 
@@ -136,8 +145,8 @@ class AssetManager {
                 return null;
             }
 
-            console.log(`Downloading asset: ${url}`);
-            const response = await net.fetch(url);
+            console.log(`Downloading asset: ${url.replace(/[\x00-\x1F\x7F]/g, '')}`);
+            const response = await this.net.fetch(url);
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -150,7 +159,7 @@ class AssetManager {
             const buffer = await response.arrayBuffer();
             // Generate filename with response information for proper extension
             const filename = this.generateFilename(url, response);
-            const finalFilepath = path.join(this.cacheDir, filename);
+            const finalFilepath = this.path.join(this.cacheDir, filename);
             
             // Validate the final path to prevent path traversal
             const validatedFinalPath = this.validatePath(finalFilepath, this.cacheDir);
@@ -158,12 +167,12 @@ class AssetManager {
                 return null;
             }
             
-            await fs.writeFile(validatedFinalPath, Buffer.from(buffer));
+            await this.fs.writeFile(validatedFinalPath, Buffer.from(buffer));
             
-            console.log(`Asset downloaded and cached: ${url} -> ${validatedFinalPath} (size: ${buffer.byteLength} bytes)`);
+            console.log(`Asset downloaded and cached: ${url.replace(/[\x00-\x1F\x7F]/g, '')} -> ${validatedFinalPath.replace(/[\x00-\x1F\x7F]/g, '')} (size: ${buffer.byteLength} bytes)`);
             return validatedFinalPath;
         } catch (error) {
-            console.error(`Failed to download asset from ${url}:`, error);
+            console.error(`Failed to download asset from ${url.replace(/[\x00-\x1F\x7F]/g, '')}:`, error);
             return null;
         }
     }
@@ -172,12 +181,12 @@ class AssetManager {
     validatePath(inputPath, baseDir) {
         try {
             // Resolve the path to handle relative paths
-            let resolvedPath = path.resolve(inputPath);
+            let resolvedPath = this.path.resolve(inputPath);
             
             // Ensure the path is within the base directory
-            const resolvedBase = path.resolve(baseDir);
+            const resolvedBase = this.path.resolve(baseDir);
             if (!resolvedPath.startsWith(resolvedBase)) {
-                console.error('Path traversal attempt detected:', inputPath);
+                console.error('Path traversal attempt detected:', inputPath.replace(/[\x00-\x1F\x7F]/g, ''));
                 return null;
             }
             
@@ -189,12 +198,12 @@ class AssetManager {
             
             // Prevent access to sensitive system directories outside of our app directory
             // Only block access if the path is NOT within our application's data directory
-            const appDataDir = path.resolve(app.getPath('userData'));
+            const appDataDir = this.path.resolve(this.app.getPath('userData'));
             if (!resolvedPath.startsWith(appDataDir)) {
                 const sensitivePaths = ['/etc/', '/root/', '/usr/', '/var/'];
                 for (const sensitivePath of sensitivePaths) {
                     if (resolvedPath.startsWith(sensitivePath)) {
-                        console.error('Access to sensitive system directories is forbidden:', inputPath);
+                        console.error('Access to sensitive system directories is forbidden:', inputPath.replace(/[\x00-\x1F\x7F]/g, ''));
                         return null;
                     }
                 }
@@ -220,7 +229,7 @@ class AssetManager {
             }
             
             try {
-                await fs.access(validatedPath);
+                await this.fs.access(validatedPath);
                 return validatedPath;
             } catch {
                 // File doesn't exist, continue with normal processing

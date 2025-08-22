@@ -6,7 +6,20 @@ class PluginManager {
     
     // Register built-in plugins
     this.registerPlugin('XMB', new XMBPlugin());
+    this.registerPlugin('CIRCLES', new CIRCLESPlugin());
+    this.registerPlugin('NONE', new NONEPlugin());
+    this.registerPlugin('STARFIELD', new STARFIELDPlugin());
+    this.registerPlugin('MATRIX', new MATRIXPlugin());
+    this.registerPlugin('AURORA', new AURORAPlugin());
+    this.registerPlugin('NEONGRID', new NEONGRIDPlugin());
+    this.registerPlugin('FIREPLACE', new FIREPLACEPlugin());
+    this.registerPlugin('OCEANDEPTHS', new OCEANDEPTHSPlugin());
+    this.registerPlugin('CLOUDSCAPE', new CLOUDSCAPEPlugin());
+    this.registerPlugin('PARTICLESTORM', new PARTICLESTORMPlugin());
+    this.registerPlugin('RETROCRT', new RETROCRTPlugin());
+    this.registerPlugin('GEOMETRIC', new GEOMETRICPlugin());
     this.registerPlugin('RADAR', new RADARPlugin());
+    this.registerPlugin('DNA', new DNAPlugin());
   }
 
   // Register a new plugin

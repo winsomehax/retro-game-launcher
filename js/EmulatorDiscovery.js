@@ -1,9 +1,9 @@
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-
 class EmulatorDiscovery {
     constructor() {
+        this.execSync = require('child_process').execSync;
+        this.fs = require('fs');
+        this.path = require('path');
+        this.os = require('os');
         this.supportedEmulators = {
             'mednafen': {
                 name: 'Mednafen',
@@ -101,7 +101,7 @@ class EmulatorDiscovery {
         }
         
         try {
-            const output = execSync('flatpak list --app --columns=application,name', { encoding: 'utf-8' });
+            const output = this.execSync('flatpak list --app --columns=application,name', { encoding: 'utf-8' });
             const lines = output.split('\n');
             
             for (const line of lines) {
@@ -146,7 +146,7 @@ class EmulatorDiscovery {
         }
         
         try {
-            const output = execSync('snap list', { encoding: 'utf-8' });
+            const output = this.execSync('snap list', { encoding: 'utf-8' });
             const lines = output.split('\n');
             
             for (const line of lines) {
@@ -188,21 +188,21 @@ class EmulatorDiscovery {
         const searchPaths = [
             '/usr/bin',
             '/usr/local/bin',
-            path.join(require('os').homedir(), '.local/bin'),
+            this.path.join(this.os.homedir(), '.local/bin'),
             '/opt'
         ];
         
         for (const searchPath of searchPaths) {
-            if (fs.existsSync(searchPath)) {
+            if (this.fs.existsSync(searchPath)) {
                 try {
-                    const files = fs.readdirSync(searchPath);
+                    const files = this.fs.readdirSync(searchPath);
                     
                     for (const file of files) {
                         // Check if this is a known emulator
                         for (const [key, emulator] of Object.entries(this.supportedEmulators)) {
                             if (file.toLowerCase() === key) {
-                                const fullPath = path.join(searchPath, file);
-                                if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
+                                const fullPath = this.path.join(searchPath, file);
+                                if (this.fs.existsSync(fullPath) && this.fs.statSync(fullPath).isFile()) {
                                     emulators.push({
                                         id: this.generateUUID(),
                                         name: emulator.name,
@@ -236,10 +236,10 @@ class EmulatorDiscovery {
                 for (const packageName of emulator.packageNames) {
                     try {
                         // Check if package is installed
-                        execSync(`dpkg -l ${packageName}`, { stdio: 'ignore' });
+                        this.execSync(`dpkg -l ${packageName}`, { stdio: 'ignore' });
                         
                         // Get package files
-                        const filesOutput = execSync(`dpkg -L ${packageName}`, { encoding: 'utf-8' });
+                        const filesOutput = this.execSync(`dpkg -L ${packageName}`, { encoding: 'utf-8' });
                         const files = filesOutput.split('\n');
                         
                         // Find binary files
@@ -286,10 +286,10 @@ class EmulatorDiscovery {
                 for (const packageName of emulator.packageNames) {
                     try {
                         // Check if package is installed
-                        execSync(`pacman -Q ${packageName}`, { stdio: 'ignore' });
+                        this.execSync(`pacman -Q ${packageName}`, { stdio: 'ignore' });
                         
                         // Get package files
-                        const filesOutput = execSync(`pacman -Ql ${packageName}`, { encoding: 'utf-8' });
+                        const filesOutput = this.execSync(`pacman -Ql ${packageName}`, { encoding: 'utf-8' });
                         const files = filesOutput.split('\n');
                         
                         // Find binary files
@@ -336,10 +336,10 @@ class EmulatorDiscovery {
                 for (const packageName of emulator.packageNames) {
                     try {
                         // Check if package is installed
-                        execSync(`rpm -q ${packageName}`, { stdio: 'ignore' });
+                        this.execSync(`rpm -q ${packageName}`, { stdio: 'ignore' });
                         
                         // Get package files
-                        const filesOutput = execSync(`rpm -ql ${packageName}`, { encoding: 'utf-8' });
+                        const filesOutput = this.execSync(`rpm -ql ${packageName}`, { encoding: 'utf-8' });
                         const files = filesOutput.split('\n');
                         
                         // Find binary files
@@ -380,7 +380,7 @@ class EmulatorDiscovery {
      */
     isCommandAvailable(command) {
         try {
-            execSync(`which ${command}`, { stdio: 'ignore' });
+            this.execSync(`which ${command}`, { stdio: 'ignore' });
             return true;
         } catch (error) {
             return false;

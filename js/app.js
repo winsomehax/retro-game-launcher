@@ -430,7 +430,7 @@ class RetroGameLauncher {
             
             // Create the "no platforms" message using DOM methods
             const noPlatformsMessage = document.createElement('p');
-            noPlatformsMessage.className = 'text-neutral-400 text-center py-8';
+            noPlatformsMessage.className = 'text-neutral-400 col-span-full text-center py-8';
             noPlatformsMessage.textContent = 'No platforms configured.';
             platformsList.appendChild(noPlatformsMessage);
             return;
@@ -446,23 +446,25 @@ class RetroGameLauncher {
         
         this.platforms.forEach(platform => {
             const platformDiv = document.createElement('div');
-            platformDiv.className = 'bg-neutral-800 rounded-lg p-4 flex items-center';
+            platformDiv.className = 'bg-neutral-800 rounded-lg p-4 hover:bg-neutral-700 transition-colors';
             
-            const imageContainer = document.createElement('div');
-            imageContainer.className = 'w-32 h-32 mr-4 flex-shrink-0 relative';
+            // Create the platform content using safe DOM methods
+            const aspectDiv = document.createElement('div');
+            aspectDiv.className = 'aspect-[3/4] bg-neutral-700 rounded mb-3 flex items-center justify-center relative overflow-hidden';
             
             if (platform.cover_image_path) {
                 const img = document.createElement('img');
                 // Use the asset path directly, the image loading will handle caching
                 img.src = platform.cover_image_path;
                 img.alt = platform.name || 'Platform cover';
-                img.className = 'w-full h-full object-contain rounded';
-                imageContainer.appendChild(img);
+                img.className = 'w-full h-full object-cover rounded platform-image';
+                img.setAttribute('data-original-src', platform.cover_image_path);
+                aspectDiv.appendChild(img);
             } else {
-                const noImageDiv = document.createElement('div');
-                noImageDiv.className = 'w-full h-full bg-neutral-700 rounded flex items-center justify-center text-neutral-500 text-center';
-                noImageDiv.textContent = 'No Image';
-                imageContainer.appendChild(noImageDiv);
+                const noImageSpan = document.createElement('span');
+                noImageSpan.className = 'text-neutral-500';
+                noImageSpan.textContent = 'No Image';
+                aspectDiv.appendChild(noImageSpan);
             }
             
             if (platform.video_url) {
@@ -471,26 +473,23 @@ class RetroGameLauncher {
                 videoButton.textContent = '▶';
                 // Use addEventListener instead of onclick attribute
                 videoButton.addEventListener('click', () => this.playVideo(platform.video_url));
-                imageContainer.appendChild(videoButton);
+                aspectDiv.appendChild(videoButton);
             }
             
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'flex-grow';
-            
             const nameEl = document.createElement('h3');
-            nameEl.className = 'font-semibold text-lg mb-2';
+            nameEl.className = 'font-semibold mb-1';
             nameEl.textContent = platform.name || 'Unknown Platform';
             
             const manufacturerEl = document.createElement('p');
-            manufacturerEl.className = 'text-neutral-400 text-sm mb-3';
+            manufacturerEl.className = 'text-sm text-neutral-400 mb-1';
             manufacturerEl.textContent = platform.manufacturer || 'No manufacturer';
             
             const releaseYearEl = document.createElement('p');
-            releaseYearEl.className = 'text-neutral-400 text-sm mb-3';
+            releaseYearEl.className = 'text-sm text-neutral-400 mb-1';
             releaseYearEl.textContent = platform.release_year || 'No release year';
             
             const descriptionEl = document.createElement('p');
-            descriptionEl.className = 'text-neutral-400 text-sm mb-3';
+            descriptionEl.className = 'text-sm text-neutral-400 mb-2';
             descriptionEl.textContent = platform.description || 'No description available.';
             
             const tagsDiv = document.createElement('div');
@@ -509,7 +508,7 @@ class RetroGameLauncher {
             }
             
             const buttonsDiv = document.createElement('div');
-            buttonsDiv.className = 'flex space-x-2';
+            buttonsDiv.className = 'flex space-x-2 mt-2';
             
             const editButton = document.createElement('button');
             editButton.className = 'bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors';
@@ -543,20 +542,29 @@ class RetroGameLauncher {
             buttonsDiv.appendChild(viewImagesButton);
             buttonsDiv.appendChild(queryButton);
             
-            contentDiv.appendChild(nameEl);
-            contentDiv.appendChild(manufacturerEl);
-            contentDiv.appendChild(releaseYearEl);
-            contentDiv.appendChild(descriptionEl);
-            contentDiv.appendChild(tagsDiv);
-            contentDiv.appendChild(buttonsDiv);
-            
-            platformDiv.appendChild(imageContainer);
-            platformDiv.appendChild(contentDiv);
+            platformDiv.appendChild(aspectDiv);
+            platformDiv.appendChild(nameEl);
+            platformDiv.appendChild(manufacturerEl);
+            platformDiv.appendChild(releaseYearEl);
+            platformDiv.appendChild(descriptionEl);
+            platformDiv.appendChild(tagsDiv);
+            platformDiv.appendChild(buttonsDiv);
             
             fragment.appendChild(platformDiv);
         });
         
         platformsList.appendChild(fragment);
+        
+        // Process images to use cached assets
+        const images = platformsList.querySelectorAll('.platform-image');
+        
+        for (const img of images) {
+            const originalSrc = img.getAttribute('data-original-src');
+            if (originalSrc) {
+                const assetPath = await this.getAssetPath(originalSrc);
+                img.src = assetPath;
+            }
+        }
     }
 
     async viewPlatformImages(platformId) {
@@ -1001,7 +1009,8 @@ class RetroGameLauncher {
 
         const existingPlatform = this.platforms.find(p => p.platform_id === platformData.id);
         if (existingPlatform) {
-            const message = `Platform with name "${platformData.name}" already exists.`;
+            const sanitizedName = window.Sanitizer ? window.Sanitizer.sanitizeForLog(platformData.name) : platformData.name;
+            const message = `Platform with name "${sanitizedName}" already exists.`;
             window.ErrorHandler?.handleWarning(message, 'Add Platform') || console.warn(message);
             return;
         }
@@ -1063,7 +1072,7 @@ class RetroGameLauncher {
         try {
             await window.electronAPI.saveData(type, data);
         } catch (error) {
-            const sanitizedName = window.Sanitizer ? window.Sanitizer.sanitizeForLog(type) : type;
+            const sanitizedName = window.Sanitizer ? window.Sanitizer.sanitizeForLog(name) : name;
             const sanitizedError = window.Sanitizer ? window.Sanitizer.sanitizeForLog(error.message) : error.message;
             console.error(`Error saving ${sanitizedName}:`, sanitizedError);
             const errorMessage = `Failed to save ${sanitizedName}. Check console for details.`;
@@ -1098,7 +1107,8 @@ class RetroGameLauncher {
             // Update progress text
             const updateProgress = (message) => {
                 if (progressElement) {
-                    progressElement.innerHTML = `<p>${message}</p>`;
+                    const sanitizedMessage = window.Sanitizer ? window.Sanitizer.sanitizeForDisplay(message) : message;
+                    progressElement.innerHTML = `<p>${sanitizedMessage}</p>`;
                 }
             };
 
@@ -1828,7 +1838,9 @@ class RetroGameLauncher {
                 const successMessage = 'Platform information updated successfully!';
                 window.ErrorHandler?.showSuccess(successMessage) || console.log(successMessage);
             } else {
-                console.warn('Could not find platform or missing result from data sources.', platform, result);
+                const sanitizedPlatform = window.Sanitizer ? window.Sanitizer.sanitizeForLog(JSON.stringify(platform)) : JSON.stringify(platform);
+                const sanitizedResult = window.Sanitizer ? window.Sanitizer.sanitizeForLog(JSON.stringify(result)) : JSON.stringify(result);
+                console.warn('Could not find platform or missing result from data sources.', sanitizedPlatform, sanitizedResult);
             }
         } catch (error) {
             const sanitizedError = window.Sanitizer ? window.Sanitizer.sanitizeForLog(error.message) : error.message;

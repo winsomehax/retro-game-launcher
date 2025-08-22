@@ -5,7 +5,7 @@ module.exports=class GameService {
     #ssApi;
 
     constructor(user, password) {
-        console.log(`Initializing GameService with user: ${user}`);
+        console.log(`Initializing GameService with user: ${typeof window !== 'undefined' && window.Sanitizer ? window.Sanitizer.sanitizeForLog(user) : String(user).replace(/[\x00-\x1F\x7F]/g, '')}`);
         this.#ssApi = new ScreenScraperAPI(user, password);
     }
 
@@ -26,7 +26,7 @@ module.exports=class GameService {
             const searchResults = await this.#ssApi.searchGameByName(gameName, systemId);
 
             if (!searchResults || !searchResults.response || !searchResults.response.jeux) {
-                console.log(`No games found for "${gameName}".`);
+                console.log(`No games found for "${typeof window !== 'undefined' && window.Sanitizer ? window.Sanitizer.sanitizeForLog(gameName) : String(gameName).replace(/[\x00-\x1F\x7F]/g, '')}".`);
                 return null;
             }
 
@@ -34,7 +34,7 @@ module.exports=class GameService {
             const gameData = Array.isArray(searchResults.response.jeux) ? searchResults.response.jeux[0] : searchResults.response.jeux;
 
             if (!gameData || !gameData.id) {
-                console.log(`Could not extract game ID for "${gameName}".`);
+                console.log(`Could not extract game ID for "${typeof window !== 'undefined' && window.Sanitizer ? window.Sanitizer.sanitizeForLog(gameName) : String(gameName).replace(/[\x00-\x1F\x7F]/g, '')}".`);
                 return null;
             }
 
@@ -44,7 +44,8 @@ module.exports=class GameService {
             const fullGameInfo = await this.#ssApi.getGameInfo(gameId);
 
             if (!fullGameInfo || !fullGameInfo.response || !fullGameInfo.response.jeux) {
-                console.log(`Could not fetch full info for game ID ${gameId}.`);
+                const sanitizedGameId = window.Sanitizer ? window.Sanitizer.sanitizeForLog(gameId) : gameId;
+                console.log(`Could not fetch full info for game ID ${sanitizedGameId}.`);
                 return {
                     id: gameId,
                     name: gameData.nom,

@@ -62,7 +62,7 @@
                         + Add Platform
                     </button>
                 </div>
-                <div id="platforms-list" class="space-y-4">
+                <div id="platforms-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <!-- Platforms will be loaded here -->
                 </div>
             </div>
@@ -183,7 +183,20 @@
                         <label class="block text-sm font-medium mb-2">Background Effect</label>
                         <select id="background-effect" class="w-full p-3 bg-neutral-800 border border-neutral-700 rounded">
                             <option value="XMB">XMB (Waves)</option>
-                            <option value="RADAR">RADAR (Concentric Circles)</option>
+                            <option value="CIRCLES">CIRCLES (Concentric Circles)</option>
+                            <option value="RADAR">RADAR (Rotating Sweep)</option>
+                            <option value="DNA">DNA (Triple Helix)</option>
+                            <option value="STARFIELD">STARFIELD (Deep Space)</option>
+                            <option value="MATRIX">MATRIX (Digital Rain)</option>
+                            <option value="AURORA">AURORA (Northern Lights)</option>
+                            <option value="NEONGRID">NEON GRID (Cyberpunk)</option>
+                            <option value="FIREPLACE">FIREPLACE (Cozy Flames)</option>
+                            <option value="OCEANDEPTHS">OCEAN DEPTHS (Underwater)</option>
+                            <option value="CLOUDSCAPE">CLOUDSCAPE (Sky)</option>
+                            <option value="PARTICLESTORM">PARTICLE STORM (Interactive)</option>
+                            <option value="RETROCRT">RETRO CRT (Scanlines)</option>
+                            <option value="GEOMETRIC">GEOMETRIC (3D Shapes)</option>
+                            <option value="NONE">NONE (No Effects - Low Resource Systems)</option>
                         </select>
                     </div>
                     <div>
@@ -254,7 +267,20 @@
     <script src="js/renderEmulators.js"></script>
     <script src="plugins/BasePlugin.js"></script>
     <script src="plugins/XMBPlugin.js"></script>
+    <script src="plugins/CIRCLESPlugin.js"></script>
+    <script src="plugins/NONEPlugin.js"></script>
+    <script src="plugins/STARFIELDPlugin.js"></script>
+    <script src="plugins/MATRIXPlugin.js"></script>
+    <script src="plugins/AURORAPlugin.js"></script>
+    <script src="plugins/NEONGRIDPlugin.js"></script>
+    <script src="plugins/FIREPLACEPlugin.js"></script>
+    <script src="plugins/OCEANDEPTHSPlugin.js"></script>
+    <script src="plugins/CLOUDSCAPEPlugin.js"></script>
+    <script src="plugins/PARTICLESTORMPlugin.js"></script>
+    <script src="plugins/RETROCRTPlugin.js"></script>
+    <script src="plugins/GEOMETRICPlugin.js"></script>
     <script src="plugins/RADARPlugin.js"></script>
+    <script src="plugins/DNAPlugin.js"></script>
     <script src="plugins/PluginManager.js"></script>
     <script src="js/app.js"></script>
     <script src="js/smoke.js"></script>

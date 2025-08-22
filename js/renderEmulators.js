@@ -44,10 +44,10 @@ class EmulatorRenderer {
             // Build the inner HTML string manually to avoid template literal issues
             let innerHTML = '<div class="flex justify-between items-start">';
             innerHTML += '<div>';
-            innerHTML += '<h3 class="font-semibold text-lg mb-2">' + knownEmulator.name + '</h3>';
-            innerHTML += '<p class="text-neutral-400 text-sm mb-3">Supported Platforms: ' + knownEmulator.platforms.join(', ') + '</p>';
+            innerHTML += '<h3 class="font-semibold text-lg mb-2">' + (window.Sanitizer ? window.Sanitizer.escapeHTML(knownEmulator.name) : knownEmulator.name) + '</h3>';
+            innerHTML += '<p class="text-neutral-400 text-sm mb-3">Supported Platforms: ' + (window.Sanitizer ? window.Sanitizer.escapeHTML(knownEmulator.platforms.join(', ')) : knownEmulator.platforms.join(', ')) + '</p>';
             innerHTML += '</div>';
-            innerHTML += '<span class="px-3 py-1 rounded-full text-sm font-medium ' + statusClass + '">' + status + '</span>';
+            innerHTML += '<span class="px-3 py-1 rounded-full text-sm font-medium ' + (window.Sanitizer ? window.Sanitizer.escapeHTML(statusClass) : statusClass) + '">' + (window.Sanitizer ? window.Sanitizer.escapeHTML(status) : status) + '</span>';
             innerHTML += '</div>';
 
             // If configured, show details
@@ -55,24 +55,25 @@ class EmulatorRenderer {
                 // Display installation type if available
                 if (configuredEmulator.installationType) {
                     let installTypeText = configuredEmulator.installationType.charAt(0).toUpperCase() + configuredEmulator.installationType.slice(1);
-                    innerHTML += '<p class="text-neutral-400 text-sm mb-1">Installation: ' + installTypeText + '</p>';
+                    innerHTML += '<p class="text-neutral-400 text-sm mb-1">Installation: ' + (window.Sanitizer ? window.Sanitizer.escapeHTML(installTypeText) : installTypeText) + '</p>';
                 }
 
                 if (configuredEmulator.executablePath) {
-                    innerHTML += '<p class="text-neutral-400 text-sm mb-1">Path: ' + configuredEmulator.executablePath + '</p>';
+                    innerHTML += '<p class="text-neutral-400 text-sm mb-1">Path: ' + (window.Sanitizer ? window.Sanitizer.escapeHTML(configuredEmulator.executablePath) : configuredEmulator.executablePath) + '</p>';
                 }
 
                 if (configuredEmulator.args) {
-                    innerHTML += '<p class="text-neutral-400 text-sm mb-3">Args: ' + configuredEmulator.args + '</p>';
+                    innerHTML += '<p class="text-neutral-400 text-sm mb-3">Args: ' + (window.Sanitizer ? window.Sanitizer.escapeHTML(configuredEmulator.args) : configuredEmulator.args) + '</p>';
                 }
 
                 if (configuredEmulator.description) {
-                    innerHTML += '<p class="text-neutral-400 text-sm mb-3">' + configuredEmulator.description + '</p>';
+                    innerHTML += '<p class="text-neutral-400 text-sm mb-3">' + (window.Sanitizer ? window.Sanitizer.escapeHTML(configuredEmulator.description) : configuredEmulator.description) + '</p>';
                 }
 
                 // Display website if available
                 if (configuredEmulator.website) {
-                    innerHTML += '<p class="text-neutral-400 text-sm mb-3"><a href="' + configuredEmulator.website + '" target="_blank">' + (configuredEmulator.website || '') + '</a></p>';
+                    const safeURL = window.Sanitizer ? window.Sanitizer.sanitizeURL(configuredEmulator.website) : configuredEmulator.website;
+                    innerHTML += '<p class="text-neutral-400 text-sm mb-3"><a href="' + safeURL + '" target="_blank">' + (window.Sanitizer ? window.Sanitizer.escapeHTML(configuredEmulator.website || '') : (configuredEmulator.website || '')) + '</a></p>';
                 }
 
                 // Build tags HTML
@@ -81,7 +82,7 @@ class EmulatorRenderer {
                     for (const tagId of configuredEmulator.tags) {
                         const tag = this.app.platformTags.find(t => t.id === tagId);
                         if (tag) {
-                            tagsHTML += '<span class="bg-secondary text-xs px-2 py-1 rounded-full">' + tag.name + '</span>';
+                            tagsHTML += '<span class="bg-secondary text-xs px-2 py-1 rounded-full">' + (window.Sanitizer ? window.Sanitizer.escapeHTML(tag.name) : tag.name) + '</span>';
                         }
                     }
                 }
@@ -90,13 +91,16 @@ class EmulatorRenderer {
             }
 
             // Build buttons HTML
+            const emulatorId = configuredEmulator ? configuredEmulator.emulator_id : 'new-' + knownEmulator.id;
+            const buttonText = configuredEmulator ? 'Edit' : 'Configure';
+            
             innerHTML += '<div class="flex space-x-2">';
-            innerHTML += '<button onclick="app.editEmulator(\'' + (configuredEmulator ? configuredEmulator.emulator_id : 'new-' + knownEmulator.id) + '\')" class="bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">';
-            innerHTML += (configuredEmulator ? 'Edit' : 'Configure');
+            innerHTML += '<button onclick="app.editEmulator(\'' + (window.Sanitizer ? window.Sanitizer.escapeHTML(emulatorId) : emulatorId) + '\')" class="bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">';
+            innerHTML += window.Sanitizer ? window.Sanitizer.escapeHTML(buttonText) : buttonText;
             innerHTML += '</button>';
 
             if (configuredEmulator) {
-                innerHTML += '<button onclick="app.deleteEmulator(\'' + configuredEmulator.emulator_id + '\')" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">';
+                innerHTML += '<button onclick="app.deleteEmulator(\'' + (window.Sanitizer ? window.Sanitizer.escapeHTML(configuredEmulator.emulator_id) : configuredEmulator.emulator_id) + '\')" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors">';
                 innerHTML += 'Delete';
                 innerHTML += '</button>';
             }

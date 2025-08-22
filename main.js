@@ -229,7 +229,7 @@ async function queryGitHubModels(platformName) {
 }
 
 async function queryGemini(platformName, tagNames = []) {
-  console.log(`Querying Gemini for platform: ${platformName}`);
+  console.log(`Querying Gemini for platform: ${typeof window !== 'undefined' && window.Sanitizer ? window.Sanitizer.sanitizeForLog(platformName) : String(platformName).replace(/[\x00-\x1F\x7F]/g, '')}`);
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
 
@@ -270,7 +270,7 @@ async function queryGemini(platformName, tagNames = []) {
 }
 
 async function queryGeminiGameTags(gameName, platformName, existingTags = []) {
-  console.log(`Querying Gemini for tags for game: ${gameName} on platform: ${platformName}`);
+  console.log(`Querying Gemini for tags for game: ${typeof window !== 'undefined' && window.Sanitizer ? window.Sanitizer.sanitizeForLog(gameName) : String(gameName).replace(/[\x00-\x1F\x7F]/g, '')} on platform: ${typeof window !== 'undefined' && window.Sanitizer ? window.Sanitizer.sanitizeForLog(platformName) : String(platformName).replace(/[\x00-\x1F\x7F]/g, '')}`);
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
 
@@ -311,7 +311,7 @@ async function queryGeminiGameTags(gameName, platformName, existingTags = []) {
 }
 
 ipcMain.handle('query-data-sources', async (event, platformName, tagNames) => {
-  console.log(`Querying data sources for platform: ${platformName}`);
+  console.log(`Querying data sources for platform: ${typeof window !== 'undefined' && window.Sanitizer ? window.Sanitizer.sanitizeForLog(platformName) : String(platformName).replace(/[\x00-\x1F\x7F]/g, '')}`);
   
   console.log('Trying ScreenScraper...');
   let result = await queryScreenScraper(platformName);
@@ -599,9 +599,9 @@ ipcMain.handle('discover-emulators', async (event) => {
     sendProgress('Initializing emulator discovery...');
     
     const emulators = await emulatorDiscovery.discoverAllEmulators(sendProgress);
-    console.log(`Found ${emulators.length} emulators`);
+    console.log(`Found ${window.Sanitizer ? window.Sanitizer.sanitizeForLog(emulators.length) : emulators.length} emulators`);
     
-    sendProgress(`Discovery complete. Found ${emulators.length} emulators.`);
+    sendProgress(`Discovery complete. Found ${window.Sanitizer ? window.Sanitizer.sanitizeForDisplay(emulators.length) : emulators.length} emulators.`);
     
     return emulators;
   } catch (error) {
