@@ -1,10 +1,10 @@
-const { app, BrowserWindow, ipcMain, net } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const GameService = require('./js/GameService'); // Import GameService
-const AssetManager = require('./js/AssetManager'); // Import AssetManager
-const EmulatorDiscovery = require('./js/EmulatorDiscovery'); // Import EmulatorDiscovery
+const GameService = require('./js/GameService');
+const AssetManager = require('./js/AssetManager');
+const EmulatorDiscovery = require('./js/EmulatorDiscovery');
 
 require('dotenv').config();
 
@@ -16,6 +16,19 @@ console.log('SCREENSCRAPER_DEV_PASSWORD:', process.env.SCREENSCRAPER_DEV_PASSWOR
 const gs = new GameService(process.env.SCREENSCRAPER_DEVID, process.env.SCREENSCRAPER_DEV_PASSWORD); // Initialize GameService with credentials
 const assetManager = new AssetManager(); // Initialize AssetManager
 const emulatorDiscovery = new EmulatorDiscovery(); // Initialize EmulatorDiscovery
+
+// Initialize AssetManager when app is ready
+app.whenReady().then(async () => {
+  await assetManager.initialize();
+});
+
+// Track when app is about to quit
+app.on('before-quit', async () => {
+  const downloadCount = assetManager.getDownloadCount();
+  console.log(`=== Application Statistics ===`);
+  console.log(`Assets downloaded from ScreenScraper: ${downloadCount}`);
+  console.log(`===============================`);
+});
 
 
 const CACHE_FILE = path.join(app.getPath('userData'), 'platforms-cache.json');

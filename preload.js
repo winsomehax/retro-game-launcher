@@ -1,9 +1,15 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+// Validate data types for basic authorization
+const validateDataType = (dataType) => {
+  const validTypes = ['games', 'platforms', 'emulators', 'tags', 'settings'];
+  return validTypes.includes(dataType);
+};
+
 contextBridge.exposeInMainWorld('electronAPI', {
   getPlatforms: () => ipcRenderer.invoke('get-platforms'),
-  loadData: (dataType) => ipcRenderer.invoke('load-data', dataType),
-  saveData: (dataType, data) => ipcRenderer.invoke('save-data', dataType, data),
+  loadData: (dataType) => validateDataType(dataType) ? ipcRenderer.invoke('load-data', dataType) : Promise.reject('Invalid data type'),
+  saveData: (dataType, data) => validateDataType(dataType) ? ipcRenderer.invoke('save-data', dataType, data) : Promise.reject('Invalid data type'),
   getPlatformMedia: (platformId) => ipcRenderer.invoke('get-platform-media', platformId),
   queryDataSources: (platformName, tagNames) => ipcRenderer.invoke('query-data-sources', platformName, tagNames),
   scanFolder: () => ipcRenderer.invoke('scan-folder'),
@@ -20,7 +26,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 });
 
 // Add event listener for emulator discovery progress
-ipcRenderer.on('emulator-discovery-progress', (event, message) => {
+ipcRenderer.on('emulator-discovery-progress', (_, message) => {
   if (window.handleEmulatorDiscoveryProgress) {
     window.handleEmulatorDiscoveryProgress(message);
   }

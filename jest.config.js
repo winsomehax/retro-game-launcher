@@ -1,0 +1,8 @@
+module.exports = {
+  testEnvironment: 'jsdom',
+  collectCoverage: true,
+  coverageDirectory: 'coverage',
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/$1'
+  }
+};

@@ -78,12 +78,17 @@ class RetroGameLauncher {
 
     async loadData() {
         try {
-            const rawData = {
-                games: await window.electronAPI.loadData('games') || [],
-                platforms: await window.electronAPI.loadData('platforms') || [],
-                emulators: await window.electronAPI.loadData('emulators') || [],
-                tags: await window.electronAPI.loadData('tags') || []
-            };
+            // Validate API availability and data types
+            if (!window.electronAPI || typeof window.electronAPI.loadData !== 'function') {
+                throw new Error('Electron API not available');
+            }
+            
+            const validDataTypes = ['games', 'platforms', 'emulators', 'tags'];
+            const rawData = {};
+            
+            for (const dataType of validDataTypes) {
+                rawData[dataType] = await window.electronAPI.loadData(dataType) || [];
+            }
 
             // Normalize data using DataModel
             this.games = window.DataModel ? 

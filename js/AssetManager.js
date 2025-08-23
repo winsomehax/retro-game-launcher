@@ -12,11 +12,24 @@ class AssetManager {
         this.crypto = crypto;
         this.net = net;
 
-        this.cacheDir = this.path.join(this.app.getPath('userData'), 'asset-cache');
-        this.ensureCacheDir();
+        // Initialize cache directory later when app is ready
+        this.cacheDir = null;
+        
+        // Download counter
+        this.downloadCount = 0;
+    }
+
+    async initialize() {
+        if (!this.cacheDir) {
+            this.cacheDir = this.path.join(this.app.getPath('userData'), 'asset-cache');
+            await this.ensureCacheDir();
+        }
     }
 
     async ensureCacheDir() {
+        if (!this.cacheDir) {
+            this.cacheDir = this.path.join(this.app.getPath('userData'), 'asset-cache');
+        }
         try {
             await this.fs.mkdir(this.cacheDir, { recursive: true });
         } catch (error) {
@@ -91,13 +104,55 @@ class AssetManager {
     }
 
     /**
+     * Normalizes a URL by removing authentication parameters that change between requests.
+     * @param {string} url - The URL to normalize.
+     * @returns {string} - The normalized URL.
+     */
+    normalizeUrl(url) {
+        let normalizedUrl = url;
+        
+        try {
+            const urlObj = new URL(url);
+            const searchParams = urlObj.searchParams;
+            
+            // Remove authentication parameters that change between requests
+            searchParams.delete('devid');
+            searchParams.delete('devpassword');
+            searchParams.delete('softname');
+            searchParams.delete('ssid');
+            searchParams.delete('sspassword');
+            
+            // Reconstruct the URL with cleaned parameters
+            urlObj.search = searchParams.toString();
+            normalizedUrl = urlObj.toString();
+        } catch (error) {
+            // If URL parsing fails, just remove common authentication parameters from the string
+            normalizedUrl = url
+                .replace(/[?&]devid=[^&]*(&|$)/g, '$1')
+                .replace(/[?&]devpassword=[^&]*(&|$)/g, '$1')
+                .replace(/[?&]softname=[^&]*(&|$)/g, '$1')
+                .replace(/[?&]ssid=[^&]*(&|$)/g, '$1')
+                .replace(/[?&]sspassword=[^&]*(&|$)/g, '$1')
+                .replace(/\?$/, ''); // Remove trailing ? if no params left
+            
+            // Clean up any double &'s or leading &'s
+            normalizedUrl = normalizedUrl
+                .replace(/&&/g, '&')
+                .replace(/\?&/, '?');
+        }
+        
+        return normalizedUrl;
+    }
+
+    /**
      * Generates a unique filename for a given URL using a hash.
      * @param {string} url - The URL of the asset.
      * @param {Response} response - The fetch response object (optional).
      * @returns {string} - The hashed filename.
      */
     generateFilename(url, response = null) {
-        const hash = this.crypto.createHash('md5').update(url).digest('hex');
+        const normalizedUrl = this.normalizeUrl(url);
+        const hash = this.crypto.createHash('md5').update(normalizedUrl).digest('hex');
         const ext = this.getFileExtension(url, response);
         return `${hash}${ext}`;
     }
@@ -108,21 +163,38 @@ class AssetManager {
      * @returns {Promise<{exists: boolean, path: string}>} - Object indicating if the asset exists and its path.
      */
     async isCached(url) {
-        const filename = this.generateFilename(url);
-        const filepath = this.path.join(this.cacheDir, filename);
-        
-        // Validate the path to prevent path traversal
-        const validatedPath = this.validatePath(filepath, this.cacheDir);
-        if (!validatedPath) {
-            return { exists: false, path: filepath };
+        // Ensure cache directory is initialized
+        if (!this.cacheDir) {
+            this.cacheDir = this.path.join(this.app.getPath('userData'), 'asset-cache');
         }
         
+        // Try to find the cached file by checking if any file with the same hash prefix exists
+        const normalizedUrl = this.normalizeUrl(url);
+        const hash = this.crypto.createHash('md5').update(normalizedUrl).digest('hex');
+        
+        // Look for any file in the cache directory that starts with this hash
         try {
-            await this.fs.access(validatedPath);
-            return { exists: true, path: validatedPath };
-        } catch {
-            return { exists: false, path: validatedPath };
+            const files = await this.fs.readdir(this.cacheDir);
+            const matchingFiles = files.filter(file => file.startsWith(hash));
+            
+            if (matchingFiles.length > 0) {
+                // Use the first matching file (there should only be one)
+                const filepath = this.path.join(this.cacheDir, matchingFiles[0]);
+                
+                // Validate the path to prevent path traversal
+                const validatedPath = this.validatePath(filepath, this.cacheDir);
+                if (validatedPath) {
+                    await this.fs.access(validatedPath);
+                    console.log(`Asset found in cache: ${url.replace(/[\x00-\x1F\x7F]/g, '')} -> ${validatedPath.replace(/[\x00-\x1F\x7F]/g, '')}`);
+                    return { exists: true, path: validatedPath };
+                }
+            }
+        } catch (error) {
+            // Ignore readdir/access errors, treat as not cached
         }
+        
+        console.log(`Asset not in cache: ${url.replace(/[\x00-\x1F\x7F]/g, '')}`);
+        return { exists: false, path: this.path.join(this.cacheDir, `${hash}.dat`) };
     }
 
     /**
@@ -131,6 +203,11 @@ class AssetManager {
      * @returns {Promise<string|null>} - The local file path of the cached asset, or null on failure.
      */
     async downloadAsset(url) {
+        // Ensure cache directory is initialized
+        if (!this.cacheDir) {
+            this.cacheDir = this.path.join(this.app.getPath('userData'), 'asset-cache');
+        }
+        
         try {
             const { exists, path: filepath } = await this.isCached(url);
             
@@ -152,6 +229,9 @@ class AssetManager {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
+            // Increment download counter
+            this.downloadCount++;
+            
             // Log response details for debugging
             console.log(`Response status: ${response.status}`);
             console.log(`Response headers:`, [...response.headers.entries()]);
@@ -177,7 +257,13 @@ class AssetManager {
         }
     }
 
-    /**\n     * Validates and resolves file paths to prevent path traversal attacks.\n     * @param {string} inputPath - The input path to validate.\n     * @param {string} baseDir - The base directory to resolve against.\n     * @returns {string|null} - The resolved path or null if invalid.\n     */
+    /**
+     * Gets the number of assets downloaded during this session.
+     * @returns {number} - The download count.
+     */
+    getDownloadCount() {
+        return this.downloadCount;
+    }
     validatePath(inputPath, baseDir) {
         try {
             // Resolve the path to handle relative paths
@@ -216,9 +302,18 @@ class AssetManager {
         }
     }
 
-    /**\n     * Gets the local path for an asset, downloading it if necessary.\n     * @param {string} url - The URL of the asset.\n     * @returns {Promise<string|null>} - The local file path of the asset, or null on failure.\n     */
+    /**
+     * Gets the local path for an asset, downloading it if necessary.
+     * @param {string} url - The URL of the asset.
+     * @returns {Promise<string|null>} - The local file path of the asset, or null on failure.
+     */
     async getAssetPath(url) {
         if (!url) return null;
+        
+        // Ensure cache directory is initialized
+        if (!this.cacheDir) {
+            this.cacheDir = this.path.join(this.app.getPath('userData'), 'asset-cache');
+        }
 
         // Check if the URL is already a local file path that exists
         if ((url.startsWith('/') || /^[A-Za-z]:/.test(url)) && url.includes(this.cacheDir)) {
@@ -228,12 +323,7 @@ class AssetManager {
                 return null;
             }
             
-            try {
-                await this.fs.access(validatedPath);
-                return validatedPath;
-            } catch {
-                // File doesn't exist, continue with normal processing
-            }
+            // Continue with normal processing - skip the file existence check
         }
 
         const { exists, path: filepath } = await this.isCached(url);
@@ -243,6 +333,14 @@ class AssetManager {
         }
 
         return await this.downloadAsset(url);
+    }
+
+    /**
+     * Gets the number of assets downloaded during this session.
+     * @returns {number} - The download count.
+     */
+    getDownloadCount() {
+        return this.downloadCount;
     }
 }
 

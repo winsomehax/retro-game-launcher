@@ -80,16 +80,7 @@ class NotificationSystem {
         document.head.appendChild(style);
     }
 
-    // Simple HTML sanitization function to prevent XSS
-    sanitizeHTML(str) {
-        if (window.Sanitizer) {
-            return window.Sanitizer.sanitizeHTML(str);
-        }
-        // Fallback sanitization
-        const temp = document.createElement('div');
-        temp.textContent = str;
-        return temp.innerHTML;
-    }
+
 
     show(message, type = 'info', duration = 5000) {
         // Create notification element
@@ -98,8 +89,8 @@ class NotificationSystem {
         
         // Add message using safe textContent
         const messageElement = document.createElement('span');
-        // Sanitize message for display - use a proper sanitization function
-        messageElement.textContent = this.sanitizeHTML(message);
+        // Use textContent to prevent code execution
+        messageElement.textContent = message;
         notification.appendChild(messageElement);
         
         // Add close button

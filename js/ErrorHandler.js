@@ -74,11 +74,13 @@ class ErrorHandler {
      */
     static handleError(userMessage, error, context = '') {
         // Log to console with context
-        const sanitizedUserMessage = window.Sanitizer ? window.Sanitizer.sanitizeForLog(userMessage) : userMessage;
-        const sanitizedContext = window.Sanitizer ? window.Sanitizer.sanitizeForLog(context) : context;
+        const sanitizeForLog = (str) => String(str).replace(/[\r\n]+/g, ' ').replace(/[\x00-\x1F\x7F]+/g, '');
+        const sanitizedUserMessage = window.Sanitizer ? window.Sanitizer.sanitizeForLog(userMessage) : sanitizeForLog(userMessage);
+        const sanitizedContext = window.Sanitizer ? window.Sanitizer.sanitizeForLog(context) : sanitizeForLog(context);
         const logMessage = sanitizedContext ? `[${sanitizedContext}] ${sanitizedUserMessage}` : sanitizedUserMessage;
-        const sanitizedError = window.Sanitizer ? window.Sanitizer.sanitizeForLog(String(error)) : String(error);
-        console.error(logMessage, sanitizedError);
+        const sanitizedError = window.Sanitizer ? window.Sanitizer.sanitizeForLog(String(error)) : sanitizeForLog(String(error));
+        const finalLogMessage = window.Sanitizer ? window.Sanitizer.sanitizeForLog(`${logMessage} ${sanitizedError}`) : `${logMessage} ${sanitizedError}`;
+        console.error(finalLogMessage);
         
         // Show user-friendly message
         this.showMessage(userMessage, 'error');
