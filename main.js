@@ -612,9 +612,9 @@ ipcMain.handle('discover-emulators', async (event) => {
     sendProgress('Initializing emulator discovery...');
     
     const emulators = await emulatorDiscovery.discoverAllEmulators(sendProgress);
-    console.log(`Found ${window.Sanitizer ? window.Sanitizer.sanitizeForLog(emulators.length) : emulators.length} emulators`);
+    console.log(`Found ${emulators.length} emulators`);
     
-    sendProgress(`Discovery complete. Found ${window.Sanitizer ? window.Sanitizer.sanitizeForDisplay(emulators.length) : emulators.length} emulators.`);
+    sendProgress(`Discovery complete. Found ${emulators.length} emulators.`);
     
     return emulators;
   } catch (error) {
