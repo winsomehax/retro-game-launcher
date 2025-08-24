@@ -39,15 +39,15 @@ class EmulatorRenderer {
             }
 
             const emulatorElement = document.createElement('div');
-            emulatorElement.className = 'bg-neutral-800 rounded-lg p-4';
+            emulatorElement.className = 'bg-neutral-800 rounded-lg p-4 hover:bg-neutral-700 transition-colors';
 
             // Build the inner HTML string manually to avoid template literal issues
-            let innerHTML = '<div class="flex justify-between items-start">';
+            let innerHTML = '<div class="flex justify-between items-start mb-2">';
             innerHTML += '<div>';
-            innerHTML += '<h3 class="font-semibold text-lg mb-2">' + (window.Sanitizer ? window.Sanitizer.escapeHTML(knownEmulator.name) : knownEmulator.name) + '</h3>';
-            innerHTML += '<p class="text-neutral-400 text-sm mb-3">Supported Platforms: ' + (window.Sanitizer ? window.Sanitizer.escapeHTML(knownEmulator.platforms.join(', ')) : knownEmulator.platforms.join(', ')) + '</p>';
+            innerHTML += '<h3 class="font-semibold text-lg mb-1">' + (window.Sanitizer ? window.Sanitizer.escapeHTML(knownEmulator.name) : knownEmulator.name) + '</h3>';
+            innerHTML += '<p class="text-neutral-400 text-sm mb-2">Supported Platforms: ' + (window.Sanitizer ? window.Sanitizer.escapeHTML(knownEmulator.platforms.join(', ')) : knownEmulator.platforms.join(', ')) + '</p>';
             innerHTML += '</div>';
-            innerHTML += '<span class="px-3 py-1 rounded-full text-sm font-medium ' + (window.Sanitizer ? window.Sanitizer.escapeHTML(statusClass) : statusClass) + '">' + (window.Sanitizer ? window.Sanitizer.escapeHTML(status) : status) + '</span>';
+            innerHTML += '<span class="px-2 py-1 rounded-full text-xs font-medium ' + (window.Sanitizer ? window.Sanitizer.escapeHTML(statusClass) : statusClass) + '">' + (window.Sanitizer ? window.Sanitizer.escapeHTML(status) : status) + '</span>';
             innerHTML += '</div>';
 
             // If configured, show details
@@ -63,17 +63,17 @@ class EmulatorRenderer {
                 }
 
                 if (configuredEmulator.args) {
-                    innerHTML += '<p class="text-neutral-400 text-sm mb-3">Args: ' + (window.Sanitizer ? window.Sanitizer.escapeHTML(configuredEmulator.args) : configuredEmulator.args) + '</p>';
+                    innerHTML += '<p class="text-neutral-400 text-sm mb-2">Args: ' + (window.Sanitizer ? window.Sanitizer.escapeHTML(configuredEmulator.args) : configuredEmulator.args) + '</p>';
                 }
 
                 if (configuredEmulator.description) {
-                    innerHTML += '<p class="text-neutral-400 text-sm mb-3">' + (window.Sanitizer ? window.Sanitizer.escapeHTML(configuredEmulator.description) : configuredEmulator.description) + '</p>';
+                    innerHTML += '<p class="text-neutral-400 text-sm mb-2">' + (window.Sanitizer ? window.Sanitizer.escapeHTML(configuredEmulator.description) : configuredEmulator.description) + '</p>';
                 }
 
                 // Display website if available
                 if (configuredEmulator.website) {
                     const safeURL = window.Sanitizer ? window.Sanitizer.sanitizeURL(configuredEmulator.website) : configuredEmulator.website;
-                    innerHTML += '<p class="text-neutral-400 text-sm mb-3"><a href="' + safeURL + '" target="_blank">' + (window.Sanitizer ? window.Sanitizer.escapeHTML(configuredEmulator.website || '') : (configuredEmulator.website || '')) + '</a></p>';
+                    innerHTML += '<p class="text-neutral-400 text-sm mb-2"><a href="' + safeURL + '" target="_blank">' + (window.Sanitizer ? window.Sanitizer.escapeHTML(configuredEmulator.website || '') : (configuredEmulator.website || '')) + '</a></p>';
                 }
 
                 // Build tags HTML
@@ -94,7 +94,7 @@ class EmulatorRenderer {
             const emulatorId = configuredEmulator ? configuredEmulator.emulator_id : 'new-' + knownEmulator.id;
             const buttonText = configuredEmulator ? 'Edit' : 'Configure';
             
-            innerHTML += '<div class="flex space-x-2">';
+            innerHTML += '<div class="flex space-x-2 mt-2">';
             innerHTML += '<button onclick="app.editEmulator(\'' + (window.Sanitizer ? window.Sanitizer.escapeHTML(emulatorId) : emulatorId) + '\')" class="bg-secondary hover:bg-purple-600 px-3 py-1 rounded text-sm transition-colors">';
             innerHTML += window.Sanitizer ? window.Sanitizer.escapeHTML(buttonText) : buttonText;
             innerHTML += '</button>';

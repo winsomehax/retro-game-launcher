@@ -1,6 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 
+beforeAll(() => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+});
+afterAll(() => {
+  console.error.mockRestore();
+});
+
 describe('ROM scanning', () => {
 
   test('Returns empty array if no valid ROM files', () => {
