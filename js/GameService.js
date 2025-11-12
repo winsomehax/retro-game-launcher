@@ -5,8 +5,13 @@ module.exports=class GameService {
     #ssApi;
 
     constructor(user, password) {
-        console.log(`Initializing GameService with user: ${user}`);
+        console.log(`Initializing GameService with user: ${typeof window !== 'undefined' && window.Sanitizer ? window.Sanitizer.sanitizeForLog(user) : String(user).replace(/[\x00-\x1F\x7F]/g, '')}`);
         this.#ssApi = new ScreenScraperAPI(user, password);
+    }
+
+    // Expose the ScreenScraperAPI instance
+    get ssAPI() {
+        return this.#ssApi;
     }
 
     /**
@@ -21,7 +26,7 @@ module.exports=class GameService {
             const searchResults = await this.#ssApi.searchGameByName(gameName, systemId);
 
             if (!searchResults || !searchResults.response || !searchResults.response.jeux) {
-                console.log(`No games found for "${gameName}".`);
+                console.log(`No games found for "${typeof window !== 'undefined' && window.Sanitizer ? window.Sanitizer.sanitizeForLog(gameName) : String(gameName).replace(/[\x00-\x1F\x7F]/g, '')}".`);
                 return null;
             }
 
@@ -29,7 +34,7 @@ module.exports=class GameService {
             const gameData = Array.isArray(searchResults.response.jeux) ? searchResults.response.jeux[0] : searchResults.response.jeux;
 
             if (!gameData || !gameData.id) {
-                console.log(`Could not extract game ID for "${gameName}".`);
+                console.log(`Could not extract game ID for "${typeof window !== 'undefined' && window.Sanitizer ? window.Sanitizer.sanitizeForLog(gameName) : String(gameName).replace(/[\x00-\x1F\x7F]/g, '')}".`);
                 return null;
             }
 
@@ -39,7 +44,8 @@ module.exports=class GameService {
             const fullGameInfo = await this.#ssApi.getGameInfo(gameId);
 
             if (!fullGameInfo || !fullGameInfo.response || !fullGameInfo.response.jeux) {
-                console.log(`Could not fetch full info for game ID ${gameId}.`);
+                const sanitizedGameId = window.Sanitizer ? window.Sanitizer.sanitizeForLog(gameId) : gameId;
+                console.log(`Could not fetch full info for game ID ${sanitizedGameId}.`);
                 return {
                     id: gameId,
                     name: gameData.nom,
@@ -54,24 +60,74 @@ module.exports=class GameService {
             if (gameDetails.medias && Array.isArray(gameDetails.medias)) {
                 gameDetails.medias.forEach(m => {
                     // Prioritize specific types or pick the first available for a type
-                    if (m.type === 'box2d' && m.url) media.boxArt = m.url;
-                    if (m.type === 'screenshot' && m.url) media.screenshot = m.url;
+                    if (m.type === 'box-2D' && m.url) media.boxArt = m.url;
+                    if (m.type === 'ss' && m.url) media.screenshot = m.url;
                     if (m.type === 'fanart' && m.url) media.fanArt = m.url;
+                    if (m.type === 'video' && m.url) media.video = m.url;
                     // Add more media types as needed
                 });
             }
 
+            // Extract names with preference for English
+            let title = 'Unknown Title';
+            if (gameDetails.noms && Array.isArray(gameDetails.noms)) {
+                const enName = gameDetails.noms.find(n => n.region === 'eu' || n.region === 'us');
+                title = enName ? enName.text : gameDetails.noms[0].text;
+            }
+
+            // Extract description with preference for English
+            let description = '';
+            if (gameDetails.synopsis && Array.isArray(gameDetails.synopsis)) {
+                const enSynopsis = gameDetails.synopsis.find(s => s.langue === 'en');
+                description = enSynopsis ? enSynopsis.text : gameDetails.synopsis[0].text;
+            }
+
+            // Extract genres
+            let genre = '';
+            if (gameDetails.genres && Array.isArray(gameDetails.genres) && gameDetails.genres.length > 0) {
+                const primaryGenre = gameDetails.genres[0];
+                if (primaryGenre.noms && Array.isArray(primaryGenre.noms)) {
+                    const enGenre = primaryGenre.noms.find(n => n.langue === 'en');
+                    genre = enGenre ? enGenre.text : primaryGenre.noms[0].text;
+                }
+            }
+
+            // Extract release date
+            let releaseDate = '';
+            if (gameDetails.dates && Array.isArray(gameDetails.dates) && gameDetails.dates.length > 0) {
+                releaseDate = gameDetails.dates[0].text;
+            }
+
+            // Extract developer
+            let developer = '';
+            if (gameDetails.developpeur && gameDetails.developpeur.text) {
+                developer = gameDetails.developpeur.text;
+            }
+
+            // Extract publisher
+            let publisher = '';
+            if (gameDetails.editeur && gameDetails.editeur.text) {
+                publisher = gameDetails.editeur.text;
+            }
+
+            // Extract players
+            let players = '';
+            if (gameDetails.joueurs && gameDetails.joueurs.text) {
+                players = gameDetails.joueurs.text;
+            }
+
             return {
                 id: gameDetails.id,
+                title: title,
                 names: gameDetails.noms, // Array of names in different languages
                 regions: gameDetails.regions, // Array of regions
                 dates: gameDetails.dates, // Array of release dates
-                developers: gameDetails.developpeur,
-                publishers: gameDetails.editeur,
-                genres: gameDetails.genres,
-                players: gameDetails.players,
+                developers: developer,
+                publishers: publisher,
+                genres: genre,
+                players: players,
                 rating: gameDetails.note,
-                description: gameDetails.synopsis,
+                description: description,
                 system: gameDetails.systeme,
                 media: media // Contains URLs to download media
             };

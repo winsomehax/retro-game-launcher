@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Plugin Test</title>
+</head>
+<body>
+    <h1>Plugin Test</h1>
+    <script src="plugins/BasePlugin.js"></script>
+    <script src="plugins/XMBPlugin.js"></script>
+    <script src="plugins/RADARPlugin.js"></script>
+    <script src="plugins/NONEPlugin.js"></script>
+    <script src="plugins/PluginManager.js"></script>
+    <script>
+        // Test if PluginManager is available
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.PluginManager) {
+                console.log('PluginManager is available');
+                console.log('Available plugins:', window.PluginManager.getAvailablePlugins());
+            } else {
+                console.log('PluginManager is not available');
+            }
+        });
+    </script>
+</body>
+</html>

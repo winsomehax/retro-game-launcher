@@ -1,6 +1,64 @@
 /* Custom scrollbar styles */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 16px;
+}
+
+/* Semi-transparent sidebar */
+nav {
+    background-color: rgba(31, 31, 31, 0.7) !important;
+    backdrop-filter: blur(5px);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 100;
+}
+
+/* Translucent cards for games, platforms, and emulators */
+.bg-neutral-800 {
+    background-color: rgba(31, 31, 31, 0.7) !important;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Translucent modal */
+.modal-content {
+    background-color: rgba(58, 58, 58, 0.8) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Translucent platform and emulator list items */
+#platforms-list > div,
+#emulators-list > div {
+    background-color: rgba(31, 31, 31, 0.7) !important;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Translucent ROM table rows */
+#roms-table-body tr {
+    background-color: rgba(31, 31, 31, 0.7) !important;
+    backdrop-filter: blur(5px);
+}
+
+/* Translucent input fields */
+input.bg-neutral-800,
+select.bg-neutral-800,
+textarea.bg-neutral-800 {
+    background-color: rgba(31, 31, 31, 0.7) !important;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Translucent table headers */
+.bg-neutral-800 th {
+    background-color: rgba(31, 31, 31, 0.7) !important;
+    backdrop-filter: blur(5px);
+}
+
+/* Translucent scan pipeline sticky bar */
+.scan-pipeline-sticky {
+    background-color: rgba(23, 23, 23, 0.8) !important;
+    backdrop-filter: blur(5px);
 }
 ::-webkit-scrollbar-track {
     background: #1f1f1f;
@@ -37,12 +95,20 @@
     display: flex;
     flex-direction: column;
     border: 1px solid #555;
+    overflow: hidden; /* Prevent content from spilling out */
 }
 
 #modal-fields {
     overflow-y: auto;
     flex-grow: 1;
     padding-right: 1rem; /* Add some padding for the scrollbar */
+    max-height: calc(80vh - 120px); /* Account for title and buttons */
+}
+
+.modal-content form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 /* Image modal specific styles */
@@ -58,4 +124,62 @@
     object-fit: contain;
     border-radius: 0.25rem;
     background-color: #1f1f1f;
+}
+
+/* Sticky pipeline buttons for scan view */
+#scan-pipeline {
+    position: relative;
+}
+
+.scan-pipeline-sticky {
+    position: sticky;
+    top: 0;
+    background-color: #171717;
+    padding: 1rem 0;
+    z-index: 100;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    margin: 0 -2rem; /* Extend to full width of container */
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+/* Clickable status badges */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* Authentication error status badge */
+.bg-red-800 {
+    background-color: #991b1b; /* Dark red for auth errors */
+}
+
+/* Emulator edit modal tabs */
+.emulator-tab-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.emulator-tab-btn:hover:not(.text-primary) {
+    color: white;
+}
+
+.emulator-tab-pane.hidden {
+    display: none;
+}
+
+/* Loading spinner */
+.loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }

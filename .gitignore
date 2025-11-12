@@ -33,3 +33,7 @@ dist
 .env
 reqexample.txt
 recommendations.txt
+
+*storybook.log
+storybook-static
+upgrade

@@ -29,13 +29,22 @@ module.exports = class ScreenScraperAPI {
         const fullUrl = `${this.#BASE_URL}/${endpoint}?${urlParams.toString()}`;
 
         try {
-            console.log(`Fetching from: ${fullUrl}`);
+            console.log(`Fetching from: ${typeof window !== 'undefined' && window.Sanitizer ? window.Sanitizer.sanitizeForLog(fullUrl) : String(fullUrl).replace(/[\x00-\x1F\x7F]/g, '')}`);
             const response = await fetch(fullUrl);
 
+            // Check if response is text and contains authentication error
+            const responseText = await response.text();
+            
+            // Check for authentication error in response text
+            if (responseText.includes("Erreur de login")) {
+                throw new Error("Authentication failed: Invalid ScreenScraper credentials");
+            }
+
+            // If we've reached here and response is not OK, handle other errors
             if (!response.ok) {
                 let errorMessage = `HTTP error! Status: ${response.status}`;
                 try {
-                    const errorJson = await response.json();
+                    const errorJson = JSON.parse(responseText);
                     errorMessage += ` - ${errorJson.status || errorJson.error || response.statusText}`;
                 } catch (e) {
                     errorMessage += ` - ${response.statusText}`;
@@ -43,11 +52,17 @@ module.exports = class ScreenScraperAPI {
                 throw new Error(errorMessage);
             }
 
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                return await response.json();
-            } else {
-                return await response.text();
+            // Try to parse response as JSON
+            try {
+                const jsonResponse = JSON.parse(responseText);
+                return jsonResponse;
+            } catch (e) {
+                // If parsing fails, check if it's an authentication error
+                if (responseText.includes("Erreur de login")) {
+                    throw new Error("Authentication failed: Invalid ScreenScraper credentials");
+                }
+                // Otherwise return as text
+                return responseText;
             }
         } catch (error) {
             console.error(`Error fetching from ${endpoint}:`, error);
@@ -144,7 +159,7 @@ module.exports = class ScreenScraperAPI {
             throw new Error("Game name is required for searchGameByName.");
         }
         const params = { recherche: gameName };
-        if (systemId) params.systemid = systemId;
+        if (systemId) params.systemeid = systemId;
         return this.#fetchData('jeuRecherche.php', params);
     }
 

@@ -27,7 +27,7 @@
 <body class="bg-neutral-900 text-neutral-100 font-sans">
     <div id="app" class="min-h-screen flex">
         <!-- Sidebar -->
-        <nav class="w-64 bg-neutral-800 p-6">
+        <nav class="fixed w-64 bg-neutral-800 p-6 h-screen overflow-y-auto">
             <h1 class="text-2xl font-display font-bold text-primary mb-8">Retro Launcher</h1>
             <ul class="space-y-2">
                 <li><a href="#games" class="nav-link block p-3 rounded hover:bg-neutral-700 transition-colors">Games</a></li>
@@ -40,7 +40,7 @@
         </nav>
 
         <!-- Main Content -->
-        <main class="flex-1 p-8">
+        <main class="flex-1 p-8 ml-64">
             <!-- Games View -->
             <div id="games-view" class="view">
                 <h2 class="text-4xl font-display font-bold mb-6">Games Library</h2>
@@ -62,7 +62,7 @@
                         + Add Platform
                     </button>
                 </div>
-                <div id="platforms-list" class="space-y-4">
+                <div id="platforms-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <!-- Platforms will be loaded here -->
                 </div>
             </div>
@@ -70,12 +70,15 @@
             <!-- Emulators View -->
             <div id="emulators-view" class="view hidden">
                 <h2 class="text-4xl font-display font-bold mb-6">Emulators</h2>
-                <div class="mb-6">
+                <div class="mb-6 flex space-x-2">
                     <button id="add-emulator-btn" class="bg-primary hover:bg-primary-dark px-4 py-2 rounded font-semibold transition-colors">
                         + Add Emulator
                     </button>
+                    <button id="discover-emulators-btn" class="bg-secondary hover:bg-purple-600 px-4 py-2 rounded font-semibold transition-colors">
+                        Discover Emulators
+                    </button>
                 </div>
-                <div id="emulators-list" class="space-y-4">
+                <div id="emulators-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <!-- Emulators will be loaded here -->
                 </div>
             </div>
@@ -101,7 +104,7 @@
                 </div>
 
                 <div id="scan-pipeline" class="hidden">
-                    <div class="flex items-center space-x-2 mb-4">
+                    <div class="flex items-center space-x-2 mb-4 scan-pipeline-sticky">
                         <button id="get-suggestions-btn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-semibold transition-colors">
                             Get Suggestions
                         </button>
@@ -136,15 +139,71 @@
                 <div class="space-y-6">
                     <div>
                         <label class="block text-sm font-medium mb-2">TheGamesDB API Key</label>
-                        <input type="text" id="thegamesdb-key" class="w-full p-3 bg-neutral-800 border border-neutral-700 rounded">
+                        <div class="relative">
+                            <input type="password" id="thegamesdb-key" class="w-full p-3 bg-neutral-800 border border-neutral-700 rounded pr-10">
+                            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center toggle-password-visibility" data-target="thegamesdb-key">
+                                <svg class="h-5 w-5 text-neutral-500 eye-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path class="eye-open hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path class="eye-open hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    <path class="eye-closed" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="text-xs text-neutral-500 mt-1">API key is stored securely. When present, shows as filled circle.</div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-2">RAWG API Key</label>
-                        <input type="text" id="rawg-key" class="w-full p-3 bg-neutral-800 border border-neutral-700 rounded">
+                        <div class="relative">
+                            <input type="password" id="rawg-key" class="w-full p-3 bg-neutral-800 border border-neutral-700 rounded pr-10">
+                            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center toggle-password-visibility" data-target="rawg-key">
+                                <svg class="h-5 w-5 text-neutral-500 eye-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path class="eye-open hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path class="eye-open hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    <path class="eye-closed" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="text-xs text-neutral-500 mt-1">API key is stored securely. When present, shows as filled circle.</div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-2">Gemini API Key</label>
-                        <input type="text" id="gemini-key" class="w-full p-3 bg-neutral-800 border border-neutral-700 rounded">
+                        <div class="relative">
+                            <input type="password" id="gemini-key" class="w-full p-3 bg-neutral-800 border border-neutral-700 rounded pr-10">
+                            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center toggle-password-visibility" data-target="gemini-key">
+                                <svg class="h-5 w-5 text-neutral-500 eye-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path class="eye-open hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path class="eye-open hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    <path class="eye-closed" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="text-xs text-neutral-500 mt-1">API key is stored securely. When present, shows as filled circle.</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Background Effect</label>
+                        <select id="background-effect" class="w-full p-3 bg-neutral-800 border border-neutral-700 rounded">
+                            <option value="XMB">XMB (Waves)</option>
+                            <option value="CIRCLES">CIRCLES (Concentric Circles)</option>
+                            <option value="RADAR">RADAR (Rotating Sweep)</option>
+                            <option value="DNA">DNA (Triple Helix)</option>
+                            <option value="STARFIELD">STARFIELD (Deep Space)</option>
+                            <option value="MATRIX">MATRIX (Digital Rain)</option>
+                            <option value="AURORA">AURORA (Northern Lights)</option>
+                            <option value="NEONGRID">NEON GRID (Cyberpunk)</option>
+                            <option value="FIREPLACE">FIREPLACE (Cozy Flames)</option>
+                            <option value="OCEANDEPTHS">OCEAN DEPTHS (Underwater)</option>
+                            <option value="CLOUDSCAPE">CLOUDSCAPE (Sky)</option>
+                            <option value="PARTICLESTORM">PARTICLE STORM (Interactive)</option>
+                            <option value="RETROCRT">RETRO CRT (Scanlines)</option>
+                            <option value="GEOMETRIC">GEOMETRIC (3D Shapes)</option>
+                            <option value="NONE">NONE (No Effects - Low Resource Systems)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="low-resources-mode" class="mr-2">
+                            <span>Low resources systems (disables colorful ribbon effect)</span>
+                        </label>
                     </div>
                     <button id="save-settings-btn" class="bg-primary hover:bg-primary-dark px-4 py-2 rounded font-semibold transition-colors">
                         Save Settings
@@ -155,14 +214,33 @@
             <!-- Tags View -->
             <div id="tags-view" class="view hidden">
                 <h2 class="text-4xl font-display font-bold mb-6">Tags</h2>
-                <div class="mb-6">
-                    <input type="text" id="new-tag-input" class="p-3 bg-neutral-800 border border-neutral-700 rounded" placeholder="New tag...">
-                    <button id="add-tag-btn" class="bg-primary hover:bg-primary-dark px-4 py-2 rounded font-semibold transition-colors">
-                        + Add Tag
-                    </button>
+                
+                <!-- Game Tags Section -->
+                <div class="mb-8">
+                    <h3 class="text-2xl font-display font-bold mb-4">Game Tags</h3>
+                    <div class="mb-4 flex">
+                        <input type="text" id="new-game-tag-input" class="p-3 bg-neutral-800 border border-neutral-700 rounded flex-grow" placeholder="New game tag...">
+                        <button id="add-game-tag-btn" class="bg-primary hover:bg-primary-dark px-4 py-2 rounded font-semibold transition-colors ml-2">
+                            + Add Game Tag
+                        </button>
+                    </div>
+                    <div id="game-tags-list" class="space-y-4">
+                        <!-- Game tags will be loaded here -->
+                    </div>
                 </div>
-                <div id="tags-list" class="space-y-4">
-                    <!-- Tags will be loaded here -->
+                
+                <!-- Platform Tags Section -->
+                <div class="mb-8">
+                    <h3 class="text-2xl font-display font-bold mb-4">Platform Tags</h3>
+                    <div class="mb-4 flex">
+                        <input type="text" id="new-platform-tag-input" class="p-3 bg-neutral-800 border border-neutral-700 rounded flex-grow" placeholder="New platform tag...">
+                        <button id="add-platform-tag-btn" class="bg-primary hover:bg-primary-dark px-4 py-2 rounded font-semibold transition-colors ml-2">
+                            + Add Platform Tag
+                        </button>
+                    </div>
+                    <div id="platform-tags-list" class="space-y-4">
+                        <!-- Platform tags will be loaded here -->
+                    </div>
                 </div>
             </div>
         </main>
@@ -182,6 +260,29 @@
         </div>
     </div>
 
+    <script src="js/ErrorHandler.js"></script>
+    <script src="js/Sanitizer.js"></script>
+    <script src="js/NotificationSystem.js"></script>
+    <script src="js/ModalSystem.js"></script>
+    <script src="js/renderEmulators.js"></script>
+    <script src="plugins/BasePlugin.js"></script>
+    <script src="plugins/XMBPlugin.js"></script>
+    <script src="plugins/CIRCLESPlugin.js"></script>
+    <script src="plugins/NONEPlugin.js"></script>
+    <script src="plugins/STARFIELDPlugin.js"></script>
+    <script src="plugins/MATRIXPlugin.js"></script>
+    <script src="plugins/AURORAPlugin.js"></script>
+    <script src="plugins/NEONGRIDPlugin.js"></script>
+    <script src="plugins/FIREPLACEPlugin.js"></script>
+    <script src="plugins/OCEANDEPTHSPlugin.js"></script>
+    <script src="plugins/CLOUDSCAPEPlugin.js"></script>
+    <script src="plugins/PARTICLESTORMPlugin.js"></script>
+    <script src="plugins/RETROCRTPlugin.js"></script>
+    <script src="plugins/GEOMETRICPlugin.js"></script>
+    <script src="plugins/RADARPlugin.js"></script>
+    <script src="plugins/DNAPlugin.js"></script>
+    <script src="plugins/PluginManager.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/smoke.js"></script>
 </body>
 </html>
